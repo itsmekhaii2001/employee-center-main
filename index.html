@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Employee Center</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    :root {
+      --text: #344054;
+      --muted: #7b8798;
+      --line: #e4eaf1;
+      --white: #ffffff;
+      --blue: #5baed2;
+      --purple: #7166d9;
+      --owner-bg: #f2edff;
+      --owner: #745ec8;
+      --shadow: 0 18px 50px rgba(77, 94, 121, .10);
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Noto Sans Thai",
+        sans-serif;
+      color: var(--text);
+      background:
+        linear-gradient(
+          135deg,
+          #f5fbff 0%,
+          #f7f9ff 45%,
+          #faf7ff 100%
+        );
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+    }
+
+    .background-shape {
+      position: fixed;
+      border-radius: 999px;
+      pointer-events: none;
+      opacity: .65;
+    }
+
+    .shape-1 {
+      width: 260px;
+      height: 260px;
+      background: #dbf6ee;
+      top: -90px;
+      right: -70px;
+    }
+
+    .shape-2 {
+      width: 300px;
+      height: 300px;
+      background: #e8e7ff;
+      bottom: -120px;
+      left: -100px;
+    }
+
+    .page {
+      width: min(1050px, 100%);
+      position: relative;
+      z-index: 2;
+    }
+
+    .brand {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 25px;
+    }
+
+    .logo {
+      width: 72px;
+      height: 72px;
+      border-radius: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 32px;
+      background:
+        linear-gradient(
+          135deg,
+          #78d2c8,
+          #8da8ff
+        );
+      box-shadow:
+        0 12px 30px
+        rgba(97, 133, 191, .18);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.1;
+    }
+
+    .brand p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .panel {
+      background: rgba(255,255,255,.92);
+      border: 1px solid rgba(218,225,235,.95);
+      border-radius: 30px;
+      padding: 36px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .welcome {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .welcome h2 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .welcome p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .login-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .login-card {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 28px;
+      background: #fff;
+      transition:
+        transform .18s ease,
+        box-shadow .18s ease;
+    }
+
+    .login-card:hover {
+      transform: translateY(-3px);
+      box-shadow:
+        0 18px 40px
+        rgba(72,87,109,.10);
+    }
+
+    .card-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 18px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 26px;
+      margin-bottom: 18px;
+    }
+
+    .employee-card .card-icon {
+      background: #e6f5fc;
+    }
+
+    .owner-card .card-icon {
+      background: var(--owner-bg);
+    }
+
+    .login-card h3 {
+      margin: 0;
+      font-size: 21px;
+    }
+
+    .login-card p {
+      margin: 8px 0 22px;
+      min-height: 42px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 13px;
+    }
+
+    button {
+      font-family: inherit;
+    }
+
+    .btn {
+      width: 100%;
+      min-height: 48px;
+      border: 0;
+      border-radius: 15px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 900;
+      transition:
+        transform .15s ease,
+        opacity .15s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      cursor: wait;
+    }
+
+    .btn-employee {
+      color: white;
+      background:
+        linear-gradient(
+          135deg,
+          #55afd0,
+          #7465d8
+        );
+    }
+
+    .btn-owner {
+      color: #654dbd;
+      background: #eee9ff;
+    }
+
+    .btn-soft {
+      background: #f4f6f9;
+      color: #667085;
+    }
+
+    /* =========================
+       OWNER POPUP
+    ========================== */
+
+    .owner-login {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      padding: 22px;
+      background: rgba(39, 48, 66, .34);
+      backdrop-filter: blur(8px);
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn .16s ease;
+    }
+
+    .owner-login.show {
+      display: flex;
+    }
+
+    .owner-modal-card {
+      width: min(500px, 100%);
+      max-height: calc(100vh - 44px);
+      overflow: auto;
+      position: relative;
+      background: rgba(255,255,255,.98);
+      border: 1px solid rgba(220,225,236,.98);
+      border-radius: 26px;
+      padding: 30px;
+      box-shadow:
+        0 30px 90px rgba(41,51,75,.23);
+      animation: popIn .18s ease;
+    }
+
+    .modal-close {
+      width: 38px;
+      height: 38px;
+      min-height: 0;
+      padding: 0;
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      border: 0;
+      border-radius: 12px;
+      background: #f4f6f9;
+      color: #667085;
+      font-size: 20px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .modal-owner-icon {
+      width: 62px;
+      height: 62px;
+      margin: 0 auto 14px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f1ecff;
+      font-size: 30px;
+    }
+
+    .owner-login h3 {
+      text-align: center;
+      margin: 0 0 6px;
+      font-size: 23px;
+    }
+
+    .owner-login .sub {
+      text-align: center;
+      color: var(--muted);
+      margin-bottom: 22px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .field {
+      max-width: 430px;
+      margin: 0 auto 13px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .field input {
+      width: 100%;
+      height: 50px;
+      border: 1px solid #dbe3ec;
+      border-radius: 14px;
+      padding: 0 14px;
+      outline: none;
+      font-family: inherit;
+      font-size: 14px;
+      background: #fff;
+      color: var(--text);
+    }
+
+    .field input:focus {
+      border-color: #8a7edf;
+      box-shadow:
+        0 0 0 4px
+        rgba(120,103,211,.08);
+    }
+
+    .owner-actions {
+      max-width: 430px;
+      margin: 18px auto 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .message {
+      display: none;
+      max-width: 430px;
+      margin: 14px auto 0;
+      padding: 11px 14px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .message.show {
+      display: block;
+    }
+
+    .message.error {
+      color: #c74e58;
+      background: #fff0f1;
+      border: 1px solid #ffd1d5;
+    }
+
+    .message.info {
+      color: #52718d;
+      background: #eef7fc;
+      border: 1px solid #d5eaf5;
+    }
+
+    .message.success {
+      color: #3f8d66;
+      background: #eaf8ef;
+      border: 1px solid #ccebd8;
+    }
+
+    .security-note {
+      max-width: 430px;
+      margin: 15px auto 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      color: #98a2b3;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 18px;
+      color: #98a2b3;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes popIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(.97);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @media (max-width: 720px) {
+      body {
+        padding: 14px;
+        align-items: flex-start;
+      }
+
+      .page {
+        margin-top: 20px;
+      }
+
+      .panel {
+        padding: 22px;
+        border-radius: 24px;
+      }
+
+      .brand {
+        justify-content: flex-start;
+      }
+
+      .logo {
+        width: 60px;
+        height: 60px;
+        border-radius: 20px;
+      }
+
+      .brand h1 {
+        font-size: 24px;
+      }
+
+      .welcome {
+        text-align: left;
+      }
+
+      .welcome h2 {
+        font-size: 23px;
+      }
+
+      .login-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .login-card p {
+        min-height: 0;
+      }
+
+      .owner-modal-card {
+        padding: 26px 18px 20px;
+        border-radius: 22px;
+      }
+
+      .owner-actions {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="background-shape shape-1"></div>
+  <div class="background-shape shape-2"></div>
+
+  <main class="page">
+
+    <header class="brand">
+      <div class="logo">👥</div>
+
+      <div>
+        <h1>Employee Center</h1>
+        <p>ศูนย์ข้อมูลและตารางกะพนักงาน</p>
+      </div>
+    </header>
+
+    <section class="panel">
+
+      <div class="welcome">
+        <h2>ยินดีต้อนรับ 👋</h2>
+        <p>เลือกรูปแบบการเข้าใช้งาน</p>
+      </div>
+
+      <div class="login-grid">
+
+        <article class="login-card employee-card">
+
+          <div class="card-icon">👤</div>
+
+          <h3>เข้าใช้งานทั่วไป</h3>
+
+          <p>
+            สำหรับพนักงาน ใช้ดูตารางกะของตนเอง
+            และตารางกะของแต่ละ TEAM
+          </p>
+
+          <button
+            class="btn btn-employee"
+            type="button"
+            onclick="openEmployee()"
+          >
+            👤 เข้าสู่หน้าพนักงาน
+          </button>
+
+        </article>
+
+        <article class="login-card owner-card">
+
+          <div class="card-icon">👑</div>
+
+          <h3>OWNER</h3>
+
+          <p>
+            สำหรับผู้ดูแลระบบ จัดการข้อมูลพนักงาน
+            เซตกะ ตารางกะ และการตั้งค่าระบบ
+          </p>
+
+          <button
+            class="btn btn-owner"
+            type="button"
+            onclick="showOwnerLogin()"
+          >
+            🔐 เข้าสู่ระบบ OWNER
+          </button>
+
+        </article>
+
+      </div>
+
+    </section>
+
+    <div class="footer">
+      Employee Center · Internal System
+    </div>
+
+  </main>
+
+
+  <!-- OWNER LOGIN POPUP -->
+
+  <div
+    class="owner-login"
+    id="ownerLogin"
+    aria-hidden="true"
+    onclick="
+      if (event.target === this) {
+        hideOwnerLogin();
+      }
+    "
+  >
+
+    <div
+      class="owner-modal-card"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ownerLoginTitle"
+    >
+
+      <button
+        class="modal-close"
+        type="button"
+        onclick="hideOwnerLogin()"
+        aria-label="ปิด"
+      >
+        ×
+      </button>
+
+      <div class="modal-owner-icon">
+        👑
+      </div>
+
+      <h3 id="ownerLoginTitle">
+        OWNER Login
+      </h3>
+
+      <div class="sub">
+        กรุณายืนยันสิทธิ์ก่อนเข้าสู่ระบบบริหาร
+      </div>
+
+      <div class="field">
+
+        <label for="ownerUsername">
+          Username
+        </label>
+
+        <input
+          id="ownerUsername"
+          type="text"
+          autocomplete="username"
+          placeholder="กรอกชื่อผู้ใช้"
+        >
+
+      </div>
+
+      <div class="field">
+
+        <label for="ownerPassword">
+          Password
+        </label>
+
+        <input
+          id="ownerPassword"
+          type="password"
+          autocomplete="current-password"
+          placeholder="กรอกรหัสผ่าน"
+          onkeydown="
+            if (event.key === 'Enter') {
+              loginOwner();
+            }
+          "
+        >
+
+      </div>
+
+      <div class="owner-actions">
+
+        <button
+          class="btn btn-soft"
+          type="button"
+          onclick="hideOwnerLogin()"
+        >
+          ยกเลิก
+        </button>
+
+        <button
+          class="btn btn-employee"
+          type="button"
+          onclick="loginOwner()"
+        >
+          🔐 เข้าสู่ระบบ
+        </button>
+
+      </div>
+
+      <div
+        class="message"
+        id="loginMessage"
+      ></div>
+
+      <div class="security-note">
+        🔒 ระบบยืนยันสิทธิ์ผ่าน Backend
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <script src="./assets/js/api.js"></script>
+  <script src="./assets/js/login.js"></script>
+
+  <script>
+    /*
+     * เสริมจาก login.js:
+     * คุม body scroll + ESC สำหรับ Popup
+     * โดยไม่แตะระบบ Login เดิม
+     */
+
+    const originalShowOwnerLogin =
+      window.showOwnerLogin;
+
+    const originalHideOwnerLogin =
+      window.hideOwnerLogin;
+
+
+    window.showOwnerLogin =
+      function () {
+
+        if (
+          typeof originalShowOwnerLogin ===
+          'function'
+        ) {
+          originalShowOwnerLogin();
+        }
+
+        document.body
+          .classList
+          .add(
+            'modal-open'
+          );
+
+        const modal =
+          document.getElementById(
+            'ownerLogin'
+          );
+
+        if (modal) {
+          modal.setAttribute(
+            'aria-hidden',
+            'false'
+          );
+        }
+      };
+
+
+    window.hideOwnerLogin =
+      function () {
+
+        if (
+          typeof originalHideOwnerLogin ===
+          'function'
+        ) {
+          originalHideOwnerLogin();
+        }
+
+        document.body
+          .classList
+          .remove(
+            'modal-open'
+          );
+
+        const modal =
+          document.getElementById(
+            'ownerLogin'
+          );
+
+        if (modal) {
+          modal.setAttribute(
+            'aria-hidden',
+            'true'
+          );
+        }
+      };
+
+
+    document.addEventListener(
+      'keydown',
+      event => {
+
+        if (
+          event.key === 'Escape'
+        ) {
+
+          const modal =
+            document.getElementById(
+              'ownerLogin'
+            );
+
+          if (
+            modal &&
+            modal.classList.contains(
+              'show'
+            )
+          ) {
+            hideOwnerLogin();
+          }
+        }
+      }
+    );
+  </script>
+
+</body>
+</html>

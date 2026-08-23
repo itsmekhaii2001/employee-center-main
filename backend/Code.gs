@@ -1,0 +1,7181 @@
+/************************************************************
+ * ศูนย์บริหารพนักงาน
+ * Google Apps Script Web App
+ ************************************************************/
+
+const APP = {
+
+  SHEETS: {
+    EMPLOYEES: 'DB_Employees',
+    SHIFT_SETS: 'DB_ShiftSets',
+    ASSIGNMENTS: 'DB_Assignments',
+    OVERRIDES: 'DB_ShiftOverrides',
+    SHIFT_HISTORY: 'DB_ShiftHistory',
+    SETTINGS: 'DB_Settings'
+  },
+
+  POSITIONS: [
+    'AG',
+    'AE',
+    'การตลาด',
+    'SEO',
+    'ตัดต่อ',
+    'กราฟฟิก',
+    'พัฒนา',
+    'PR',
+    'Audit',
+    'ฝาก - ถอน',
+    'แอดมิน',
+    'Tele sell'
+  ],
+
+  GENDERS: [
+    'ชาย',
+    'หญิง'
+  ],
+
+  EMPLOYEE_STATUS: [
+    'ทำงาน',
+    'รอเรียก',
+    'พักงาน',
+    'ออก'
+  ],
+
+  DEFAULT_TEAMS: [
+    'TEAM A',
+    'TEAM B',
+    'TEAM C'
+  ],
+
+  DEFAULT_BRANCHES: [
+    'RH289',
+    'LD789',
+    'ส่วนกลาง (RH289/LD789)'
+  ]
+};
+
+
+/* =========================================================
+   WEB APP
+========================================================= */
+
+function doGet(e) {
+
+  setupSystem_();
+
+
+  const api =
+    String(
+      e?.parameter?.api || ''
+    )
+    .trim()
+    .toLowerCase();
+
+
+  if (
+    api === 'public'
+  ) {
+
+    return handlePublicApi_(
+      e
+    );
+  }
+
+
+  const view =
+    String(
+      e?.parameter?.view || ''
+    )
+    .trim()
+    .toLowerCase();
+
+
+  if (
+    view === 'employee'
+  ) {
+
+    const template =
+      HtmlService
+        .createTemplateFromFile(
+          'Employee'
+        );
+
+
+    template.initialEmployeeId =
+      String(
+        e?.parameter?.id || ''
+      )
+      .trim()
+      .toUpperCase();
+
+
+    return template
+      .evaluate()
+      .setTitle(
+        'ตารางกะพนักงาน'
+      )
+      .setXFrameOptionsMode(
+        HtmlService
+          .XFrameOptionsMode
+          .ALLOWALL
+      );
+  }
+
+
+  return HtmlService
+    .createHtmlOutputFromFile(
+      'Index'
+    )
+    .setTitle(
+      'ศูนย์บริหารพนักงาน'
+    )
+    .setXFrameOptionsMode(
+      HtmlService
+        .XFrameOptionsMode
+        .ALLOWALL
+    );
+}
+
+
+/**
+ * API อ่านข้อมูลสำหรับหน้า GitHub Pages
+ * เป็น read-only บ่มีคำสั่งแก้ข้อมูล
+ */
+function handlePublicApi_(e) {
+
+  const p =
+    e?.parameter || {};
+
+
+  const callback =
+    String(
+      p.callback || ''
+    )
+    .trim();
+
+
+  if (
+    !/^[A-Za-z_$][0-9A-Za-z_$]*$/.test(
+      callback
+    )
+  ) {
+
+    return ContentService
+      .createTextOutput(
+        '/* invalid callback */'
+      )
+      .setMimeType(
+        ContentService.MimeType.JAVASCRIPT
+      );
+  }
+
+
+  try {
+
+    const action =
+      String(
+        p.action || ''
+      )
+      .trim();
+
+
+    let data;
+
+
+    if (
+      action === 'employeeSchedule'
+    ) {
+
+      data =
+        getEmployeePublicSchedule(
+          p.query || '',
+          p.anchorDate || ''
+        );
+
+    } else if (
+      action === 'teamSchedule'
+    ) {
+
+      data =
+        getEmployeePublicTeamSchedule(
+          p.anchorDate || ''
+        );
+
+    } else if (
+      action === 'ownerResult'
+    ) {
+
+      data =
+        getOwnerAsyncResult_(
+          p.requestId || ''
+        );
+
+    } else {
+
+      throw new Error(
+        'ไม่พบคำสั่ง API'
+      );
+    }
+
+
+    return jsonpOutput_(
+      callback,
+      {
+        ok: true,
+        data: data
+      }
+    );
+
+  } catch (error) {
+
+    return jsonpOutput_(
+      callback,
+      {
+        ok: false,
+
+        error:
+          String(
+            error?.message ||
+            error ||
+            'เกิดข้อผิดพลาด'
+          )
+          .replace(
+            /^Error:\s*/i,
+            ''
+          )
+      }
+    );
+  }
+}
+
+
+function jsonpOutput_(
+  callback,
+  payload
+) {
+
+  return ContentService
+    .createTextOutput(
+      callback +
+      '(' +
+      JSON.stringify(
+        payload
+      ) +
+      ');'
+    )
+    .setMimeType(
+      ContentService.MimeType.JAVASCRIPT
+    );
+}
+
+
+
+/* =========================================================
+   OWNER AUTH / OWNER API
+   ใช้กับหน้า OWNER บน GitHub Pages
+========================================================= */
+
+const OWNER_SESSION_SECONDS_ = 21600;
+const OWNER_RESULT_SECONDS_ = 120;
+const OWNER_RESULT_CHUNK_ = 25000;
+
+
+function doPost(e) {
+
+  const p =
+    e?.parameter || {};
+
+  const action =
+    String(
+      p.action || ''
+    ).trim();
+
+  try {
+
+    if (
+      action === 'ownerLogin'
+    ) {
+
+      processOwnerLogin_(p);
+
+    } else if (
+      action === 'ownerCall'
+    ) {
+
+      processOwnerCall_(p);
+
+    } else if (
+      action === 'ownerLogout'
+    ) {
+
+      processOwnerLogout_(p);
+
+    } else {
+
+      throw new Error(
+        'ไม่พบคำสั่ง POST'
+      );
+    }
+
+  } catch (error) {
+
+    const requestId =
+      normalizeOwnerRequestId_(
+        p.requestId || ''
+      );
+
+    if (requestId) {
+
+      cacheOwnerAsyncResult_(
+        requestId,
+        {
+          ok: false,
+          error:
+            cleanOwnerError_(
+              error
+            )
+        }
+      );
+    }
+  }
+
+  return ContentService
+    .createTextOutput('OK')
+    .setMimeType(
+      ContentService.MimeType.TEXT
+    );
+}
+
+
+function processOwnerLogin_(p) {
+
+  const requestId =
+    requireOwnerRequestId_(
+      p.requestId
+    );
+
+  const username =
+    String(
+      p.username || ''
+    ).trim();
+
+  const password =
+    String(
+      p.password || ''
+    );
+
+  if (
+    !username ||
+    !password
+  ) {
+
+    cacheOwnerAsyncResult_(
+      requestId,
+      {
+        ok: false,
+        error:
+          'กรุณากรอก Username และ Password'
+      }
+    );
+
+    return;
+  }
+
+  const props =
+    PropertiesService
+      .getScriptProperties();
+
+  const savedUsername =
+    String(
+      props.getProperty(
+        'OWNER_USERNAME'
+      ) || ''
+    ).trim();
+
+  const savedPassword =
+    String(
+      props.getProperty(
+        'OWNER_PASSWORD'
+      ) || ''
+    );
+
+  if (
+    !savedUsername ||
+    !savedPassword
+  ) {
+
+    cacheOwnerAsyncResult_(
+      requestId,
+      {
+        ok: false,
+        error:
+          'ระบบยังไม่ได้ตั้งค่าบัญชี OWNER'
+      }
+    );
+
+    return;
+  }
+
+  const cache =
+    CacheService
+      .getScriptCache();
+
+  const rateKey =
+    'OWNER_LOGIN_FAIL_' +
+    Utilities.base64EncodeWebSafe(
+      username.toLowerCase()
+    )
+    .replace(
+      /=+$/g,
+      ''
+    )
+    .slice(
+      0,
+      80
+    );
+
+  const failCount =
+    Number(
+      cache.get(
+        rateKey
+      ) || 0
+    );
+
+  if (
+    failCount >= 7
+  ) {
+
+    cacheOwnerAsyncResult_(
+      requestId,
+      {
+        ok: false,
+        error:
+          'ลองเข้าสู่ระบบหลายครั้งเกินไป กรุณารอสักครู่แล้วลองใหม่'
+      }
+    );
+
+    return;
+  }
+
+  const valid =
+    safeTextEqual_(
+      username,
+      savedUsername
+    ) &&
+    safeTextEqual_(
+      password,
+      savedPassword
+    );
+
+  if (!valid) {
+
+    cache.put(
+      rateKey,
+      String(
+        failCount + 1
+      ),
+      600
+    );
+
+    cacheOwnerAsyncResult_(
+      requestId,
+      {
+        ok: false,
+        error:
+          'Username หรือ Password ไม่ถูกต้อง'
+      }
+    );
+
+    return;
+  }
+
+  cache.remove(
+    rateKey
+  );
+
+  const token =
+    createOwnerSession_();
+
+  cacheOwnerAsyncResult_(
+    requestId,
+    {
+      ok: true,
+      token:
+        token,
+      expiresIn:
+        OWNER_SESSION_SECONDS_
+    }
+  );
+}
+
+
+function processOwnerCall_(p) {
+
+  const requestId =
+    requireOwnerRequestId_(
+      p.requestId
+    );
+
+  const token =
+    String(
+      p.token || ''
+    ).trim();
+
+  const method =
+    String(
+      p.method || ''
+    ).trim();
+
+  let args = [];
+
+  try {
+
+    args =
+      JSON.parse(
+        String(
+          p.args || '[]'
+        )
+      );
+
+  } catch (_) {
+
+    throw new Error(
+      'รูปแบบข้อมูลคำสั่งไม่ถูกต้อง'
+    );
+  }
+
+  if (
+    !Array.isArray(args)
+  ) {
+
+    throw new Error(
+      'รูปแบบ args ไม่ถูกต้อง'
+    );
+  }
+
+  if (
+    !verifyOwnerSession_(
+      token
+    )
+  ) {
+
+    cacheOwnerAsyncResult_(
+      requestId,
+      {
+        ok: false,
+        authExpired: true,
+        error:
+          'Session OWNER หมดอายุ กรุณาเข้าสู่ระบบใหม่'
+      }
+    );
+
+    return;
+  }
+
+  try {
+
+    const result =
+      callOwnerMethod_(
+        method,
+        args
+      );
+
+    cacheOwnerAsyncResult_(
+      requestId,
+      {
+        ok: true,
+        data:
+          result === undefined
+            ? null
+            : result
+      }
+    );
+
+  } catch (error) {
+
+    cacheOwnerAsyncResult_(
+      requestId,
+      {
+        ok: false,
+        error:
+          cleanOwnerError_(
+            error
+          )
+      }
+    );
+  }
+}
+
+
+function processOwnerLogout_(p) {
+
+  const requestId =
+    requireOwnerRequestId_(
+      p.requestId
+    );
+
+  const token =
+    String(
+      p.token || ''
+    ).trim();
+
+  if (token) {
+
+    CacheService
+      .getScriptCache()
+      .remove(
+        ownerSessionKey_(
+          token
+        )
+      );
+  }
+
+  cacheOwnerAsyncResult_(
+    requestId,
+    {
+      ok: true
+    }
+  );
+}
+
+
+function callOwnerMethod_(
+  method,
+  args
+) {
+
+  const methods = {
+
+    setupSystem:
+      () =>
+        setupSystem(),
+
+    getImportSheets:
+      () =>
+        getImportSheets(),
+
+    previewEmployeeImport:
+      () =>
+        previewEmployeeImport(
+          args[0]
+        ),
+
+    importEmployeesFromSheet:
+      () =>
+        importEmployeesFromSheet(
+          args[0]
+        ),
+
+    saveEmployee:
+      () =>
+        saveEmployee(
+          args[0]
+        ),
+
+    deleteEmployee:
+      () =>
+        deleteEmployee(
+          args[0]
+        ),
+
+    saveShiftSet:
+      () =>
+        saveShiftSet(
+          args[0]
+        ),
+
+    deleteShiftSet:
+      () =>
+        deleteShiftSet(
+          args[0]
+        ),
+
+    saveAssignment:
+      () =>
+        saveAssignment(
+          args[0]
+        ),
+
+    deactivateAssignment:
+      () =>
+        deactivateAssignment(
+          args[0]
+        ),
+
+    getEmployeeCalendar:
+      () =>
+        getEmployeeCalendar(
+          args[0]
+        ),
+
+    saveEmployeeDayNote:
+      () =>
+        saveEmployeeDayNote(
+          args[0]
+        ),
+
+    saveShiftOverridesBatch:
+      () =>
+        saveShiftOverridesBatch(
+          args[0]
+        ),
+
+    getShiftHistory:
+      () =>
+        getShiftHistory(
+          args[0]
+        ),
+
+    getSchedule:
+      () =>
+        getSchedule(
+          args[0]
+        ),
+
+    getManpower:
+      () =>
+        getManpower(
+          args[0]
+        ),
+
+    saveSetting:
+      () =>
+        saveSetting(
+          args[0]
+        ),
+
+    deleteSetting:
+      () =>
+        deleteSetting(
+          args[0]
+        ),
+
+    getEmployeeView:
+      () =>
+        getEmployeeView(
+          args[0]
+        )
+  };
+
+  if (
+    !Object.prototype
+      .hasOwnProperty
+      .call(
+        methods,
+        method
+      )
+  ) {
+
+    throw new Error(
+      'คำสั่ง OWNER นี้ไม่ได้รับอนุญาต'
+    );
+  }
+
+  return methods[
+    method
+  ]();
+}
+
+
+function createOwnerSession_() {
+
+  const token =
+    Utilities
+      .getUuid()
+      .replace(
+        /-/g,
+        ''
+      ) +
+    Utilities
+      .getUuid()
+      .replace(
+        /-/g,
+        ''
+      );
+
+  CacheService
+    .getScriptCache()
+    .put(
+      ownerSessionKey_(
+        token
+      ),
+      JSON.stringify({
+        role:
+          'OWNER',
+        createdAt:
+          new Date()
+            .toISOString()
+      }),
+      OWNER_SESSION_SECONDS_
+    );
+
+  return token;
+}
+
+
+function verifyOwnerSession_(token) {
+
+  token =
+    String(
+      token || ''
+    ).trim();
+
+  if (
+    !/^[A-Za-z0-9_-]{40,160}$/.test(
+      token
+    )
+  ) {
+
+    return false;
+  }
+
+  const cache =
+    CacheService
+      .getScriptCache();
+
+  const key =
+    ownerSessionKey_(
+      token
+    );
+
+  const raw =
+    cache.get(
+      key
+    );
+
+  if (!raw) {
+
+    return false;
+  }
+
+  cache.put(
+    key,
+    raw,
+    OWNER_SESSION_SECONDS_
+  );
+
+  return true;
+}
+
+
+function ownerSessionKey_(token) {
+
+  return (
+    'OWNER_SESSION_' +
+    token
+  );
+}
+
+
+function normalizeOwnerRequestId_(
+  requestId
+) {
+
+  requestId =
+    String(
+      requestId || ''
+    ).trim();
+
+  if (
+    !/^[A-Za-z0-9_-]{16,120}$/.test(
+      requestId
+    )
+  ) {
+
+    return '';
+  }
+
+  return requestId;
+}
+
+
+function requireOwnerRequestId_(
+  requestId
+) {
+
+  const clean =
+    normalizeOwnerRequestId_(
+      requestId
+    );
+
+  if (!clean) {
+
+    throw new Error(
+      'requestId ไม่ถูกต้อง'
+    );
+  }
+
+  return clean;
+}
+
+
+function cacheOwnerAsyncResult_(
+  requestId,
+  payload
+) {
+
+  requestId =
+    requireOwnerRequestId_(
+      requestId
+    );
+
+  const text =
+    JSON.stringify(
+      payload
+    );
+
+  const cache =
+    CacheService
+      .getScriptCache();
+
+  const prefix =
+    ownerResultPrefix_(
+      requestId
+    );
+
+  const chunkCount =
+    Math.max(
+      1,
+      Math.ceil(
+        text.length /
+        OWNER_RESULT_CHUNK_
+      )
+    );
+
+  if (
+    chunkCount > 30
+  ) {
+
+    throw new Error(
+      'ผลลัพธ์มีขนาดใหญ่เกินไป'
+    );
+  }
+
+  for (
+    let i = 0;
+    i < chunkCount;
+    i++
+  ) {
+
+    cache.put(
+      prefix +
+      '_CHUNK_' +
+      i,
+      text.slice(
+        i *
+          OWNER_RESULT_CHUNK_,
+        (i + 1) *
+          OWNER_RESULT_CHUNK_
+      ),
+      OWNER_RESULT_SECONDS_
+    );
+  }
+
+  cache.put(
+    prefix +
+    '_META',
+    String(
+      chunkCount
+    ),
+    OWNER_RESULT_SECONDS_
+  );
+}
+
+
+function getOwnerAsyncResult_(
+  requestId
+) {
+
+  requestId =
+    normalizeOwnerRequestId_(
+      requestId
+    );
+
+  if (!requestId) {
+
+    return {
+      pending: false,
+      ok: false,
+      error:
+        'requestId ไม่ถูกต้อง'
+    };
+  }
+
+  const cache =
+    CacheService
+      .getScriptCache();
+
+  const prefix =
+    ownerResultPrefix_(
+      requestId
+    );
+
+  const metaKey =
+    prefix +
+    '_META';
+
+  const chunkCount =
+    Number(
+      cache.get(
+        metaKey
+      ) || 0
+    );
+
+  if (!chunkCount) {
+
+    return {
+      pending: true
+    };
+  }
+
+  let text = '';
+
+  const keys = [
+    metaKey
+  ];
+
+  for (
+    let i = 0;
+    i < chunkCount;
+    i++
+  ) {
+
+    const key =
+      prefix +
+      '_CHUNK_' +
+      i;
+
+    const chunk =
+      cache.get(
+        key
+      );
+
+    if (
+      chunk === null
+    ) {
+
+      return {
+        pending: true
+      };
+    }
+
+    text +=
+      chunk;
+
+    keys.push(
+      key
+    );
+  }
+
+  keys.forEach(
+    key =>
+      cache.remove(
+        key
+      )
+  );
+
+  try {
+
+    return JSON.parse(
+      text
+    );
+
+  } catch (_) {
+
+    return {
+      pending: false,
+      ok: false,
+      error:
+        'อ่านผลลัพธ์จากระบบไม่สำเร็จ'
+    };
+  }
+}
+
+
+function ownerResultPrefix_(
+  requestId
+) {
+
+  return (
+    'OWNER_RESULT_' +
+    requestId
+  );
+}
+
+
+function safeTextEqual_(
+  a,
+  b
+) {
+
+  return (
+    sha256Hex_(
+      String(
+        a ?? ''
+      )
+    ) ===
+    sha256Hex_(
+      String(
+        b ?? ''
+      )
+    )
+  );
+}
+
+
+function sha256Hex_(text) {
+
+  const bytes =
+    Utilities.computeDigest(
+      Utilities.DigestAlgorithm.SHA_256,
+      text,
+      Utilities.Charset.UTF_8
+    );
+
+  return bytes
+    .map(
+      byte =>
+        (
+          byte +
+          256
+        )
+        .toString(16)
+        .slice(-2)
+    )
+    .join('');
+}
+
+
+function cleanOwnerError_(
+  error
+) {
+
+  return String(
+    error?.message ||
+    error ||
+    'เกิดข้อผิดพลาด'
+  )
+  .replace(
+    /^Error:\s*/i,
+    ''
+  )
+  .trim();
+}
+
+
+/* =========================================================
+   SETUP
+========================================================= */
+
+function setupSystem() {
+
+  setupSystem_();
+
+  return getAppData();
+}
+
+
+function setupSystem_() {
+
+  const ss = getDatabase_();
+
+  ensureSheet_(
+    ss,
+    APP.SHEETS.EMPLOYEES,
+    [
+      'employeeId',
+      'nickname',
+      'fullName',
+      'team',
+      'position',
+      'branch',
+      'gender',
+      'status',
+      'createdAt',
+      'updatedAt'
+    ]
+  );
+
+  ensureSheet_(
+    ss,
+    APP.SHEETS.SHIFT_SETS,
+    [
+      'setId',
+      'setName',
+      'workDays',
+      'offDays',
+      'alternate',
+      'startShift',
+      'fixedShift',
+      'createdAt',
+      'updatedAt'
+    ]
+  );
+
+  ensureSheet_(
+    ss,
+    APP.SHEETS.ASSIGNMENTS,
+    [
+      'assignmentId',
+      'scopeType',
+      'scopeValue',
+      'teamFilter',
+      'setId',
+      'startDate',
+      'startShift',
+      'active',
+      'createdAt',
+      'cycleStartDate',
+      'cycleReset',
+      'updatedAt'
+    ]
+  );
+
+  ensureSheet_(
+    ss,
+    APP.SHEETS.OVERRIDES,
+    [
+      'employeeId',
+      'date',
+      'shift',
+      'note',
+      'updatedAt'
+    ]
+  );
+
+  ensureSheet_(
+    ss,
+    APP.SHEETS.SHIFT_HISTORY,
+    [
+      'historyId',
+      'employeeId',
+      'nickname',
+      'team',
+      'position',
+      'date',
+      'oldShift',
+      'newShift',
+      'action',
+      'changedAt'
+    ]
+  );
+
+
+  ensureSheet_(
+    ss,
+    APP.SHEETS.SETTINGS,
+    [
+      'settingId',
+      'type',
+      'value',
+      'sortOrder',
+      'active',
+      'createdAt',
+      'updatedAt'
+    ]
+  );
+
+  seedDefaultShiftSets_();
+  seedDefaultSettings_();
+
+  /*
+   * รอบตาราง 26-25 เป็นเพียงรอบแสดงผล/รายงาน
+   * ส่วน Cycle ทำงาน-หยุด (เช่น 10/5) ต้องเดินต่อเนื่องตลอด
+   * จึงเก็บ cycleStartDate แยกจาก startDate ของการนำเซตไปใช้
+   */
+  migrateAssignmentCycles_();
+}
+
+
+function getDatabase_() {
+
+  const props =
+    PropertiesService
+      .getScriptProperties();
+
+  const savedId =
+    props.getProperty(
+      'EMPLOYEE_DB_ID'
+    );
+
+  if (savedId) {
+
+    return SpreadsheetApp
+      .openById(savedId);
+  }
+
+  const ss =
+    SpreadsheetApp
+      .getActiveSpreadsheet();
+
+  if (!ss) {
+
+    throw new Error(
+      'ไม่พบ Google Sheet ที่เชื่อมกับระบบ'
+    );
+  }
+
+  props.setProperty(
+    'EMPLOYEE_DB_ID',
+    ss.getId()
+  );
+
+  return ss;
+}
+
+
+function ensureSheet_(
+  ss,
+  name,
+  headers
+) {
+
+  let sheet =
+    ss.getSheetByName(name);
+
+  if (!sheet) {
+
+    sheet =
+      ss.insertSheet(name);
+  }
+
+  if (
+    sheet.getLastRow() === 0
+  ) {
+
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        headers.length
+      )
+      .setValues([headers]);
+
+    sheet.setFrozenRows(1);
+
+    return;
+  }
+
+
+  /*
+   * รองรับการอัปเดตระบบเดิมโดยไม่ต้องลบชีตฐานข้อมูล
+   * ถ้าเวอร์ชันใหม่เพิ่มคอลัมน์ จะเติมหัวคอลัมน์ท้ายชีตให้อัตโนมัติ
+   */
+  const lastColumn =
+    Math.max(
+      1,
+      sheet.getLastColumn()
+    );
+
+  const currentHeaders =
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        lastColumn
+      )
+      .getDisplayValues()[0]
+      .map(
+        value =>
+          String(value || '').trim()
+      );
+
+  const missing =
+    headers.filter(
+      header =>
+        !currentHeaders.includes(header)
+    );
+
+  if (missing.length) {
+
+    sheet
+      .getRange(
+        1,
+        lastColumn + 1,
+        1,
+        missing.length
+      )
+      .setValues([missing]);
+  }
+
+  sheet.setFrozenRows(1);
+}
+
+
+/* =========================================================
+   DEFAULT DATA
+========================================================= */
+
+function seedDefaultShiftSets_() {
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.SHIFT_SETS
+      );
+
+  if (
+    sheet.getLastRow() > 1
+  ) {
+    return;
+  }
+
+  const now =
+    nowText_();
+
+  sheet
+    .getRange(
+      2,
+      1,
+      3,
+      9
+    )
+    .setValues([
+
+      [
+        'SET_10_5_ALT',
+        '10 ทำงาน / 5 หยุด / สลับกะ',
+        10,
+        5,
+        'TRUE',
+        'MORNING',
+        '',
+        now,
+        now
+      ],
+
+      [
+        'SET_10_5_MORNING',
+        '10 ทำงาน / 5 หยุด / เช้าคงที่',
+        10,
+        5,
+        'FALSE',
+        'MORNING',
+        'MORNING',
+        now,
+        now
+      ],
+
+      [
+        'SET_10_5_NIGHT',
+        '10 ทำงาน / 5 หยุด / ดึกคงที่',
+        10,
+        5,
+        'FALSE',
+        'NIGHT',
+        'NIGHT',
+        now,
+        now
+      ]
+
+    ]);
+}
+
+
+function seedDefaultSettings_() {
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.SETTINGS
+      );
+
+  const rows =
+    getSheetObjects_(
+      APP.SHEETS.SETTINGS
+    );
+
+  const now =
+    nowText_();
+
+  const teams =
+    rows.filter(
+      x =>
+        x.type === 'TEAM' &&
+        String(
+          x.active || 'TRUE'
+        ).toUpperCase() !== 'FALSE'
+    );
+
+  const branches =
+    rows.filter(
+      x =>
+        x.type === 'BRANCH' &&
+        String(
+          x.active || 'TRUE'
+        ).toUpperCase() !== 'FALSE'
+    );
+
+
+  if (!teams.length) {
+
+    APP.DEFAULT_TEAMS
+      .forEach(
+        (name, index) => {
+
+          sheet.appendRow([
+            'TEAM_' +
+              new Date().getTime() +
+              '_' +
+              index,
+            'TEAM',
+            name,
+            index + 1,
+            'TRUE',
+            now,
+            now
+          ]);
+        }
+      );
+  }
+
+
+  if (!branches.length) {
+
+    APP.DEFAULT_BRANCHES
+      .forEach(
+        (name, index) => {
+
+          sheet.appendRow([
+            'BRANCH_' +
+              new Date().getTime() +
+              '_' +
+              index,
+            'BRANCH',
+            name,
+            index + 1,
+            'TRUE',
+            now,
+            now
+          ]);
+        }
+      );
+  }
+}
+
+
+/* =========================================================
+   APP DATA
+========================================================= */
+
+function getAppData() {
+
+  setupSystem_();
+
+  const settings =
+    getSettings_();
+
+  const employees =
+    getEmployees_();
+
+  const today =
+    todayText_();
+
+  return {
+
+    teams:
+      settings
+        .filter(
+          x => x.type === 'TEAM'
+        )
+        .map(
+          x => x.value
+        ),
+
+    branches:
+      settings
+        .filter(
+          x => x.type === 'BRANCH'
+        )
+        .map(
+          x => x.value
+        ),
+
+    settings:
+      settings,
+
+    positions:
+      APP.POSITIONS,
+
+    genders:
+      APP.GENDERS,
+
+    employeeStatus:
+      APP.EMPLOYEE_STATUS,
+
+    employees:
+      employees,
+
+    shiftSets:
+      getShiftSets_(),
+
+    assignments:
+      getAssignments_(),
+
+    importSheets:
+      getImportSheets_(),
+
+    today:
+      today,
+
+    dashboard:
+      getManpowerInternal_(today),
+
+    round:
+      getRoundRange_(today)
+  };
+}
+
+
+/* =========================================================
+   IMPORT EMPLOYEES FROM EXISTING SHEET
+========================================================= */
+
+/**
+ * รายชื่อชีตที่สามารถเลือกเป็นต้นทางได้
+ * ตัดชีตฐานข้อมูลของระบบออกทั้งหมด
+ */
+function getImportSheets_() {
+
+  const ss =
+    getDatabase_();
+
+  const blocked =
+    Object.values(
+      APP.SHEETS
+    );
+
+  return ss
+    .getSheets()
+    .map(
+      sheet => sheet.getName()
+    )
+    .filter(
+      name =>
+        !blocked.includes(name)
+    );
+}
+
+
+/**
+ * ใช้จากหน้าเว็บเพื่อรีเฟรชรายชื่อชีตต้นทาง
+ */
+function getImportSheets() {
+
+  setupSystem_();
+
+  return getImportSheets_();
+}
+
+
+/**
+ * ตรวจตัวอย่างก่อนนำเข้า
+ */
+function previewEmployeeImport(
+  sheetName
+) {
+
+  const parsed =
+    parseEmployeeSourceSheet_(
+      sheetName
+    );
+
+  const existing =
+    getEmployees_();
+
+  const existingIds =
+    {};
+
+  existing.forEach(
+    employee => {
+
+      existingIds[
+        String(
+          employee.employeeId
+        ).trim().toUpperCase()
+      ] = true;
+    }
+  );
+
+
+  let newCount = 0;
+  let updateCount = 0;
+
+
+  parsed.validRows
+    .forEach(row => {
+
+      const id =
+        String(
+          row.employeeId
+        ).trim().toUpperCase();
+
+      if (existingIds[id]) {
+        updateCount++;
+      } else {
+        newCount++;
+      }
+    });
+
+
+  return {
+
+    sheetName:
+      sheetName,
+
+    headerRow:
+      parsed.headerRow,
+
+    totalSourceRows:
+      parsed.totalSourceRows,
+
+    validCount:
+      parsed.validRows.length,
+
+    invalidCount:
+      parsed.invalidRows.length,
+
+    duplicateCount:
+      parsed.duplicateCount,
+
+    newCount:
+      newCount,
+
+    updateCount:
+      updateCount,
+
+    rows:
+      parsed.validRows
+        .slice(0, 20),
+
+    invalidRows:
+      parsed.invalidRows
+        .slice(0, 10),
+
+    detectedHeaders:
+      parsed.detectedHeaders
+  };
+}
+
+
+/**
+ * นำเข้าจริง
+ */
+function importEmployeesFromSheet(
+  sheetName
+) {
+
+  const parsed =
+    parseEmployeeSourceSheet_(
+      sheetName
+    );
+
+
+  if (!parsed.validRows.length) {
+
+    throw new Error(
+      'ไม่พบข้อมูลพนักงานที่สามารถนำเข้าได้'
+    );
+  }
+
+
+  const employeeSheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.EMPLOYEES
+      );
+
+
+  const existing =
+    getSheetObjects_(
+      APP.SHEETS.EMPLOYEES
+    );
+
+
+  const employeeMap =
+    new Map();
+
+
+  existing.forEach(
+    employee => {
+
+      const id =
+        String(
+          employee.employeeId || ''
+        )
+        .trim()
+        .toUpperCase();
+
+
+      if (!id) {
+        return;
+      }
+
+
+      employeeMap.set(
+        id,
+        employee
+      );
+    }
+  );
+
+
+  let newCount = 0;
+  let updateCount = 0;
+
+  const now =
+    nowText_();
+
+
+  parsed.validRows
+    .forEach(
+      imported => {
+
+        const key =
+          String(
+            imported.employeeId
+          )
+          .trim()
+          .toUpperCase();
+
+
+        const old =
+          employeeMap.get(key);
+
+
+        if (old) {
+
+          updateCount++;
+
+        } else {
+
+          newCount++;
+        }
+
+
+        employeeMap.set(
+          key,
+          {
+
+            employeeId:
+              imported.employeeId,
+
+            nickname:
+              imported.nickname,
+
+            fullName:
+              old
+                ? old.fullName || ''
+                : '',
+
+            team:
+              imported.team,
+
+            position:
+              imported.position,
+
+            branch:
+              imported.branch,
+
+            gender:
+              imported.gender,
+
+            status:
+              imported.status,
+
+            createdAt:
+              old
+                ? old.createdAt || now
+                : now,
+
+            updatedAt:
+              now
+          }
+        );
+      }
+    );
+
+
+  const headers = [
+    'employeeId',
+    'nickname',
+    'fullName',
+    'team',
+    'position',
+    'branch',
+    'gender',
+    'status',
+    'createdAt',
+    'updatedAt'
+  ];
+
+
+  const finalRows =
+    Array
+      .from(
+        employeeMap.values()
+      )
+      .map(
+        employee =>
+          headers.map(
+            header =>
+              employee[header] || ''
+          )
+      );
+
+
+  if (
+    employeeSheet.getLastRow() > 1
+  ) {
+
+    employeeSheet
+      .getRange(
+        2,
+        1,
+        employeeSheet.getLastRow() - 1,
+        headers.length
+      )
+      .clearContent();
+  }
+
+
+  if (finalRows.length) {
+
+    employeeSheet
+      .getRange(
+        2,
+        1,
+        finalRows.length,
+        headers.length
+      )
+      .setValues(
+        finalRows
+      );
+  }
+
+
+  /**
+   * เพิ่ม TEAM / สาขาที่พบในข้อมูล
+   * เข้า DB_Settings ให้อัตโนมัติ
+   */
+  const teams =
+    [...new Set(
+      parsed.validRows
+        .map(
+          x => x.team
+        )
+        .filter(Boolean)
+    )];
+
+
+  const branches =
+    [...new Set(
+      parsed.validRows
+        .map(
+          x => x.branch
+        )
+        .filter(Boolean)
+    )];
+
+
+  syncSettingValues_(
+    'TEAM',
+    teams
+  );
+
+  syncSettingValues_(
+    'BRANCH',
+    branches
+  );
+
+
+  const settings =
+    getSettings_();
+
+
+  return {
+
+    ok: true,
+
+    message:
+      'นำเข้าพนักงานสำเร็จ ' +
+      parsed.validRows.length +
+      ' คน',
+
+    importedCount:
+      parsed.validRows.length,
+
+    newCount:
+      newCount,
+
+    updateCount:
+      updateCount,
+
+    invalidCount:
+      parsed.invalidRows.length,
+
+    duplicateCount:
+      parsed.duplicateCount,
+
+    employees:
+      getEmployees_(),
+
+    settings:
+      settings,
+
+    teams:
+      settings
+        .filter(
+          x => x.type === 'TEAM'
+        )
+        .map(
+          x => x.value
+        ),
+
+    branches:
+      settings
+        .filter(
+          x => x.type === 'BRANCH'
+        )
+        .map(
+          x => x.value
+        )
+  };
+}
+
+
+/**
+ * อ่านชีตต้นทางและแปลงหัวตารางอัตโนมัติ
+ */
+function parseEmployeeSourceSheet_(
+  sheetName
+) {
+
+  sheetName =
+    String(
+      sheetName || ''
+    ).trim();
+
+
+  if (!sheetName) {
+
+    throw new Error(
+      'กรุณาเลือกชีตต้นทาง'
+    );
+  }
+
+
+  if (
+    Object
+      .values(APP.SHEETS)
+      .includes(sheetName)
+  ) {
+
+    throw new Error(
+      'ไม่สามารถใช้ชีตฐานข้อมูลของระบบเป็นชีตต้นทางได้'
+    );
+  }
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        sheetName
+      );
+
+
+  if (!sheet) {
+
+    throw new Error(
+      'ไม่พบชีต "' +
+      sheetName +
+      '"'
+    );
+  }
+
+
+  const lastRow =
+    sheet.getLastRow();
+
+  const lastColumn =
+    sheet.getLastColumn();
+
+
+  if (
+    lastRow < 2 ||
+    lastColumn < 1
+  ) {
+
+    throw new Error(
+      'ชีตที่เลือกยังไม่มีข้อมูล'
+    );
+  }
+
+
+  const values =
+    sheet
+      .getRange(
+        1,
+        1,
+        lastRow,
+        lastColumn
+      )
+      .getDisplayValues();
+
+
+  const aliases = {
+
+    employeeId: [
+      'รหัสพนักงาน',
+      'รหัส',
+      'employeeid',
+      'employee id',
+      'empid',
+      'emp id'
+    ],
+
+    nickname: [
+      'ชื่อ',
+      'ชื่อเล่น',
+      'nickname',
+      'nick name'
+    ],
+
+    position: [
+      'ตำแหน่ง',
+      'position',
+      'department',
+      'แผนก'
+    ],
+
+    team: [
+      'ทีม',
+      'team'
+    ],
+
+    branch: [
+      'สาขา',
+      'branch'
+    ],
+
+    gender: [
+      'เพศ',
+      'gender',
+      'sex'
+    ],
+
+    status: [
+      'สถานะ',
+      'status',
+      'สถานะงาน'
+    ]
+  };
+
+
+  let headerRowIndex = -1;
+  let columnMap = {};
+
+
+  const maxHeaderSearch =
+    Math.min(
+      values.length,
+      10
+    );
+
+
+  for (
+    let rowIndex = 0;
+    rowIndex < maxHeaderSearch;
+    rowIndex++
+  ) {
+
+    const map =
+      detectEmployeeHeaders_(
+        values[rowIndex],
+        aliases
+      );
+
+
+    if (
+      map.employeeId !== undefined &&
+      map.nickname !== undefined
+    ) {
+
+      headerRowIndex =
+        rowIndex;
+
+      columnMap =
+        map;
+
+      break;
+    }
+  }
+
+
+  if (
+    headerRowIndex === -1
+  ) {
+
+    throw new Error(
+      'หารายการหัวตารางไม่เจอ กรุณาตรวจว่ามีหัว "รหัสพนักงาน" และ "ชื่อ"'
+    );
+  }
+
+
+  const headerRow =
+    values[
+      headerRowIndex
+    ];
+
+
+  const detectedHeaders = {
+
+    employeeId:
+      getDetectedHeaderName_(
+        headerRow,
+        columnMap.employeeId
+      ),
+
+    nickname:
+      getDetectedHeaderName_(
+        headerRow,
+        columnMap.nickname
+      ),
+
+    position:
+      getDetectedHeaderName_(
+        headerRow,
+        columnMap.position
+      ),
+
+    team:
+      getDetectedHeaderName_(
+        headerRow,
+        columnMap.team
+      ),
+
+    branch:
+      getDetectedHeaderName_(
+        headerRow,
+        columnMap.branch
+      ),
+
+    gender:
+      getDetectedHeaderName_(
+        headerRow,
+        columnMap.gender
+      ),
+
+    status:
+      getDetectedHeaderName_(
+        headerRow,
+        columnMap.status
+      )
+  };
+
+
+  const validMap =
+    new Map();
+
+  const invalidRows = [];
+
+  let duplicateCount = 0;
+  let totalSourceRows = 0;
+
+
+  for (
+    let i =
+      headerRowIndex + 1;
+    i < values.length;
+    i++
+  ) {
+
+    const sourceRow =
+      values[i];
+
+
+    const hasAnyData =
+      sourceRow.some(
+        cell =>
+          String(cell)
+            .trim() !== ''
+      );
+
+
+    if (!hasAnyData) {
+      continue;
+    }
+
+
+    totalSourceRows++;
+
+
+    const employee = {
+
+      employeeId:
+        cleanEmployeeValue_(
+          getMappedCell_(
+            sourceRow,
+            columnMap.employeeId
+          )
+        ),
+
+      nickname:
+        cleanEmployeeValue_(
+          getMappedCell_(
+            sourceRow,
+            columnMap.nickname
+          )
+        ),
+
+      position:
+        cleanEmployeeValue_(
+          getMappedCell_(
+            sourceRow,
+            columnMap.position
+          )
+        ),
+
+      team:
+        normalizeTeam_(
+          getMappedCell_(
+            sourceRow,
+            columnMap.team
+          )
+        ),
+
+      branch:
+        normalizeBranch_(
+          getMappedCell_(
+            sourceRow,
+            columnMap.branch
+          )
+        ),
+
+      gender:
+        normalizeGender_(
+          getMappedCell_(
+            sourceRow,
+            columnMap.gender
+          )
+        ),
+
+      status:
+        normalizeEmployeeStatus_(
+          getMappedCell_(
+            sourceRow,
+            columnMap.status
+          )
+        ),
+
+      sourceRow:
+        i + 1
+    };
+
+
+    if (!employee.employeeId) {
+
+      invalidRows.push({
+
+        row:
+          i + 1,
+
+        reason:
+          'ไม่มีรหัสพนักงาน'
+      });
+
+      continue;
+    }
+
+
+    if (!employee.nickname) {
+
+      invalidRows.push({
+
+        row:
+          i + 1,
+
+        employeeId:
+          employee.employeeId,
+
+        reason:
+          'ไม่มีชื่อ'
+      });
+
+      continue;
+    }
+
+
+    const key =
+      employee.employeeId
+        .toUpperCase();
+
+
+    if (
+      validMap.has(key)
+    ) {
+
+      duplicateCount++;
+    }
+
+
+    /**
+     * ถ้ามีรหัสซ้ำในชีตต้นทาง
+     * ใช้ข้อมูลแถวล่าสุด
+     */
+    validMap.set(
+      key,
+      employee
+    );
+  }
+
+
+  return {
+
+    headerRow:
+      headerRowIndex + 1,
+
+    totalSourceRows:
+      totalSourceRows,
+
+    validRows:
+      Array.from(
+        validMap.values()
+      ),
+
+    invalidRows:
+      invalidRows,
+
+    duplicateCount:
+      duplicateCount,
+
+    detectedHeaders:
+      detectedHeaders
+  };
+}
+
+
+function detectEmployeeHeaders_(
+  row,
+  aliases
+) {
+
+  const result = {};
+
+
+  Object
+    .keys(aliases)
+    .forEach(key => {
+
+      const aliasList =
+        aliases[key]
+          .map(
+            normalizeHeader_
+          );
+
+
+      for (
+        let i = 0;
+        i < row.length;
+        i++
+      ) {
+
+        const normalized =
+          normalizeHeader_(
+            row[i]
+          );
+
+
+        if (
+          aliasList.includes(
+            normalized
+          )
+        ) {
+
+          result[key] =
+            i;
+
+          break;
+        }
+      }
+    });
+
+
+  return result;
+}
+
+
+function normalizeHeader_(value) {
+
+  return String(
+    value || ''
+  )
+  .trim()
+  .toLowerCase()
+  .replace(
+    /[\s_\-\/\\().]+/g,
+    ''
+  );
+}
+
+
+function getDetectedHeaderName_(
+  headerRow,
+  index
+) {
+
+  if (
+    index === undefined
+  ) {
+    return '';
+  }
+
+  return String(
+    headerRow[index] || ''
+  );
+}
+
+
+function getMappedCell_(
+  row,
+  index
+) {
+
+  if (
+    index === undefined ||
+    index === null
+  ) {
+    return '';
+  }
+
+  return row[index] || '';
+}
+
+
+function cleanEmployeeValue_(
+  value
+) {
+
+  return String(
+    value || ''
+  ).trim();
+}
+
+
+function normalizeTeam_(
+  value
+) {
+
+  const text =
+    String(
+      value || ''
+    )
+    .trim()
+    .replace(
+      /\s+/g,
+      ' '
+    );
+
+
+  if (!text) {
+    return '';
+  }
+
+
+  const upper =
+    text.toUpperCase();
+
+
+  if (
+    /^TEAMA$/i.test(
+      upper.replace(/\s/g, '')
+    )
+  ) {
+    return 'TEAM A';
+  }
+
+
+  if (
+    /^TEAMB$/i.test(
+      upper.replace(/\s/g, '')
+    )
+  ) {
+    return 'TEAM B';
+  }
+
+
+  if (
+    /^TEAMC$/i.test(
+      upper.replace(/\s/g, '')
+    )
+  ) {
+    return 'TEAM C';
+  }
+
+
+  return text;
+}
+
+
+function normalizeBranch_(
+  value
+) {
+
+  return String(
+    value || ''
+  )
+  .trim()
+  .replace(
+    /\s+/g,
+    ' '
+  );
+}
+
+
+function normalizeGender_(
+  value
+) {
+
+  const text =
+    String(
+      value || ''
+    )
+    .trim()
+    .toLowerCase();
+
+
+  if (!text) {
+    return '';
+  }
+
+
+  if (
+    text === 'ชาย' ||
+    text === 'male' ||
+    text === 'm'
+  ) {
+    return 'ชาย';
+  }
+
+
+  if (
+    text === 'หญิง' ||
+    text === 'female' ||
+    text === 'f'
+  ) {
+    return 'หญิง';
+  }
+
+
+  return String(
+    value || ''
+  ).trim();
+}
+
+
+function normalizeEmployeeStatus_(
+  value
+) {
+
+  const text =
+    String(
+      value || ''
+    )
+    .trim()
+    .toLowerCase()
+    .replace(
+      /\s+/g,
+      ''
+    );
+
+
+  if (!text) {
+    return 'ทำงาน';
+  }
+
+
+  if (
+    text.includes(
+      'รอเรียก'
+    ) ||
+    text.includes(
+      'รอเรียกงาน'
+    ) ||
+    text.includes(
+      'waiting'
+    )
+  ) {
+
+    return 'รอเรียก';
+  }
+
+
+  if (
+    text.includes(
+      'พักงาน'
+    )
+  ) {
+
+    return 'พักงาน';
+  }
+
+
+  if (
+    text.includes(
+      'ลาออก'
+    ) ||
+    text.includes(
+      'พ้นสภาพ'
+    ) ||
+    text.includes(
+      'ออกแล้ว'
+    ) ||
+    text === 'ออก'
+  ) {
+
+    return 'ออก';
+  }
+
+
+  if (
+    text.includes(
+      'ทำงาน'
+    )
+  ) {
+
+    return 'ทำงาน';
+  }
+
+
+  return 'ทำงาน';
+}
+
+
+/**
+ * ถ้าข้อมูลนำเข้ามี TEAM / สาขาใหม่
+ * เพิ่มเข้าเมนูตั้งค่าให้อัตโนมัติ
+ */
+function syncSettingValues_(
+  type,
+  values
+) {
+
+  if (
+    !values ||
+    !values.length
+  ) {
+    return;
+  }
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.SETTINGS
+      );
+
+
+  const settings =
+    getSettings_()
+      .filter(
+        x => x.type === type
+      );
+
+
+  const existing =
+    new Set(
+      settings.map(
+        x =>
+          String(
+            x.value
+          )
+          .trim()
+          .toLowerCase()
+      )
+    );
+
+
+  let sortOrder =
+    settings.length;
+
+
+  const now =
+    nowText_();
+
+
+  values.forEach(
+    value => {
+
+      value =
+        String(
+          value || ''
+        ).trim();
+
+
+      if (!value) {
+        return;
+      }
+
+
+      const key =
+        value.toLowerCase();
+
+
+      if (
+        existing.has(key)
+      ) {
+        return;
+      }
+
+
+      sortOrder++;
+
+
+      sheet.appendRow([
+
+        type +
+          '_' +
+          new Date().getTime() +
+          '_' +
+          sortOrder,
+
+        type,
+
+        value,
+
+        sortOrder,
+
+        'TRUE',
+
+        now,
+
+        now
+      ]);
+
+
+      existing.add(key);
+    }
+  );
+}
+
+
+/* =========================================================
+   SETTINGS
+========================================================= */
+
+function getSettings_() {
+
+  return getSheetObjects_(
+    APP.SHEETS.SETTINGS
+  )
+  .filter(
+    x =>
+      String(
+        x.active || 'TRUE'
+      ).toUpperCase() !== 'FALSE'
+  )
+  .sort(
+    (a, b) => {
+
+      if (
+        a.type !== b.type
+      ) {
+
+        return String(
+          a.type
+        ).localeCompare(
+          String(
+            b.type
+          )
+        );
+      }
+
+      return (
+        Number(
+          a.sortOrder || 0
+        ) -
+        Number(
+          b.sortOrder || 0
+        )
+      );
+    }
+  );
+}
+
+
+function saveSetting(data) {
+
+  const type =
+    String(
+      data?.type || ''
+    )
+    .trim()
+    .toUpperCase();
+
+
+  const settingValue =
+    String(
+      data?.value || ''
+    ).trim();
+
+
+  let settingId =
+    String(
+      data?.settingId || ''
+    ).trim();
+
+
+  if (
+    ![
+      'TEAM',
+      'BRANCH'
+    ].includes(type)
+  ) {
+
+    throw new Error(
+      'ประเภทการตั้งค่าไม่ถูกต้อง'
+    );
+  }
+
+
+  if (!settingValue) {
+
+    throw new Error(
+      'กรุณากรอกชื่อ'
+    );
+  }
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.SETTINGS
+      );
+
+
+  const rows =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  let foundRow = 0;
+  let oldCreatedAt = '';
+  let sortOrder = 0;
+
+
+  for (
+    let r = 1;
+    r < rows.length;
+    r++
+  ) {
+
+    const rowId =
+      String(
+        rows[r][0]
+      );
+
+    const rowType =
+      String(
+        rows[r][1]
+      ).toUpperCase();
+
+    const rowValue =
+      String(
+        rows[r][2]
+      ).trim();
+
+    const active =
+      String(
+        rows[r][4] || 'TRUE'
+      ).toUpperCase() !== 'FALSE';
+
+
+    if (
+      active &&
+      rowType === type &&
+      rowValue.toLowerCase() ===
+        settingValue.toLowerCase() &&
+      rowId !== settingId
+    ) {
+
+      throw new Error(
+        'มีรายการนี้อยู่แล้ว'
+      );
+    }
+
+
+    if (
+      rowId === settingId
+    ) {
+
+      foundRow =
+        r + 1;
+
+      sortOrder =
+        Number(
+          rows[r][3] || 0
+        );
+
+      oldCreatedAt =
+        rows[r][5] || '';
+    }
+  }
+
+
+  if (!settingId) {
+
+    settingId =
+      type +
+      '_' +
+      new Date().getTime();
+  }
+
+
+  if (!sortOrder) {
+
+    sortOrder =
+      getSettings_()
+        .filter(
+          x => x.type === type
+        )
+        .length + 1;
+  }
+
+
+  const now =
+    nowText_();
+
+
+  const row = [
+
+    settingId,
+    type,
+    settingValue,
+    sortOrder,
+    'TRUE',
+    oldCreatedAt || now,
+    now
+  ];
+
+
+  if (foundRow) {
+
+    sheet
+      .getRange(
+        foundRow,
+        1,
+        1,
+        row.length
+      )
+      .setValues([row]);
+
+  } else {
+
+    sheet.appendRow(row);
+  }
+
+
+  return {
+
+    ok: true,
+
+    message:
+      'บันทึกการตั้งค่าแล้ว',
+
+    settings:
+      getSettings_()
+  };
+}
+
+
+function deleteSetting(
+  settingId
+) {
+
+  const setting =
+    getSettings_()
+      .find(
+        x =>
+          x.settingId ===
+          settingId
+      );
+
+
+  if (!setting) {
+
+    throw new Error(
+      'ไม่พบรายการ'
+    );
+  }
+
+
+  const employees =
+    getEmployees_();
+
+
+  if (
+    setting.type === 'TEAM' &&
+    employees.some(
+      e =>
+        e.team ===
+        setting.value
+    )
+  ) {
+
+    throw new Error(
+      'TEAM นี้มีพนักงานใช้งานอยู่ จึงยังลบไม่ได้'
+    );
+  }
+
+
+  if (
+    setting.type === 'BRANCH' &&
+    employees.some(
+      e =>
+        e.branch ===
+        setting.value
+    )
+  ) {
+
+    throw new Error(
+      'สาขานี้มีพนักงานใช้งานอยู่ จึงยังลบไม่ได้'
+    );
+  }
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.SETTINGS
+      );
+
+
+  const rows =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  for (
+    let r = 1;
+    r < rows.length;
+    r++
+  ) {
+
+    if (
+      String(
+        rows[r][0]
+      ) ===
+      String(settingId)
+    ) {
+
+      sheet.deleteRow(
+        r + 1
+      );
+
+      break;
+    }
+  }
+
+
+  return {
+
+    ok: true,
+
+    message:
+      'ลบแล้ว',
+
+    settings:
+      getSettings_()
+  };
+}
+
+
+/* =========================================================
+   EMPLOYEES
+========================================================= */
+
+function getEmployees_() {
+
+  return getSheetObjects_(
+    APP.SHEETS.EMPLOYEES
+  )
+  .sort(
+    (a, b) => {
+
+      const teamCompare =
+        String(
+          a.team || ''
+        ).localeCompare(
+          String(
+            b.team || ''
+          )
+        );
+
+
+      if (
+        teamCompare !== 0
+      ) {
+
+        return teamCompare;
+      }
+
+
+      return String(
+        a.employeeId || ''
+      ).localeCompare(
+        String(
+          b.employeeId || ''
+        )
+      );
+    }
+  );
+}
+
+
+function saveEmployee(data) {
+
+  if (!data) {
+
+    throw new Error(
+      'ไม่พบข้อมูลพนักงาน'
+    );
+  }
+
+
+  const employeeId =
+    String(
+      data.employeeId || ''
+    ).trim();
+
+
+  const nickname =
+    String(
+      data.nickname || ''
+    ).trim();
+
+
+  if (!employeeId) {
+
+    throw new Error(
+      'กรุณากรอกรหัสพนักงาน'
+    );
+  }
+
+
+  if (!nickname) {
+
+    throw new Error(
+      'กรุณากรอกชื่อเล่น'
+    );
+  }
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.EMPLOYEES
+      );
+
+
+  const rows =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  let foundRow = 0;
+  let oldCreatedAt = '';
+  let oldFullName = '';
+
+
+  for (
+    let r = 1;
+    r < rows.length;
+    r++
+  ) {
+
+    if (
+      String(
+        rows[r][0]
+      )
+      .trim()
+      .toUpperCase() ===
+      employeeId.toUpperCase()
+    ) {
+
+      foundRow =
+        r + 1;
+
+      oldFullName =
+        rows[r][2] || '';
+
+      oldCreatedAt =
+        rows[r][8] || '';
+
+      break;
+    }
+  }
+
+
+  const now =
+    nowText_();
+
+
+  const row = [
+
+    employeeId,
+
+    nickname,
+
+    oldFullName,
+
+    String(
+      data.team || ''
+    ).trim(),
+
+    String(
+      data.position || ''
+    ).trim(),
+
+    String(
+      data.branch || ''
+    ).trim(),
+
+    String(
+      data.gender || ''
+    ).trim(),
+
+    normalizeEmployeeStatus_(
+      data.status || 'ทำงาน'
+    ),
+
+    oldCreatedAt || now,
+
+    now
+  ];
+
+
+  if (foundRow) {
+
+    sheet
+      .getRange(
+        foundRow,
+        1,
+        1,
+        row.length
+      )
+      .setValues([row]);
+
+  } else {
+
+    sheet.appendRow(row);
+  }
+
+
+  return {
+
+    ok: true,
+
+    message:
+      'บันทึกข้อมูลพนักงานแล้ว',
+
+    employees:
+      getEmployees_()
+  };
+}
+
+
+function deleteEmployee(
+  employeeId
+) {
+
+  employeeId =
+    String(
+      employeeId || ''
+    ).trim();
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.EMPLOYEES
+      );
+
+
+  const rows =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  for (
+    let r =
+      rows.length - 1;
+    r >= 1;
+    r--
+  ) {
+
+    if (
+      String(
+        rows[r][0]
+      )
+      .trim()
+      .toUpperCase() ===
+      employeeId.toUpperCase()
+    ) {
+
+      sheet.deleteRow(
+        r + 1
+      );
+    }
+  }
+
+
+  return {
+
+    ok: true,
+
+    message:
+      'ลบพนักงานแล้ว',
+
+    employees:
+      getEmployees_()
+  };
+}
+
+
+/* =========================================================
+   SHIFT SET
+========================================================= */
+
+function getShiftSets_() {
+
+  return getSheetObjects_(
+    APP.SHEETS.SHIFT_SETS
+  )
+  .map(
+    x => ({
+
+      setId:
+        x.setId,
+
+      setName:
+        x.setName,
+
+      workDays:
+        Number(
+          x.workDays || 10
+        ),
+
+      offDays:
+        Number(
+          x.offDays || 5
+        ),
+
+      alternate:
+        String(
+          x.alternate
+        ).toUpperCase() === 'TRUE',
+
+      startShift:
+        x.startShift ||
+        'MORNING',
+
+      fixedShift:
+        x.fixedShift || '',
+
+      createdAt:
+        x.createdAt || '',
+
+      updatedAt:
+        x.updatedAt || ''
+    })
+  );
+}
+
+
+function saveShiftSet(data) {
+
+  const setName =
+    String(
+      data?.setName || ''
+    ).trim();
+
+
+  if (!setName) {
+
+    throw new Error(
+      'กรุณาตั้งชื่อเซตกะ'
+    );
+  }
+
+
+  const workDays =
+    Math.max(
+      1,
+      Number(
+        data.workDays || 10
+      )
+    );
+
+
+  const offDays =
+    Math.max(
+      0,
+      Number(
+        data.offDays || 5
+      )
+    );
+
+
+  const alternate =
+    data.alternate === true ||
+    String(
+      data.alternate
+    ).toUpperCase() === 'TRUE';
+
+
+  let setId =
+    String(
+      data.setId || ''
+    ).trim();
+
+
+  if (!setId) {
+
+    setId =
+      'SET_' +
+      new Date().getTime();
+  }
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.SHIFT_SETS
+      );
+
+
+  const rows =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  let foundRow = 0;
+  let oldCreatedAt = '';
+
+
+  for (
+    let r = 1;
+    r < rows.length;
+    r++
+  ) {
+
+    if (
+      String(
+        rows[r][0]
+      ) === setId
+    ) {
+
+      foundRow =
+        r + 1;
+
+      oldCreatedAt =
+        rows[r][7] || '';
+
+      break;
+    }
+  }
+
+
+  const now =
+    nowText_();
+
+
+  const row = [
+
+    setId,
+
+    setName,
+
+    workDays,
+
+    offDays,
+
+    alternate
+      ? 'TRUE'
+      : 'FALSE',
+
+    String(
+      data.startShift ||
+      'MORNING'
+    ),
+
+    alternate
+      ? ''
+      : String(
+          data.fixedShift ||
+          data.startShift ||
+          'MORNING'
+        ),
+
+    oldCreatedAt || now,
+
+    now
+  ];
+
+
+  if (foundRow) {
+
+    sheet
+      .getRange(
+        foundRow,
+        1,
+        1,
+        row.length
+      )
+      .setValues([row]);
+
+  } else {
+
+    sheet.appendRow(row);
+  }
+
+
+  return {
+
+    ok: true,
+
+    message:
+      'บันทึกเซตกะแล้ว',
+
+    shiftSets:
+      getShiftSets_()
+  };
+}
+
+
+function deleteShiftSet(
+  setId
+) {
+
+  const assignments =
+    getAssignments_();
+
+
+  const inUse =
+    assignments.some(
+      a =>
+        a.setId === setId &&
+        String(
+          a.active || 'TRUE'
+        ).toUpperCase() !== 'FALSE'
+    );
+
+
+  if (inUse) {
+
+    throw new Error(
+      'เซตกะนี้กำลังถูกใช้งานอยู่'
+    );
+  }
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.SHIFT_SETS
+      );
+
+
+  const rows =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  for (
+    let r =
+      rows.length - 1;
+    r >= 1;
+    r--
+  ) {
+
+    if (
+      String(
+        rows[r][0]
+      ) ===
+      String(setId)
+    ) {
+
+      sheet.deleteRow(
+        r + 1
+      );
+    }
+  }
+
+
+  return {
+
+    ok: true,
+
+    message:
+      'ลบเซตกะแล้ว',
+
+    shiftSets:
+      getShiftSets_()
+  };
+}
+
+
+/* =========================================================
+   ASSIGNMENTS
+========================================================= */
+
+function getAssignments_() {
+
+  return getSheetObjects_(
+    APP.SHEETS.ASSIGNMENTS
+  )
+  .map(
+    assignment => ({
+
+      ...assignment,
+
+      cycleStartDate:
+        String(
+          assignment.cycleStartDate ||
+          assignment.startDate ||
+          ''
+        ).trim(),
+
+      cycleReset:
+        String(
+          assignment.cycleReset ||
+          'FALSE'
+        ).toUpperCase() === 'TRUE'
+    })
+  );
+}
+
+
+/**
+ * แปลงข้อมูลการจัดกะเวอร์ชันเก่าให้มี cycleStartDate
+ * โดยไม่รีเซ็ตรอบ 10/5 ทุกครั้งที่ขึ้นรอบเดือนใหม่
+ *
+ * หลักการ:
+ * - startDate = วันที่เริ่มใช้รายการ/เซตกะนั้น
+ * - cycleStartDate = จุดอ้างอิงสำหรับนับ ทำงาน X วัน / หยุด Y วัน
+ * - ถ้าเป็น Cycle รูปแบบเดิมของ scope เดิม ให้สืบทอดจุดอ้างอิงเดิม
+ */
+function migrateAssignmentCycles_() {
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.ASSIGNMENTS
+      );
+
+  if (
+    !sheet ||
+    sheet.getLastRow() <= 1
+  ) {
+    return;
+  }
+
+
+  const headers =
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        sheet.getLastColumn()
+      )
+      .getDisplayValues()[0]
+      .map(
+        value =>
+          String(value || '').trim()
+      );
+
+
+  const index = {};
+
+  headers.forEach(
+    (header, i) => {
+      index[header] = i;
+    }
+  );
+
+
+  if (
+    index.cycleStartDate === undefined ||
+    index.cycleReset === undefined
+  ) {
+    return;
+  }
+
+
+  const values =
+    sheet
+      .getRange(
+        2,
+        1,
+        sheet.getLastRow() - 1,
+        headers.length
+      )
+      .getDisplayValues();
+
+
+  const setMap = {};
+
+  getShiftSets_()
+    .forEach(
+      set => {
+        setMap[set.setId] = set;
+      }
+    );
+
+
+  const rows =
+    values
+      .map(
+        (row, offset) => {
+
+          const obj = {};
+
+          headers.forEach(
+            (header, i) => {
+              obj[header] =
+                row[i] !== undefined
+                  ? row[i]
+                  : '';
+            }
+          );
+
+          obj.__rowNumber =
+            offset + 2;
+
+          return obj;
+        }
+      )
+      .filter(
+        row =>
+          String(
+            row.assignmentId || ''
+          ).trim()
+      )
+      .sort(
+        (a, b) => {
+
+          const dateCompare =
+            String(
+              a.startDate || ''
+            ).localeCompare(
+              String(
+                b.startDate || ''
+              )
+            );
+
+          if (dateCompare !== 0) {
+            return dateCompare;
+          }
+
+          return String(
+            a.createdAt || ''
+          ).localeCompare(
+            String(
+              b.createdAt || ''
+            )
+          );
+        }
+      );
+
+
+  const chainAnchors = {};
+
+
+  rows.forEach(
+    row => {
+
+      const set =
+        setMap[row.setId] || {};
+
+      const cycleKey =
+        getAssignmentCycleKey_(
+          row,
+          set
+        );
+
+      const reset =
+        String(
+          row.cycleReset ||
+          'FALSE'
+        ).toUpperCase() === 'TRUE';
+
+      let cycleStart =
+        String(
+          row.cycleStartDate || ''
+        ).trim();
+
+
+      if (!cycleStart) {
+
+        if (
+          reset ||
+          !chainAnchors[cycleKey]
+        ) {
+
+          cycleStart =
+            String(
+              row.startDate || ''
+            ).trim();
+
+        } else {
+
+          cycleStart =
+            chainAnchors[cycleKey];
+        }
+
+
+        if (cycleStart) {
+
+          sheet
+            .getRange(
+              row.__rowNumber,
+              index.cycleStartDate + 1
+            )
+            .setValue(
+              cycleStart
+            );
+        }
+      }
+
+
+      if (cycleStart) {
+        chainAnchors[cycleKey] =
+          cycleStart;
+      }
+    }
+  );
+}
+
+
+function getAssignmentCycleKey_(
+  assignment,
+  set
+) {
+
+  const workDays =
+    Math.max(
+      1,
+      Number(
+        set?.workDays || 10
+      )
+    );
+
+  const offDays =
+    Math.max(
+      0,
+      Number(
+        set?.offDays || 5
+      )
+    );
+
+  return [
+    String(
+      assignment.scopeType || ''
+    ).trim(),
+    String(
+      assignment.scopeValue || ''
+    ).trim(),
+    String(
+      assignment.teamFilter || ''
+    ).trim(),
+    workDays + '/' + offDays
+  ].join('|');
+}
+
+
+function sameAssignmentScope_(
+  a,
+  b
+) {
+
+  return (
+    String(
+      a.scopeType || ''
+    ).trim() ===
+    String(
+      b.scopeType || ''
+    ).trim()
+
+    &&
+
+    String(
+      a.scopeValue || ''
+    ).trim() ===
+    String(
+      b.scopeValue || ''
+    ).trim()
+
+    &&
+
+    String(
+      a.teamFilter || ''
+    ).trim() ===
+    String(
+      b.teamFilter || ''
+    ).trim()
+  );
+}
+
+
+function appendObjectRow_(
+  sheetName,
+  object
+) {
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        sheetName
+      );
+
+  const headers =
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        sheet.getLastColumn()
+      )
+      .getDisplayValues()[0]
+      .map(
+        value =>
+          String(value || '').trim()
+      );
+
+  sheet.appendRow(
+    headers.map(
+      header =>
+        object[header] !== undefined &&
+        object[header] !== null
+          ? object[header]
+          : ''
+    )
+  );
+}
+
+
+function saveAssignment(data) {
+
+  if (
+    !data ||
+    !data.scopeType ||
+    !data.scopeValue ||
+    !data.setId ||
+    !data.startDate
+  ) {
+
+    throw new Error(
+      'กรุณากรอกข้อมูลการจัดกะให้ครบ'
+    );
+  }
+
+
+  const now =
+    nowText_();
+
+  const startDate =
+    String(
+      data.startDate || ''
+    ).trim();
+
+  const resetCycle =
+    data.resetCycle === true ||
+    String(
+      data.resetCycle || ''
+    ).toUpperCase() === 'TRUE';
+
+
+  const setMap = {};
+
+  getShiftSets_()
+    .forEach(
+      set => {
+        setMap[set.setId] = set;
+      }
+    );
+
+
+  const selectedSet =
+    setMap[
+      String(
+        data.setId
+      )
+    ];
+
+  if (!selectedSet) {
+    throw new Error(
+      'ไม่พบเซตกะที่เลือก'
+    );
+  }
+
+
+  const newAssignment = {
+
+    assignmentId:
+      'ASN_' +
+      new Date().getTime(),
+
+    scopeType:
+      String(
+        data.scopeType
+      ),
+
+    scopeValue:
+      String(
+        data.scopeValue
+      ),
+
+    teamFilter:
+      String(
+        data.teamFilter || ''
+      ),
+
+    setId:
+      String(
+        data.setId
+      ),
+
+    startDate:
+      startDate,
+
+    startShift:
+      String(
+        data.startShift || ''
+      ),
+
+    active:
+      'TRUE',
+
+    createdAt:
+      now,
+
+    cycleStartDate:
+      '',
+
+    cycleReset:
+      resetCycle
+        ? 'TRUE'
+        : 'FALSE',
+
+    updatedAt:
+      now
+  };
+
+
+  const assignments =
+    getAssignments_();
+
+
+  /*
+   * กันการกดบันทึกรายการเดิมซ้ำแบบไม่ตั้งใจ
+   */
+  const exactDuplicate =
+    assignments.find(
+      old =>
+        String(
+          old.active || 'TRUE'
+        ).toUpperCase() !== 'FALSE' &&
+        sameAssignmentScope_(
+          old,
+          newAssignment
+        ) &&
+        String(old.setId) ===
+          String(newAssignment.setId) &&
+        String(old.startDate) ===
+          String(newAssignment.startDate) &&
+        String(old.startShift || '') ===
+          String(newAssignment.startShift || '')
+    );
+
+
+  if (exactDuplicate) {
+
+    return {
+
+      ok: true,
+
+      message:
+        'รายการนี้มีอยู่แล้ว ไม่ได้สร้างซ้ำ',
+
+      assignments:
+        getAssignments_()
+    };
+  }
+
+
+  const selectedCycleKey =
+    getAssignmentCycleKey_(
+      newAssignment,
+      selectedSet
+    );
+
+
+  const previousCompatible =
+    assignments
+      .filter(
+        old => {
+
+          if (
+            !sameAssignmentScope_(
+              old,
+              newAssignment
+            )
+          ) {
+            return false;
+          }
+
+          if (
+            !old.startDate ||
+            old.startDate > startDate
+          ) {
+            return false;
+          }
+
+          const oldSet =
+            setMap[old.setId] || {};
+
+          return (
+            getAssignmentCycleKey_(
+              old,
+              oldSet
+            ) ===
+            selectedCycleKey
+          );
+        }
+      )
+      .sort(
+        (a, b) => {
+
+          const dateCompare =
+            String(
+              b.startDate || ''
+            ).localeCompare(
+              String(
+                a.startDate || ''
+              )
+            );
+
+          if (dateCompare !== 0) {
+            return dateCompare;
+          }
+
+          return String(
+            b.createdAt || ''
+          ).localeCompare(
+            String(
+              a.createdAt || ''
+            )
+          );
+        }
+      )[0];
+
+
+  if (
+    resetCycle ||
+    !previousCompatible
+  ) {
+
+    newAssignment.cycleStartDate =
+      startDate;
+
+  } else {
+
+    newAssignment.cycleStartDate =
+      String(
+        previousCompatible.cycleStartDate ||
+        previousCompatible.startDate ||
+        startDate
+      );
+  }
+
+
+  appendObjectRow_(
+    APP.SHEETS.ASSIGNMENTS,
+    newAssignment
+  );
+
+
+  return {
+
+    ok: true,
+
+    message:
+      resetCycle
+        ? 'นำเซตกะไปใช้แล้ว และเริ่มนับ Cycle ใหม่จาก ' +
+          formatThaiDateServer_(startDate)
+        : previousCompatible
+          ? 'นำเซตกะไปใช้แล้ว · รอบทำงาน/หยุดนับต่อเนื่องจาก ' +
+            formatThaiDateServer_(
+              newAssignment.cycleStartDate
+            )
+          : 'นำเซตกะไปใช้แล้ว · เริ่ม Cycle ครั้งแรกจาก ' +
+            formatThaiDateServer_(
+              newAssignment.cycleStartDate
+            ),
+
+    assignments:
+      getAssignments_()
+  };
+}
+
+
+function formatThaiDateServer_(
+  dateText
+) {
+
+  if (!dateText) {
+    return '-';
+  }
+
+  const date =
+    parseDate_(dateText);
+
+  const months = [
+    'ม.ค.',
+    'ก.พ.',
+    'มี.ค.',
+    'เม.ย.',
+    'พ.ค.',
+    'มิ.ย.',
+    'ก.ค.',
+    'ส.ค.',
+    'ก.ย.',
+    'ต.ค.',
+    'พ.ย.',
+    'ธ.ค.'
+  ];
+
+  return (
+    date.getDate() +
+    ' ' +
+    months[date.getMonth()] +
+    ' ' +
+    (date.getFullYear() + 543)
+  );
+}
+
+function deactivateAssignment(
+  assignmentId
+) {
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.ASSIGNMENTS
+      );
+
+
+  const rows =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  for (
+    let r = 1;
+    r < rows.length;
+    r++
+  ) {
+
+    if (
+      String(
+        rows[r][0]
+      ) ===
+      String(assignmentId)
+    ) {
+
+      const headers =
+        rows[0];
+
+      const activeIndex =
+        headers.indexOf('active');
+
+      const updatedIndex =
+        headers.indexOf('updatedAt');
+
+      if (activeIndex >= 0) {
+
+        sheet
+          .getRange(
+            r + 1,
+            activeIndex + 1
+          )
+          .setValue(
+            'FALSE'
+          );
+      }
+
+      if (updatedIndex >= 0) {
+
+        sheet
+          .getRange(
+            r + 1,
+            updatedIndex + 1
+          )
+          .setValue(
+            nowText_()
+          );
+      }
+
+      break;
+    }
+  }
+
+
+  return {
+
+    ok: true,
+
+    message:
+      'ปิดการจัดกะแล้ว',
+
+    assignments:
+      getAssignments_()
+  };
+}
+
+
+/* =========================================================
+   INDIVIDUAL CALENDAR
+========================================================= */
+
+function getEmployeeCalendar(
+  request
+) {
+
+  const employeeId =
+    String(
+      request?.employeeId || ''
+    ).trim();
+
+
+  const anchorDate =
+    String(
+      request?.anchorDate ||
+      todayText_()
+    ).trim();
+
+
+  const employee =
+    getEmployees_()
+      .find(
+        e =>
+          e.employeeId ===
+          employeeId
+      );
+
+
+  if (!employee) {
+
+    throw new Error(
+      'ไม่พบพนักงาน'
+    );
+  }
+
+
+  const range =
+    getRoundRange_(
+      anchorDate
+    );
+
+
+  const dates =
+    createDateRange_(
+      range.from,
+      range.to,
+      40
+    );
+
+
+  const setMap = {};
+
+
+  getShiftSets_()
+    .forEach(
+      set => {
+
+        setMap[
+          set.setId
+        ] = set;
+      }
+    );
+
+
+  const assignments =
+    getAssignments_();
+
+
+  const overrides =
+    getOverrideMap_(
+      range.from,
+      range.to
+    );
+
+
+  const days =
+    dates.map(
+      date => {
+
+        const result =
+          calculateEmployeeShift_(
+            employee,
+            date,
+            setMap,
+            assignments,
+            overrides
+          );
+
+
+        const automatic =
+          calculateEmployeeShift_(
+            employee,
+            date,
+            setMap,
+            assignments,
+            {}
+          );
+
+
+        return {
+
+          date:
+            date,
+
+          shift:
+            result.shift,
+
+          autoShift:
+            automatic.shift,
+
+          hasOverride:
+            result.source ===
+            'OVERRIDE',
+
+          source:
+            result.source,
+
+          setName:
+            automatic.setName || '',
+
+          note:
+            String(
+              overrides[
+                employee.employeeId +
+                '|' +
+                date
+              ]?.note || ''
+            )
+        };
+      }
+    );
+
+
+  return {
+
+    employee:
+      employee,
+
+    anchorDate:
+      anchorDate,
+
+    from:
+      range.from,
+
+    to:
+      range.to,
+
+    days:
+      days
+  };
+}
+
+
+function saveShiftOverridesBatch(
+  data
+) {
+
+  const employeeId =
+    String(
+      data?.employeeId || ''
+    ).trim();
+
+
+  const items =
+    Array.isArray(
+      data?.items
+    )
+      ? data.items
+      : [];
+
+
+  if (!employeeId) {
+
+    throw new Error(
+      'กรุณาเลือกพนักงาน'
+    );
+  }
+
+
+  if (!items.length) {
+
+    return {
+
+      ok: true,
+
+      message:
+        'ไม่มีรายการเปลี่ยนแปลง'
+    };
+  }
+
+
+  const employee =
+    getEmployees_()
+      .find(
+        e =>
+          e.employeeId ===
+          employeeId
+      );
+
+
+  if (!employee) {
+
+    throw new Error(
+      'ไม่พบพนักงาน'
+    );
+  }
+
+
+  const setMap = {};
+
+
+  getShiftSets_()
+    .forEach(
+      set => {
+
+        setMap[
+          set.setId
+        ] = set;
+      }
+    );
+
+
+  const assignments =
+    getAssignments_();
+
+
+  const existing =
+    getSheetObjects_(
+      APP.SHEETS.OVERRIDES
+    );
+
+
+  const map =
+    new Map();
+
+
+  existing.forEach(
+    row => {
+
+      const id =
+        String(
+          row.employeeId || ''
+        ).trim();
+
+      const date =
+        String(
+          row.date || ''
+        ).trim();
+
+
+      if (
+        !id ||
+        !date
+      ) {
+        return;
+      }
+
+
+      map.set(
+        id + '|' + date,
+        {
+          employeeId:
+            id,
+
+          date:
+            date,
+
+          shift:
+            String(
+              row.shift || 'AUTO'
+            )
+            .trim()
+            .toUpperCase() ||
+            'AUTO',
+
+          note:
+            String(
+              row.note || ''
+            ),
+
+          updatedAt:
+            row.updatedAt || ''
+        }
+      );
+    }
+  );
+
+
+  const validManualShifts = [
+    'MORNING',
+    'NIGHT',
+    'OFF',
+    'UNSET'
+  ];
+
+
+  const historyRows = [];
+
+
+  items.forEach(
+    item => {
+
+      const date =
+        String(
+          item?.date || ''
+        ).trim();
+
+
+      if (!date) {
+        return;
+      }
+
+
+      let shift =
+        String(
+          item?.shift || 'AUTO'
+        )
+        .trim()
+        .toUpperCase();
+
+
+      if (
+        ![
+          'AUTO',
+          'MORNING',
+          'NIGHT',
+          'OFF',
+          'UNSET'
+        ].includes(
+          shift
+        )
+      ) {
+
+        shift =
+          'AUTO';
+      }
+
+
+      const key =
+        employeeId +
+        '|' +
+        date;
+
+
+      const old =
+        map.get(key) || {
+          employeeId:
+            employeeId,
+          date:
+            date,
+          shift:
+            'AUTO',
+          note:
+            '',
+          updatedAt:
+            ''
+        };
+
+
+      const oldStoredShift =
+        String(
+          old.shift || 'AUTO'
+        )
+        .trim()
+        .toUpperCase() ||
+        'AUTO';
+
+
+      const automatic =
+        calculateEmployeeShift_(
+          employee,
+          date,
+          setMap,
+          assignments,
+          {}
+        );
+
+
+      const oldEffectiveShift =
+        validManualShifts.includes(
+          oldStoredShift
+        )
+          ? oldStoredShift
+          : automatic.shift;
+
+
+      const newEffectiveShift =
+        validManualShifts.includes(
+          shift
+        )
+          ? shift
+          : automatic.shift;
+
+
+      /*
+       * เก็บประวัติเมื่อ "วิธีการกำหนดกะ" เปลี่ยนจริง
+       * เช่น เช้า -> หยุด หรือ Override -> AUTO
+       */
+      if (
+        oldStoredShift !==
+        shift
+      ) {
+
+        historyRows.push({
+
+          historyId:
+            'HIS_' +
+            Utilities.getUuid(),
+
+          employeeId:
+            employee.employeeId,
+
+          nickname:
+            employee.nickname,
+
+          team:
+            employee.team,
+
+          position:
+            employee.position,
+
+          date:
+            date,
+
+          oldShift:
+            oldEffectiveShift,
+
+          newShift:
+            newEffectiveShift,
+
+          action:
+            shift === 'AUTO'
+              ? 'กลับไปใช้ตามเซตกะ'
+              : shift === 'UNSET'
+                ? 'กำหนดไม่มีกะ'
+                : 'แก้กะรายบุคคล',
+
+          changedAt:
+            nowText_()
+        });
+      }
+
+
+      const note =
+        String(
+          old.note || ''
+        );
+
+
+      /*
+       * ถ้ากลับไปใช้ตามเซต และไม่มีหมายเหตุ
+       * ไม่จำเป็นต้องเก็บแถวไว้
+       */
+      if (
+        shift === 'AUTO' &&
+        !note.trim()
+      ) {
+
+        map.delete(key);
+
+        return;
+      }
+
+
+      map.set(
+        key,
+        {
+          employeeId:
+            employeeId,
+
+          date:
+            date,
+
+          shift:
+            shift,
+
+          note:
+            note,
+
+          updatedAt:
+            nowText_()
+        }
+      );
+    }
+  );
+
+
+  rewriteShiftOverrides_(
+    Array.from(
+      map.values()
+    )
+  );
+
+
+  appendShiftHistory_(
+    historyRows
+  );
+
+
+  return {
+
+    ok: true,
+
+    message:
+      'บันทึกกะรายบุคคลแล้ว ' +
+      items.length +
+      ' วัน'
+  };
+}
+
+
+/**
+ * เพิ่มประวัติการแก้กะ
+ */
+function appendShiftHistory_(
+  rows
+) {
+
+  if (
+    !rows ||
+    !rows.length
+  ) {
+    return;
+  }
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.SHIFT_HISTORY
+      );
+
+
+  const headers = [
+    'historyId',
+    'employeeId',
+    'nickname',
+    'team',
+    'position',
+    'date',
+    'oldShift',
+    'newShift',
+    'action',
+    'changedAt'
+  ];
+
+
+  const values =
+    rows.map(
+      row =>
+        headers.map(
+          header =>
+            row[header] || ''
+        )
+    );
+
+
+  sheet
+    .getRange(
+      sheet.getLastRow() + 1,
+      1,
+      values.length,
+      headers.length
+    )
+    .setValues(
+      values
+    );
+}
+
+
+/**
+ * ดึงประวัติการแก้กะสำหรับหน้า Admin
+ */
+function getShiftHistory(
+  request
+) {
+
+  request =
+    request || {};
+
+
+  const employeeId =
+    String(
+      request.employeeId || ''
+    ).trim();
+
+
+  const team =
+    String(
+      request.team || ''
+    ).trim();
+
+
+  const from =
+    String(
+      request.from || ''
+    ).trim();
+
+
+  const to =
+    String(
+      request.to || ''
+    ).trim();
+
+
+  const search =
+    String(
+      request.search || ''
+    )
+    .trim()
+    .toLowerCase();
+
+
+  let rows =
+    getSheetObjects_(
+      APP.SHEETS.SHIFT_HISTORY
+    );
+
+
+  if (
+    employeeId
+  ) {
+
+    rows =
+      rows.filter(
+        row =>
+          String(
+            row.employeeId || ''
+          ) === employeeId
+      );
+  }
+
+
+  if (
+    team
+  ) {
+
+    rows =
+      rows.filter(
+        row =>
+          String(
+            row.team || ''
+          ) === team
+      );
+  }
+
+
+  if (
+    from
+  ) {
+
+    rows =
+      rows.filter(
+        row =>
+          String(
+            row.date || ''
+          ) >= from
+      );
+  }
+
+
+  if (
+    to
+  ) {
+
+    rows =
+      rows.filter(
+        row =>
+          String(
+            row.date || ''
+          ) <= to
+      );
+  }
+
+
+  if (
+    search
+  ) {
+
+    rows =
+      rows.filter(
+        row => {
+
+          const text =
+            [
+              row.employeeId,
+              row.nickname,
+              row.team,
+              row.position,
+              row.action
+            ]
+            .join(
+              ' '
+            )
+            .toLowerCase();
+
+
+          return text.includes(
+            search
+          );
+        }
+      );
+  }
+
+
+  rows.sort(
+    (a,b) =>
+      String(
+        b.changedAt || ''
+      )
+      .localeCompare(
+        String(
+          a.changedAt || ''
+        )
+      )
+  );
+
+
+  return {
+    total:
+      rows.length,
+
+    rows:
+      rows.slice(
+        0,
+        1000
+      )
+  };
+}
+
+
+/**
+ * บันทึก / แก้ไข / ลบ หมายเหตุของวัน
+ * โดยไม่กระทบกะที่กำหนดไว้
+ */
+function saveEmployeeDayNote(
+  data
+) {
+
+  const employeeId =
+    String(
+      data?.employeeId || ''
+    ).trim();
+
+
+  const date =
+    String(
+      data?.date || ''
+    ).trim();
+
+
+  const note =
+    String(
+      data?.note || ''
+    )
+    .trim()
+    .slice(
+      0,
+      200
+    );
+
+
+  if (!employeeId) {
+
+    throw new Error(
+      'กรุณาเลือกพนักงาน'
+    );
+  }
+
+
+  if (!date) {
+
+    throw new Error(
+      'ไม่พบวันที่'
+    );
+  }
+
+
+  const existing =
+    getSheetObjects_(
+      APP.SHEETS.OVERRIDES
+    );
+
+
+  const map =
+    new Map();
+
+
+  existing.forEach(
+    row => {
+
+      const id =
+        String(
+          row.employeeId || ''
+        ).trim();
+
+      const rowDate =
+        String(
+          row.date || ''
+        ).trim();
+
+
+      if (
+        !id ||
+        !rowDate
+      ) {
+        return;
+      }
+
+
+      map.set(
+        id + '|' + rowDate,
+        {
+          employeeId:
+            id,
+
+          date:
+            rowDate,
+
+          shift:
+            String(
+              row.shift || 'AUTO'
+            )
+            .trim()
+            .toUpperCase() ||
+            'AUTO',
+
+          note:
+            String(
+              row.note || ''
+            ),
+
+          updatedAt:
+            row.updatedAt || ''
+        }
+      );
+    }
+  );
+
+
+  const key =
+    employeeId +
+    '|' +
+    date;
+
+
+  const old =
+    map.get(key) || {
+      employeeId:
+        employeeId,
+      date:
+        date,
+      shift:
+        'AUTO',
+      note:
+        '',
+      updatedAt:
+        ''
+    };
+
+
+  let shift =
+    String(
+      old.shift || 'AUTO'
+    )
+    .trim()
+    .toUpperCase();
+
+
+  if (
+    ![
+      'AUTO',
+      'MORNING',
+      'NIGHT',
+      'OFF',
+      'UNSET'
+    ].includes(
+      shift
+    )
+  ) {
+
+    shift =
+      'AUTO';
+  }
+
+
+  /*
+   * ลบหมายเหตุ:
+   * ถ้าวันนี้ไม่มี override กะด้วย ก็ลบทั้งแถว
+   */
+  if (
+    !note &&
+    shift === 'AUTO'
+  ) {
+
+    map.delete(key);
+
+  } else {
+
+    map.set(
+      key,
+      {
+        employeeId:
+          employeeId,
+
+        date:
+          date,
+
+        shift:
+          shift,
+
+        note:
+          note,
+
+        updatedAt:
+          nowText_()
+      }
+    );
+  }
+
+
+  rewriteShiftOverrides_(
+    Array.from(
+      map.values()
+    )
+  );
+
+
+  return {
+
+    ok: true,
+
+    message:
+      note
+        ? 'บันทึกหมายเหตุแล้ว'
+        : 'ลบหมายเหตุแล้ว',
+
+    employeeId:
+      employeeId,
+
+    date:
+      date,
+
+    note:
+      note
+  };
+}
+
+
+/**
+ * เขียนข้อมูล DB_ShiftOverrides ใหม่ทั้งตาราง
+ */
+function rewriteShiftOverrides_(
+  rows
+) {
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.OVERRIDES
+      );
+
+
+  const headers = [
+    'employeeId',
+    'date',
+    'shift',
+    'note',
+    'updatedAt'
+  ];
+
+
+  if (
+    sheet.getLastRow() > 1
+  ) {
+
+    sheet
+      .getRange(
+        2,
+        1,
+        sheet.getLastRow() - 1,
+        headers.length
+      )
+      .clearContent();
+  }
+
+
+  if (
+    !rows ||
+    !rows.length
+  ) {
+    return;
+  }
+
+
+  const values =
+    rows.map(
+      row =>
+        headers.map(
+          header =>
+            row[header] || ''
+        )
+    );
+
+
+  sheet
+    .getRange(
+      2,
+      1,
+      values.length,
+      headers.length
+    )
+    .setValues(values);
+}
+
+
+/* =========================================================
+   SCHEDULE
+========================================================= */
+
+function getSchedule(
+  request
+) {
+
+  request =
+    request || {};
+
+
+  let from =
+    String(
+      request.from || ''
+    ).trim();
+
+
+  let to =
+    String(
+      request.to || ''
+    ).trim();
+
+
+  if (
+    !from ||
+    !to
+  ) {
+
+    const range =
+      getRoundRange_(
+        todayText_()
+      );
+
+    from =
+      range.from;
+
+    to =
+      range.to;
+  }
+
+
+  let employees =
+    getEmployees_()
+      .filter(
+        e =>
+          String(
+            e.status || ''
+          ).trim() === 'ทำงาน'
+      );
+
+
+  if (
+    request.team
+  ) {
+
+    employees =
+      employees.filter(
+        e =>
+          e.team ===
+          request.team
+      );
+  }
+
+
+  if (
+    request.position
+  ) {
+
+    employees =
+      employees.filter(
+        e =>
+          e.position ===
+          request.position
+      );
+  }
+
+
+  if (
+    request.employeeId
+  ) {
+
+    employees =
+      employees.filter(
+        e =>
+          e.employeeId ===
+          request.employeeId
+      );
+  }
+
+
+  const search =
+    String(
+      request.search || ''
+    )
+    .trim()
+    .toLowerCase();
+
+
+  if (search) {
+
+    employees =
+      employees.filter(
+        e =>
+          String(
+            e.employeeId || ''
+          )
+          .toLowerCase()
+          .includes(search)
+
+          ||
+
+          String(
+            e.nickname || ''
+          )
+          .toLowerCase()
+          .includes(search)
+      );
+  }
+
+
+  const dates =
+    createDateRange_(
+      from,
+      to,
+      50
+    );
+
+
+  const setMap = {};
+
+
+  getShiftSets_()
+    .forEach(
+      set => {
+
+        setMap[
+          set.setId
+        ] = set;
+      }
+    );
+
+
+  const assignments =
+    getAssignments_();
+
+
+  const overrides =
+    getOverrideMap_(
+      from,
+      to
+    );
+
+
+  const rows =
+    employees.map(
+      employee => ({
+
+        employeeId:
+          employee.employeeId,
+
+        nickname:
+          employee.nickname,
+
+        team:
+          employee.team,
+
+        position:
+          employee.position,
+
+        branch:
+          employee.branch,
+
+        gender:
+          employee.gender,
+
+        days:
+          dates.map(
+            date => {
+
+              const result =
+                calculateEmployeeShift_(
+                  employee,
+                  date,
+                  setMap,
+                  assignments,
+                  overrides
+                );
+
+
+              return {
+
+                date:
+                  date,
+
+                shift:
+                  result.shift,
+
+                source:
+                  result.source,
+
+                setName:
+                  result.setName || ''
+              };
+            }
+          )
+      })
+    );
+
+
+  return {
+
+    from:
+      from,
+
+    to:
+      to,
+
+    dates:
+      dates,
+
+    rows:
+      rows
+  };
+}
+
+
+/* =========================================================
+   EMPLOYEE VIEW
+========================================================= */
+
+function getEmployeeView(
+  employeeId
+) {
+
+  const employee =
+    getEmployees_()
+      .find(
+        e =>
+          e.employeeId ===
+          employeeId
+      );
+
+
+  if (!employee) {
+
+    throw new Error(
+      'ไม่พบพนักงาน'
+    );
+  }
+
+
+  const today =
+    todayText_();
+
+
+  const range =
+    getRoundRange_(
+      today
+    );
+
+
+  return {
+
+    employee:
+      employee,
+
+    today:
+      today,
+
+    todayShift:
+      getShiftForEmployeeDate_(
+        employeeId,
+        today
+      ),
+
+    round:
+      range,
+
+    schedule:
+      getSchedule({
+
+        employeeId:
+          employeeId,
+
+        from:
+          range.from,
+
+        to:
+          range.to
+      })
+  };
+}
+
+
+
+/* =========================================================
+   EMPLOYEE PUBLIC VIEW
+   อ่านอย่างเดียวสำหรับลิงก์พนักงาน
+========================================================= */
+
+function findEmployeePublic_(query) {
+
+  query =
+    String(
+      query || ''
+    )
+    .trim()
+    .replace(
+      /^["']+|["']+$/g,
+      ''
+    )
+    .trim();
+
+
+  if (
+    !query ||
+    query === '""' ||
+    query === "''"
+  ) {
+
+    throw new Error(
+      'กรุณากรอกรหัสหรือชื่อพนักงาน'
+    );
+  }
+
+
+  const q =
+    query.toLowerCase();
+
+
+  const employees =
+    getEmployees_()
+      .filter(
+        e =>
+          String(
+            e.status || ''
+          ).trim() !== 'ออก'
+      );
+
+
+  /*
+   * 1) รหัสพนักงานตรงกัน
+   */
+  let employee =
+    employees.find(
+      e =>
+        String(
+          e.employeeId || ''
+        )
+        .trim()
+        .toLowerCase() ===
+        q
+    );
+
+
+  if (employee) {
+    return employee;
+  }
+
+
+  /*
+   * 2) ชื่อเล่น หรือ ชื่อ-นามสกุล ตรงกัน
+   */
+  const exact =
+    employees.filter(
+      e => {
+
+        const nickname =
+          String(
+            e.nickname || ''
+          )
+          .trim()
+          .toLowerCase();
+
+
+        const fullName =
+          String(
+            e.fullName || ''
+          )
+          .trim()
+          .toLowerCase();
+
+
+        return (
+          nickname === q ||
+          fullName === q
+        );
+      }
+    );
+
+
+  if (
+    exact.length === 1
+  ) {
+
+    return exact[0];
+  }
+
+
+  if (
+    exact.length > 1
+  ) {
+
+    throw new Error(
+      'พบชื่อซ้ำ กรุณาใช้รหัสพนักงาน'
+    );
+  }
+
+
+  /*
+   * 3) ค้นหาบางส่วน
+   */
+  const partial =
+    employees.filter(
+      e => {
+
+        const employeeId =
+          String(
+            e.employeeId || ''
+          )
+          .toLowerCase();
+
+
+        const nickname =
+          String(
+            e.nickname || ''
+          )
+          .toLowerCase();
+
+
+        const fullName =
+          String(
+            e.fullName || ''
+          )
+          .toLowerCase();
+
+
+        return (
+          employeeId.includes(q) ||
+          nickname.includes(q) ||
+          fullName.includes(q)
+        );
+      }
+    );
+
+
+  if (
+    partial.length === 1
+  ) {
+
+    return partial[0];
+  }
+
+
+  if (
+    partial.length > 1
+  ) {
+
+    const examples =
+      partial
+        .slice(
+          0,
+          5
+        )
+        .map(
+          e =>
+            e.employeeId +
+            ' · ' +
+            e.nickname
+        )
+        .join(
+          ', '
+        );
+
+
+    throw new Error(
+      'พบหลายคน: ' +
+      examples +
+      ' กรุณาพิมพ์ชื่อหรือรหัสให้ชัดเจนขึ้น'
+    );
+  }
+
+
+  throw new Error(
+    'ไม่พบรหัสหรือชื่อพนักงานนี้'
+  );
+}
+
+
+function getEmployeePublicSchedule(query, anchorDate) {
+  const employee = findEmployeePublic_(query);
+  const today = todayText_();
+  anchorDate = String(anchorDate || today).trim();
+  const range = getRoundRange_(anchorDate);
+  const dates = createDateRange_(range.from, range.to, 40);
+  const setMap = {};
+  getShiftSets_().forEach(set => setMap[set.setId] = set);
+  const assignments = getAssignments_();
+  const overrides = getOverrideMap_(range.from, range.to);
+
+  const days = dates.map(date => {
+    const result = calculateEmployeeShift_(employee,date,setMap,assignments,overrides);
+    return {date:date, shift:result.shift};
+  });
+
+  const todayResult = calculateEmployeeShift_(
+    employee,today,setMap,assignments,getOverrideMap_(today,today)
+  );
+
+  return {
+    employee:{
+      employeeId:employee.employeeId,
+      nickname:employee.nickname,
+      team:employee.team,
+      position:employee.position
+    },
+    today:today,
+    todayShift:todayResult.shift,
+    round:range,
+    days:days
+  };
+}
+
+
+function getEmployeePublicTeamSchedule(anchorDate) {
+  const today = todayText_();
+  anchorDate = String(anchorDate || today).trim();
+  const range = getRoundRange_(anchorDate);
+  const schedule = getSchedule({from:range.from,to:range.to});
+  const order = {'TEAM A':1,'TEAM B':2,'TEAM C':3};
+
+  const rows = schedule.rows.map(row => ({
+    employeeId:row.employeeId,
+    nickname:row.nickname,
+    team:row.team,
+    position:row.position,
+    days:row.days.map(day => ({date:day.date,shift:day.shift}))
+  })).sort((a,b) => {
+    const ta = order[String(a.team || '').toUpperCase()] || 99;
+    const tb = order[String(b.team || '').toUpperCase()] || 99;
+    if (ta !== tb) return ta-tb;
+    return String(a.employeeId || '').localeCompare(String(b.employeeId || ''));
+  });
+
+  const counts={};
+  rows.forEach(row => {
+    const team=row.team || 'ไม่ระบุ TEAM';
+    counts[team]=(counts[team]||0)+1;
+  });
+
+  return {today:today,round:range,dates:schedule.dates,rows:rows,counts:counts};
+}
+
+
+/* =========================================================
+   MANPOWER
+========================================================= */
+
+function getManpower(
+  date
+) {
+
+  return getManpowerInternal_(
+    String(
+      date ||
+      todayText_()
+    )
+  );
+}
+
+
+function getManpowerInternal_(
+  date
+) {
+
+  const employees =
+    getEmployees_()
+      .filter(
+        e =>
+          String(
+            e.status || ''
+          ).trim() === 'ทำงาน'
+      );
+
+
+  const setMap = {};
+
+
+  getShiftSets_()
+    .forEach(
+      set => {
+
+        setMap[
+          set.setId
+        ] = set;
+      }
+    );
+
+
+  const assignments =
+    getAssignments_();
+
+
+  const overrides =
+    getOverrideMap_(
+      date,
+      date
+    );
+
+
+  const summary = {
+    MORNING: 0,
+    NIGHT: 0,
+    OFF: 0,
+    UNSET: 0
+  };
+
+
+  const byTeam = {};
+  const byPosition = {};
+  const byGender = {};
+  const byTeamGender = {};
+
+
+  const byShiftGender = {
+    MORNING: {},
+    NIGHT: {},
+    OFF: {},
+    UNSET: {}
+  };
+
+
+  const byTeamShiftGender = {};
+
+
+  employees.forEach(
+    employee => {
+
+      const result =
+        calculateEmployeeShift_(
+          employee,
+          date,
+          setMap,
+          assignments,
+          overrides
+        );
+
+
+      const shift =
+        [
+          'MORNING',
+          'NIGHT',
+          'OFF'
+        ].includes(
+          result.shift
+        )
+          ? result.shift
+          : 'UNSET';
+
+
+      const team =
+        employee.team ||
+        'ไม่ระบุ TEAM';
+
+
+      const position =
+        employee.position ||
+        'ไม่ระบุตำแหน่ง';
+
+
+      const gender =
+        employee.gender ||
+        'ไม่ระบุ';
+
+
+      summary[shift]++;
+
+
+      if (!byTeam[team]) {
+
+        byTeam[team] = {
+          MORNING: 0,
+          NIGHT: 0,
+          OFF: 0,
+          UNSET: 0
+        };
+      }
+
+      byTeam[team][shift]++;
+
+
+      if (
+        !byPosition[position]
+      ) {
+
+        byPosition[position] = {
+          MORNING: 0,
+          NIGHT: 0,
+          OFF: 0,
+          UNSET: 0
+        };
+      }
+
+      byPosition[position][shift]++;
+
+
+      incrementObject_(
+        byGender,
+        gender
+      );
+
+
+      if (
+        !byTeamGender[team]
+      ) {
+
+        byTeamGender[team] = {};
+      }
+
+      incrementObject_(
+        byTeamGender[team],
+        gender
+      );
+
+
+      incrementObject_(
+        byShiftGender[shift],
+        gender
+      );
+
+
+      if (
+        !byTeamShiftGender[team]
+      ) {
+
+        byTeamShiftGender[team] = {
+
+          MORNING: {},
+          NIGHT: {},
+          OFF: {},
+          UNSET: {}
+        };
+      }
+
+
+      incrementObject_(
+        byTeamShiftGender[team][shift],
+        gender
+      );
+    }
+  );
+
+
+  return {
+
+    date:
+      date,
+
+    total:
+      employees.length,
+
+    summary:
+      summary,
+
+    byTeam:
+      byTeam,
+
+    byPosition:
+      byPosition,
+
+    byGender:
+      byGender,
+
+    byTeamGender:
+      byTeamGender,
+
+    byShiftGender:
+      byShiftGender,
+
+    byTeamShiftGender:
+      byTeamShiftGender
+  };
+}
+
+
+function incrementObject_(
+  obj,
+  key
+) {
+
+  if (!obj[key]) {
+    obj[key] = 0;
+  }
+
+  obj[key]++;
+}
+
+
+/* =========================================================
+   SHIFT CALCULATION
+========================================================= */
+
+function getShiftForEmployeeDate_(
+  employeeId,
+  date
+) {
+
+  const employee =
+    getEmployees_()
+      .find(
+        e =>
+          e.employeeId ===
+          employeeId
+      );
+
+
+  if (!employee) {
+
+    return {
+
+      shift:
+        'UNSET',
+
+      source:
+        'NONE'
+    };
+  }
+
+
+  const setMap = {};
+
+
+  getShiftSets_()
+    .forEach(
+      set => {
+
+        setMap[
+          set.setId
+        ] = set;
+      }
+    );
+
+
+  return calculateEmployeeShift_(
+    employee,
+    date,
+    setMap,
+    getAssignments_(),
+    getOverrideMap_(
+      date,
+      date
+    )
+  );
+}
+
+
+function calculateEmployeeShift_(
+  employee,
+  date,
+  setMap,
+  assignments,
+  overrideMap
+) {
+
+  const overrideKey =
+    employee.employeeId +
+    '|' +
+    date;
+
+
+  const overrideRow =
+    overrideMap &&
+    overrideMap[overrideKey]
+      ? overrideMap[overrideKey]
+      : null;
+
+
+  const overrideShift =
+    String(
+      overrideRow?.shift || ''
+    )
+    .trim()
+    .toUpperCase();
+
+
+  if (
+    [
+      'MORNING',
+      'NIGHT',
+      'OFF',
+      'UNSET'
+    ].includes(
+      overrideShift
+    )
+  ) {
+
+    return {
+
+      shift:
+        overrideShift,
+
+      source:
+        'OVERRIDE',
+
+      setName:
+        'แก้กะรายบุคคล'
+    };
+  }
+
+
+  const assignment =
+    resolveAssignment_(
+      employee,
+      date,
+      assignments
+    );
+
+
+  if (!assignment) {
+
+    return {
+
+      shift:
+        'UNSET',
+
+      source:
+        'NONE',
+
+      setName:
+        ''
+    };
+  }
+
+
+  const set =
+    setMap[
+      assignment.setId
+    ];
+
+
+  if (!set) {
+
+    return {
+
+      shift:
+        'UNSET',
+
+      source:
+        'NONE',
+
+      setName:
+        ''
+    };
+  }
+
+
+  const cycleStartDate =
+    resolveCycleStartDate_(
+      employee,
+      date,
+      assignment,
+      set,
+      assignments,
+      setMap
+    );
+
+
+  const diff =
+    dayDiff_(
+      cycleStartDate,
+      date
+    );
+
+
+  if (diff < 0) {
+
+    return {
+
+      shift:
+        'UNSET',
+
+      source:
+        'NONE',
+
+      setName:
+        ''
+    };
+  }
+
+
+  const workDays =
+    Math.max(
+      1,
+      Number(
+        set.workDays || 10
+      )
+    );
+
+
+  const offDays =
+    Math.max(
+      0,
+      Number(
+        set.offDays || 5
+      )
+    );
+
+
+  const cycleLength =
+    workDays +
+    offDays;
+
+
+  const cycleIndex =
+    Math.floor(
+      diff /
+      cycleLength
+    );
+
+
+  const dayInCycle =
+    diff %
+    cycleLength;
+
+
+  if (
+    dayInCycle >=
+    workDays
+  ) {
+
+    return {
+
+      shift:
+        'OFF',
+
+      source:
+        assignment.scopeType,
+
+      setName:
+        set.setName
+    };
+  }
+
+
+  const baseShift =
+    assignment.startShift ||
+    set.startShift ||
+    'MORNING';
+
+
+  let shift =
+    baseShift;
+
+
+  if (
+    set.alternate
+  ) {
+
+    if (
+      cycleIndex % 2 === 1
+    ) {
+
+      shift =
+        baseShift ===
+        'MORNING'
+          ? 'NIGHT'
+          : 'MORNING';
+    }
+
+  } else {
+
+    shift =
+      set.fixedShift ||
+      baseShift;
+  }
+
+
+  return {
+
+    shift:
+      shift,
+
+    source:
+      assignment.scopeType,
+
+    setName:
+      set.setName
+  };
+}
+
+
+/**
+ * หา "จุดอ้างอิง Cycle" แยกจากวันที่เริ่มใช้รายการ
+ *
+ * ความสำคัญ:
+ * 1) ถ้ารายการนี้สั่ง resetCycle -> ใช้ cycleStartDate ของรายการนี้
+ * 2) ถ้าเป็น POSITION/EMPLOYEE และมี TEAM เดียวกันที่ใช้ work/off เท่ากัน
+ *    ให้ยึด Cycle ของ TEAM เพื่อให้วันหยุดตรงกัน แต่กะเช้า/ดึกยัง override ได้
+ * 3) นอกนั้นใช้ cycleStartDate ที่สืบทอดมา
+ */
+function resolveCycleStartDate_(
+  employee,
+  date,
+  assignment,
+  set,
+  assignments,
+  setMap
+) {
+
+  const ownCycleStart =
+    String(
+      assignment.cycleStartDate ||
+      assignment.startDate ||
+      ''
+    ).trim();
+
+  const ownReset =
+    assignment.cycleReset === true ||
+    String(
+      assignment.cycleReset || ''
+    ).toUpperCase() === 'TRUE';
+
+
+  if (
+    ownReset ||
+    assignment.scopeType === 'TEAM'
+  ) {
+    return ownCycleStart;
+  }
+
+
+  const workDays =
+    Math.max(
+      1,
+      Number(
+        set.workDays || 10
+      )
+    );
+
+  const offDays =
+    Math.max(
+      0,
+      Number(
+        set.offDays || 5
+      )
+    );
+
+
+  const teamCandidates =
+    assignments
+      .filter(
+        candidate => {
+
+          if (
+            String(
+              candidate.active || 'TRUE'
+            ).toUpperCase() === 'FALSE'
+          ) {
+            return false;
+          }
+
+          if (
+            candidate.scopeType !== 'TEAM' ||
+            candidate.scopeValue !== employee.team ||
+            !candidate.startDate ||
+            candidate.startDate > date
+          ) {
+            return false;
+          }
+
+          const teamSet =
+            setMap[candidate.setId];
+
+          if (!teamSet) {
+            return false;
+          }
+
+          return (
+            Math.max(
+              1,
+              Number(
+                teamSet.workDays || 10
+              )
+            ) === workDays
+
+            &&
+
+            Math.max(
+              0,
+              Number(
+                teamSet.offDays || 5
+              )
+            ) === offDays
+          );
+        }
+      )
+      .sort(
+        (a, b) => {
+
+          const dateCompare =
+            String(
+              b.startDate || ''
+            ).localeCompare(
+              String(
+                a.startDate || ''
+              )
+            );
+
+          if (dateCompare !== 0) {
+            return dateCompare;
+          }
+
+          return String(
+            b.createdAt || ''
+          ).localeCompare(
+            String(
+              a.createdAt || ''
+            )
+          );
+        }
+      );
+
+
+  if (teamCandidates.length) {
+
+    return String(
+      teamCandidates[0].cycleStartDate ||
+      teamCandidates[0].startDate ||
+      ownCycleStart
+    ).trim();
+  }
+
+
+  return ownCycleStart;
+}
+
+
+function resolveAssignment_(
+  employee,
+  date,
+  assignments
+) {
+
+  const matches =
+    assignments.filter(
+      assignment => {
+
+        if (
+          String(
+            assignment.active ||
+            'TRUE'
+          ).toUpperCase() ===
+          'FALSE'
+        ) {
+
+          return false;
+        }
+
+
+        if (
+          !assignment.startDate ||
+          assignment.startDate >
+          date
+        ) {
+
+          return false;
+        }
+
+
+        if (
+          assignment.scopeType ===
+          'EMPLOYEE'
+        ) {
+
+          return (
+            assignment.scopeValue ===
+            employee.employeeId
+          );
+        }
+
+
+        if (
+          assignment.scopeType ===
+          'POSITION'
+        ) {
+
+          if (
+            assignment.scopeValue !==
+            employee.position
+          ) {
+
+            return false;
+          }
+
+
+          if (
+            assignment.teamFilter &&
+            assignment.teamFilter !==
+            employee.team
+          ) {
+
+            return false;
+          }
+
+
+          return true;
+        }
+
+
+        if (
+          assignment.scopeType ===
+          'TEAM'
+        ) {
+
+          return (
+            assignment.scopeValue ===
+            employee.team
+          );
+        }
+
+
+        return false;
+      }
+    );
+
+
+  if (!matches.length) {
+    return null;
+  }
+
+
+  const priority = {
+    TEAM: 1,
+    POSITION: 2,
+    EMPLOYEE: 3
+  };
+
+
+  matches.sort(
+    (a, b) => {
+
+      const p =
+        priority[
+          b.scopeType
+        ] -
+        priority[
+          a.scopeType
+        ];
+
+
+      if (p !== 0) {
+        return p;
+      }
+
+
+      const dateCompare =
+        String(
+          b.startDate
+        ).localeCompare(
+          String(
+            a.startDate
+          )
+        );
+
+
+      if (
+        dateCompare !== 0
+      ) {
+        return dateCompare;
+      }
+
+
+      return String(
+        b.createdAt || ''
+      ).localeCompare(
+        String(
+          a.createdAt || ''
+        )
+      );
+    }
+  );
+
+
+  return matches[0];
+}
+
+
+/* =========================================================
+   OVERRIDES
+========================================================= */
+
+function getOverrideMap_(
+  from,
+  to
+) {
+
+  const map = {};
+
+
+  getSheetObjects_(
+    APP.SHEETS.OVERRIDES
+  )
+  .forEach(
+    row => {
+
+      if (
+        row.date >= from &&
+        row.date <= to
+      ) {
+
+        map[
+          row.employeeId +
+          '|' +
+          row.date
+        ] = row;
+      }
+    }
+  );
+
+
+  return map;
+}
+
+
+/* =========================================================
+   SHEET HELPERS
+========================================================= */
+
+function getSheetObjects_(
+  sheetName
+) {
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        sheetName
+      );
+
+
+  if (!sheet) {
+    return [];
+  }
+
+
+  const values =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  if (
+    values.length <= 1
+  ) {
+    return [];
+  }
+
+
+  const headers =
+    values[0];
+
+
+  return values
+    .slice(1)
+    .filter(
+      row =>
+        row.some(
+          value =>
+            String(value)
+              .trim() !== ''
+        )
+    )
+    .map(
+      row => {
+
+        const obj = {};
+
+
+        headers.forEach(
+          (header, index) => {
+
+            obj[header] =
+              row[index] !==
+              undefined
+                ? row[index]
+                : '';
+          }
+        );
+
+
+        return obj;
+      }
+    );
+}
+
+
+/* =========================================================
+   DATE HELPERS
+========================================================= */
+
+function todayText_() {
+
+  return Utilities.formatDate(
+    new Date(),
+    Session.getScriptTimeZone(),
+    'yyyy-MM-dd'
+  );
+}
+
+
+function nowText_() {
+
+  return Utilities.formatDate(
+    new Date(),
+    Session.getScriptTimeZone(),
+    'yyyy-MM-dd HH:mm:ss'
+  );
+}
+
+
+function parseDate_(
+  text
+) {
+
+  const parts =
+    String(text)
+      .split('-')
+      .map(Number);
+
+
+  return new Date(
+    parts[0],
+    parts[1] - 1,
+    parts[2],
+    12,
+    0,
+    0
+  );
+}
+
+
+function formatDate_(
+  date
+) {
+
+  return Utilities.formatDate(
+    date,
+    Session.getScriptTimeZone(),
+    'yyyy-MM-dd'
+  );
+}
+
+
+function dayDiff_(
+  from,
+  to
+) {
+
+  const a =
+    String(from)
+      .split('-')
+      .map(Number);
+
+
+  const b =
+    String(to)
+      .split('-')
+      .map(Number);
+
+
+  const utcA =
+    Date.UTC(
+      a[0],
+      a[1] - 1,
+      a[2]
+    );
+
+
+  const utcB =
+    Date.UTC(
+      b[0],
+      b[1] - 1,
+      b[2]
+    );
+
+
+  return Math.round(
+    (utcB - utcA) /
+    86400000
+  );
+}
+
+
+function createDateRange_(
+  from,
+  to,
+  maxDays
+) {
+
+  const start =
+    parseDate_(from);
+
+  const end =
+    parseDate_(to);
+
+  const result = [];
+
+  let date =
+    new Date(start);
+
+
+  while (
+    date <= end &&
+    result.length <
+    maxDays
+  ) {
+
+    result.push(
+      formatDate_(date)
+    );
+
+
+    date.setDate(
+      date.getDate() + 1
+    );
+  }
+
+
+  return result;
+}
+
+
+function getRoundRange_(
+  dateText
+) {
+
+  const date =
+    parseDate_(
+      dateText
+    );
+
+
+  const year =
+    date.getFullYear();
+
+  const month =
+    date.getMonth();
+
+  const day =
+    date.getDate();
+
+
+  let from;
+  let to;
+
+
+  if (
+    day >= 26
+  ) {
+
+    from =
+      new Date(
+        year,
+        month,
+        26,
+        12
+      );
+
+
+    to =
+      new Date(
+        year,
+        month + 1,
+        25,
+        12
+      );
+
+  } else {
+
+    from =
+      new Date(
+        year,
+        month - 1,
+        26,
+        12
+      );
+
+
+    to =
+      new Date(
+        year,
+        month,
+        25,
+        12
+      );
+  }
+
+
+  return {
+
+    from:
+      formatDate_(from),
+
+    to:
+      formatDate_(to)
+  };
+}
