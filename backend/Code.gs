@@ -1169,9 +1169,46 @@ function cleanOwnerError_(
 
 function setupSystem() {
 
+  /*
+   * เดิมฟังก์ชันนี้เรียก setupSystem_()
+   * แล้ว getAppData() ก็เรียก setupSystem_() ซ้ำอีกครั้ง
+   * ทำให้ตอนเข้า OWNER ต้องตรวจ/สร้างชีตซ้ำ 2 รอบ
+   */
+  ensureSystemReadyCached_();
+
+  return getAppDataFast_();
+}
+
+
+/**
+ * ลดงานตรวจโครงสร้างชีตซ้ำทุกครั้งที่ Refresh OWNER
+ * Cache ไว้ 5 นาที
+ */
+function ensureSystemReadyCached_() {
+
+  const cache =
+    CacheService
+      .getScriptCache();
+
+  const key =
+    'EMPLOYEE_CENTER_SYSTEM_READY_V1';
+
+
+  if (
+    cache.get(key) === '1'
+  ) {
+    return;
+  }
+
+
   setupSystem_();
 
-  return getAppData();
+
+  cache.put(
+    key,
+    '1',
+    300
+  );
 }
 
 
@@ -1562,7 +1599,13 @@ function seedDefaultSettings_() {
 
 function getAppData() {
 
-  setupSystem_();
+  ensureSystemReadyCached_();
+
+  return getAppDataFast_();
+}
+
+
+function getAppDataFast_() {
 
   const settings =
     getSettings_();
@@ -1570,8 +1613,15 @@ function getAppData() {
   const employees =
     getEmployees_();
 
+  const shiftSets =
+    getShiftSets_();
+
+  const assignments =
+    getAssignments_();
+
   const today =
     todayText_();
+
 
   return {
 
@@ -1609,10 +1659,10 @@ function getAppData() {
       employees,
 
     shiftSets:
-      getShiftSets_(),
+      shiftSets,
 
     assignments:
-      getAssignments_(),
+      assignments,
 
     importSheets:
       getImportSheets_(),
@@ -1620,11 +1670,29 @@ function getAppData() {
     today:
       today,
 
+    /*
+     * ใช้ข้อมูลที่โหลดมาแล้ว
+     * ไม่อ่าน Employees / ShiftSets / Assignments ซ้ำอีกรอบ
+     */
     dashboard:
-      getManpowerInternal_(today),
+      getManpowerInternal_(
+        today,
+        {
+          employees:
+            employees,
+
+          shiftSets:
+            shiftSets,
+
+          assignments:
+            assignments
+        }
+      ),
 
     round:
-      getRoundRange_(today)
+      getRoundRange_(
+        today
+      )
   };
 }
 
@@ -6045,11 +6113,19 @@ function getManpower(
 
 
 function getManpowerInternal_(
-  date
+  date,
+  preloaded
 ) {
 
+  preloaded =
+    preloaded || {};
+
+
   const employees =
-    getEmployees_()
+    (
+      preloaded.employees ||
+      getEmployees_()
+    )
       .filter(
         e =>
           String(
@@ -6061,7 +6137,10 @@ function getManpowerInternal_(
   const setMap = {};
 
 
-  getShiftSets_()
+  (
+    preloaded.shiftSets ||
+    getShiftSets_()
+  )
     .forEach(
       set => {
 
@@ -6073,6 +6152,7 @@ function getManpowerInternal_(
 
 
   const assignments =
+    preloaded.assignments ||
     getAssignments_();
 
 
