@@ -4061,6 +4061,85 @@ th:nth-child(2) {
 </div>
 
 
+<div
+  class="card"
+  style="grid-column:1/-1"
+>
+
+  <div class="section-title">
+
+    <div>
+
+      <h2>
+        💜 ตั้งค่าตำแหน่ง
+      </h2>
+
+      <p>
+        รายการตำแหน่งที่นี่จะเชื่อมไปหน้าเพิ่มพนักงาน หน้า “จัดกะ” และตัวกรองตำแหน่งทั้งระบบ
+      </p>
+
+    </div>
+
+    <div class="actions">
+
+      <button
+        class="btn btn-soft btn-sm"
+        onclick="goToPositionUsage('employees')"
+      >
+        👤 ไปหน้าเพิ่มพนักงาน
+      </button>
+
+      <button
+        class="btn btn-soft btn-sm"
+        onclick="goToPositionUsage('assign')"
+      >
+        📅 ไปหน้าจัดกะ
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <input
+    type="hidden"
+    id="positionSettingId"
+  >
+
+
+  <div class="actions">
+
+    <input
+      id="positionSettingValue"
+      placeholder="เช่น การตลาด / แอดมิน / ฝาก - ถอน"
+      style="flex:1"
+    >
+
+    <button
+      class="btn btn-primary"
+      onclick="saveSettingForm('POSITION')"
+    >
+      บันทึกตำแหน่ง
+    </button>
+
+    <button
+      class="btn btn-soft"
+      onclick="clearSettingForm('POSITION')"
+    >
+      ล้าง
+    </button>
+
+  </div>
+
+
+  <div
+    id="positionSettingList"
+    style="margin-top:18px"
+  ></div>
+
+</div>
+
+
 </div>
 
 
@@ -6464,8 +6543,10 @@ function updateAssignScope() {
 
   /*
    * TEAM:
-   * - TEAM ต้องเลือก
-   * - ตำแหน่งไม่ใช้
+   * TEAM ต้องเลือก
+   * ตำแหน่งเลือกเพิ่มได้
+   * - ไม่เลือกตำแหน่ง = ทุกตำแหน่งใน TEAM
+   * - เลือกตำแหน่ง = เฉพาะตำแหน่งนั้นใน TEAM
    */
   if (
     type === 'TEAM'
@@ -6476,11 +6557,7 @@ function updateAssignScope() {
 
 
     positionSelect.disabled =
-      true;
-
-
-    positionSelect.value =
-      '';
+      false;
 
 
     employeeBox.style.display =
@@ -6492,11 +6569,11 @@ function updateAssignScope() {
 
 
     positionHint.textContent =
-      'โหมด TEAM จะใช้กับทุกตำแหน่งใน TEAM';
+      'ไม่เลือก = ทุกตำแหน่งใน TEAM · เลือกได้หากต้องการจัดเฉพาะตำแหน่ง';
 
 
     positionSelect.style.opacity =
-      '.55';
+      '1';
 
 
     return;
@@ -6505,8 +6582,8 @@ function updateAssignScope() {
 
   /*
    * POSITION:
-   * - ตำแหน่งต้องเลือก
-   * - TEAM เลือกได้ ถ้าเว้นว่าง = ทุก TEAM
+   * ตำแหน่งต้องเลือก
+   * TEAM ไม่เลือก = ทุก TEAM
    */
   if (
     type === 'POSITION'
@@ -6525,7 +6602,7 @@ function updateAssignScope() {
 
 
     teamHint.textContent =
-      'เว้นว่าง = ใช้ตำแหน่งนี้ทุก TEAM';
+      'ไม่เลือก TEAM = ใช้ตำแหน่งนี้ทุก TEAM';
 
 
     positionHint.textContent =
@@ -6536,28 +6613,13 @@ function updateAssignScope() {
       '1';
 
 
-    /*
-     * ต้องมีตัวเลือก "ทุก TEAM"
-     */
-    if (
-      teamSelect.options.length &&
-      teamSelect.options[0].value !== ''
-    ) {
-
-      teamSelect.insertAdjacentHTML(
-        'afterbegin',
-        '<option value="">ทุก TEAM</option>'
-      );
-    }
-
-
     return;
   }
 
 
   /*
    * EMPLOYEE:
-   * - ใช้เฉพาะพนักงาน
+   * ใช้เฉพาะรายบุคคล
    */
   if (
     type === 'EMPLOYEE'
@@ -6599,7 +6661,7 @@ function updateAssignScope() {
 
 function saveAssignmentForm() {
 
-  const type =
+  const uiType =
     value(
       'assignScopeType'
     );
@@ -6623,6 +6685,10 @@ function saveAssignmentForm() {
     );
 
 
+  let scopeType =
+    uiType;
+
+
   let scopeValue =
     '';
 
@@ -6631,18 +6697,63 @@ function saveAssignmentForm() {
     '';
 
 
+  /*
+   * TEAM + ตำแหน่ง:
+   * Backend เก็บเป็น POSITION + teamFilter
+   * เพื่อให้ priority "รายบุคคล > ตำแหน่ง > TEAM" ทำงานเหมือนเดิม
+   */
   if (
-    type === 'TEAM'
+    uiType === 'TEAM'
   ) {
 
-    scopeValue =
-      selectedTeam;
+    if (!selectedTeam) {
+
+      return toast(
+        'กรุณาเลือก TEAM'
+      );
+    }
+
+
+    if (selectedPosition) {
+
+      scopeType =
+        'POSITION';
+
+
+      scopeValue =
+        selectedPosition;
+
+
+      teamFilter =
+        selectedTeam;
+
+    } else {
+
+      scopeType =
+        'TEAM';
+
+
+      scopeValue =
+        selectedTeam;
+    }
   }
 
 
   if (
-    type === 'POSITION'
+    uiType === 'POSITION'
   ) {
+
+    if (!selectedPosition) {
+
+      return toast(
+        'กรุณาเลือกตำแหน่ง'
+      );
+    }
+
+
+    scopeType =
+      'POSITION';
+
 
     scopeValue =
       selectedPosition;
@@ -6654,8 +6765,20 @@ function saveAssignmentForm() {
 
 
   if (
-    type === 'EMPLOYEE'
+    uiType === 'EMPLOYEE'
   ) {
+
+    if (!selectedEmployee) {
+
+      return toast(
+        'กรุณาเลือกพนักงาน'
+      );
+    }
+
+
+    scopeType =
+      'EMPLOYEE';
+
 
     scopeValue =
       selectedEmployee;
@@ -6665,7 +6788,7 @@ function saveAssignmentForm() {
   const data = {
 
     scopeType:
-      type,
+      scopeType,
 
     scopeValue:
       scopeValue,
@@ -6693,39 +6816,6 @@ function saveAssignmentForm() {
         'assignResetCycle'
       )?.checked === true
   };
-
-
-  if (
-    type === 'TEAM' &&
-    !selectedTeam
-  ) {
-
-    return toast(
-      'กรุณาเลือก TEAM'
-    );
-  }
-
-
-  if (
-    type === 'POSITION' &&
-    !selectedPosition
-  ) {
-
-    return toast(
-      'กรุณาเลือกตำแหน่ง'
-    );
-  }
-
-
-  if (
-    type === 'EMPLOYEE' &&
-    !selectedEmployee
-  ) {
-
-    return toast(
-      'กรุณาเลือกพนักงาน'
-    );
-  }
 
 
   if (
@@ -6757,9 +6847,7 @@ function saveAssignmentForm() {
           );
 
 
-        if (
-          resetBox
-        ) {
+        if (resetBox) {
 
           resetBox.checked =
             false;
@@ -9598,29 +9686,67 @@ function genderCount(
    SETTINGS
 ========================= */
 
+function getSettingFormFields(
+  type
+) {
+
+  const map = {
+
+    TEAM: {
+      idField:
+        'teamSettingId',
+
+      valueField:
+        'teamSettingValue'
+    },
+
+    BRANCH: {
+      idField:
+        'branchSettingId',
+
+      valueField:
+        'branchSettingValue'
+    },
+
+    POSITION: {
+      idField:
+        'positionSettingId',
+
+      valueField:
+        'positionSettingValue'
+    }
+  };
+
+
+  return map[
+    type
+  ] || null;
+}
+
+
 function saveSettingForm(
   type
 ) {
 
-  const isTeam =
-    type === 'TEAM';
+  const fields =
+    getSettingFormFields(
+      type
+    );
 
 
-  const idField =
-    isTeam
-      ? 'teamSettingId'
-      : 'branchSettingId';
+  if (!fields) {
 
-
-  const valueField =
-    isTeam
-      ? 'teamSettingValue'
-      : 'branchSettingValue';
+    return toast(
+      'ประเภทการตั้งค่าไม่ถูกต้อง'
+    );
+  }
 
 
   const settingValue =
-    value(valueField)
-      .trim();
+    value(
+      fields.valueField
+    )
+    .trim();
 
 
   if (!settingValue) {
@@ -9642,17 +9768,27 @@ function saveSettingForm(
         STATE.settings =
           res.settings;
 
+
         rebuildSettingsState();
 
-        clearSettingForm(type);
+
+        clearSettingForm(
+          type
+        );
+
 
         renderSettings();
 
+
         refreshAllDropdowns();
+
 
         setLoading(false);
 
-        toast(res.message);
+
+        toast(
+          res.message
+        );
       }
     )
 
@@ -9663,7 +9799,9 @@ function saveSettingForm(
     .saveSetting({
 
       settingId:
-        value(idField),
+        value(
+          fields.idField
+        ),
 
       type:
         type,
@@ -9687,35 +9825,32 @@ function editSetting(
       );
 
 
-  if (!setting) return;
-
-
-  if (
-    type === 'TEAM'
-  ) {
-
-    setValue(
-      'teamSettingId',
-      setting.settingId
-    );
-
-    setValue(
-      'teamSettingValue',
-      setting.value
-    );
-
-  } else {
-
-    setValue(
-      'branchSettingId',
-      setting.settingId
-    );
-
-    setValue(
-      'branchSettingValue',
-      setting.value
-    );
+  if (!setting) {
+    return;
   }
+
+
+  const fields =
+    getSettingFormFields(
+      type
+    );
+
+
+  if (!fields) {
+    return;
+  }
+
+
+  setValue(
+    fields.idField,
+    setting.settingId
+  );
+
+
+  setValue(
+    fields.valueField,
+    setting.value
+  );
 }
 
 
@@ -9723,32 +9858,27 @@ function clearSettingForm(
   type
 ) {
 
-  if (
-    type === 'TEAM'
-  ) {
-
-    setValue(
-      'teamSettingId',
-      ''
+  const fields =
+    getSettingFormFields(
+      type
     );
 
-    setValue(
-      'teamSettingValue',
-      ''
-    );
 
-  } else {
-
-    setValue(
-      'branchSettingId',
-      ''
-    );
-
-    setValue(
-      'branchSettingValue',
-      ''
-    );
+  if (!fields) {
+    return;
   }
+
+
+  setValue(
+    fields.idField,
+    ''
+  );
+
+
+  setValue(
+    fields.valueField,
+    ''
+  );
 }
 
 
@@ -9816,6 +9946,17 @@ function rebuildSettingsState() {
       .map(
         x => x.value
       );
+
+
+  STATE.positions =
+    STATE.settings
+      .filter(
+        x =>
+          x.type === 'POSITION'
+      )
+      .map(
+        x => x.value
+      );
 }
 
 
@@ -9826,9 +9967,16 @@ function renderSettings() {
     'teamSettingList'
   );
 
+
   renderSettingList(
     'BRANCH',
     'branchSettingList'
+  );
+
+
+  renderSettingList(
+    'POSITION',
+    'positionSettingList'
   );
 }
 
@@ -9869,7 +10017,9 @@ function renderSettingList(
           ${
             type === 'TEAM'
               ? '🟦'
-              : '💚'
+              : type === 'BRANCH'
+                ? '💚'
+                : '💜'
           }
           ${escapeHtml(x.value)}
         </div>
@@ -9895,6 +10045,64 @@ function renderSettingList(
       </div>
 
     `).join('')
+  );
+}
+
+
+
+function goToPositionUsage(
+  page
+) {
+
+  const button =
+    document.querySelector(
+      `[data-page="${page}"]`
+    );
+
+
+  openPage(
+    page,
+    button
+  );
+
+
+  setTimeout(
+    () => {
+
+      if (
+        page === 'employees'
+      ) {
+
+        document
+          .getElementById(
+            'empPosition'
+          )
+          ?.focus();
+      }
+
+
+      if (
+        page === 'assign'
+      ) {
+
+        setValue(
+          'assignScopeType',
+          'POSITION'
+        );
+
+
+        updateAssignScope();
+
+
+        document
+          .getElementById(
+            'assignPositionSelect'
+          )
+          ?.focus();
+      }
+
+    },
+    60
   );
 }
 

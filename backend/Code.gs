@@ -1204,7 +1204,7 @@ function ensureSystemReadyCached_() {
       .getScriptCache();
 
   const key =
-    'EMPLOYEE_CENTER_SYSTEM_READY_V1';
+    'EMPLOYEE_CENTER_SYSTEM_READY_V2';
 
 
   if (
@@ -1573,6 +1573,16 @@ function seedDefaultSettings_() {
     );
 
 
+  const positions =
+    rows.filter(
+      x =>
+        x.type === 'POSITION' &&
+        String(
+          x.active || 'TRUE'
+        ).toUpperCase() !== 'FALSE'
+    );
+
+
   if (!teams.length) {
 
     APP.DEFAULT_TEAMS
@@ -1617,6 +1627,29 @@ function seedDefaultSettings_() {
         }
       );
   }
+
+
+  if (!positions.length) {
+
+    APP.POSITIONS
+      .forEach(
+        (name, index) => {
+
+          sheet.appendRow([
+            'POSITION_' +
+              new Date().getTime() +
+              '_' +
+              index,
+            'POSITION',
+            name,
+            index + 1,
+            'TRUE',
+            now,
+            now
+          ]);
+        }
+      );
+  }
 }
 
 
@@ -1634,8 +1667,25 @@ function getAppData() {
 
 function getAppDataFast_() {
 
-  const settings =
+  let settings =
     getSettings_();
+
+
+  /*
+   * ระบบเก่าที่เพิ่งอัปเดตอาจยังไม่มี POSITION ใน DB_Settings
+   * เติมรายการตำแหน่งเดิมให้ครั้งแรกอัตโนมัติ แล้วโหลด settings ใหม่
+   */
+  if (
+    !settings.some(
+      x => x.type === 'POSITION'
+    )
+  ) {
+
+    seedDefaultSettings_();
+
+    settings =
+      getSettings_();
+  }
 
   const employees =
     getEmployees_();
@@ -1674,7 +1724,13 @@ function getAppDataFast_() {
       settings,
 
     positions:
-      APP.POSITIONS,
+      settings
+        .filter(
+          x => x.type === 'POSITION'
+        )
+        .map(
+          x => x.value
+        ),
 
     genders:
       APP.GENDERS,
@@ -3025,7 +3081,8 @@ function saveSetting(data) {
   if (
     ![
       'TEAM',
-      'BRANCH'
+      'BRANCH',
+      'POSITION'
     ].includes(type)
   ) {
 
@@ -3238,6 +3295,54 @@ function deleteSetting(
     throw new Error(
       'สาขานี้มีพนักงานใช้งานอยู่ จึงยังลบไม่ได้'
     );
+  }
+
+
+  if (
+    setting.type === 'POSITION' &&
+    employees.some(
+      e =>
+        e.position ===
+        setting.value
+    )
+  ) {
+
+    throw new Error(
+      'ตำแหน่งนี้มีพนักงานใช้งานอยู่ จึงยังลบไม่ได้'
+    );
+  }
+
+
+  if (
+    setting.type === 'POSITION'
+  ) {
+
+    const assignments =
+      getAssignments_();
+
+
+    const usedByAssignment =
+      assignments.some(
+        item =>
+          String(
+            item.active || 'TRUE'
+          ).toUpperCase() !== 'FALSE' &&
+          String(
+            item.scopeType || ''
+          ).toUpperCase() === 'POSITION' &&
+          String(
+            item.scopeValue || ''
+          ).trim() ===
+            setting.value
+      );
+
+
+    if (usedByAssignment) {
+
+      throw new Error(
+        'ตำแหน่งนี้ยังถูกใช้ในรายการจัดกะ จึงยังลบไม่ได้'
+      );
+    }
   }
 
 
