@@ -2055,32 +2055,71 @@ th:nth-child(2) {
 
   position:fixed;
 
-  right:22px;
-  bottom:22px;
+  left:50%;
+  top:50%;
 
-  z-index:9999;
+  right:auto;
+  bottom:auto;
 
-  max-width:420px;
+  z-index:10050;
 
-  min-width:250px;
+  min-width:280px;
+  max-width:min(520px,calc(100vw - 32px));
 
   padding:
-    13px 16px;
+    18px 22px;
 
-  border-radius:12px;
+  border:
+    1px solid
+    #dfe7ef;
 
-  background:#354052;
+  border-radius:18px;
 
-  color:#fff;
+  background:
+    rgba(255,255,255,.98);
+
+  color:#344054;
+
+  font-size:13px;
+
+  font-weight:900;
+
+  line-height:1.55;
+
+  text-align:center;
 
   opacity:0;
 
   pointer-events:none;
 
   transform:
-    translateY(12px);
+    translate(-50%,-44%)
+    scale(.94);
 
-  transition:.2s;
+  box-shadow:
+    0 22px 70px
+    rgba(55,65,81,.20);
+
+  backdrop-filter:
+    blur(12px);
+
+  transition:
+    opacity .18s ease,
+    transform .22s ease;
+}
+
+
+.toast::before {
+
+  content:'✅';
+
+  display:block;
+
+  margin-bottom:7px;
+
+  font-size:24px;
+
+  line-height:1;
 }
 
 
@@ -2089,7 +2128,59 @@ th:nth-child(2) {
   opacity:1;
 
   transform:
-    translateY(0);
+    translate(-50%,-50%)
+    scale(1);
+}
+
+
+.toast.toast-error {
+
+  border-color:#ffc4ca;
+
+  background:
+    rgba(255,247,248,.98);
+
+  color:#b54753;
+}
+
+
+.toast.toast-error::before {
+
+  content:'⚠️';
+}
+
+
+.toast.toast-warning {
+
+  border-color:#f2d48d;
+
+  background:
+    rgba(255,251,239,.98);
+
+  color:#9a6d16;
+}
+
+
+.toast.toast-warning::before {
+
+  content:'💡';
+}
+
+
+.toast.toast-info {
+
+  border-color:#c9dff5;
+
+  background:
+    rgba(247,251,255,.98);
+
+  color:#3f6f9f;
+}
+
+
+.toast.toast-info::before {
+
+  content:'ℹ️';
 }
 
 
@@ -7357,7 +7448,8 @@ function showCalendarLocalError(
   toast(
     error?.message ||
     String(error) ||
-    'เกิดข้อผิดพลาด'
+    'เกิดข้อผิดพลาด',
+    'error'
   );
 }
 
@@ -11221,7 +11313,10 @@ function emptyHtml(
 }
 
 
-function toast(message) {
+function toast(
+  message,
+  type
+) {
 
   const el =
     document
@@ -11230,13 +11325,120 @@ function toast(message) {
       );
 
 
+  if (!el) {
+    return;
+  }
+
+
+  const text =
+    String(
+      message ||
+      'ดำเนินการเรียบร้อย'
+    )
+    .trim();
+
+
+  /*
+   * ถ้า caller ไม่ได้ส่ง type มา
+   * ให้ระบบดูจากข้อความอัตโนมัติ
+   */
+  if (!type) {
+
+    if (
+      /ผิดพลาด|error|ไม่สามารถ|ล้มเหลว|ไม่สำเร็จ/i
+        .test(
+          text
+        )
+    ) {
+
+      type =
+        'error';
+
+    } else if (
+      /กรุณา|ยังไม่มี|ยังไม่ได้|ไม่พบ|ต้องเลือก|โปรด/i
+        .test(
+          text
+        )
+    ) {
+
+      type =
+        'warning';
+
+    } else if (
+      /กำลัง|ข้อมูล|อัปเดต/i
+        .test(
+          text
+        )
+    ) {
+
+      type =
+        'info';
+
+    } else {
+
+      type =
+        'success';
+    }
+  }
+
+
   el.textContent =
-    message ||
-    'สำเร็จ';
+    text;
 
 
   el.classList
-    .add('show');
+    .remove(
+      'toast-error',
+      'toast-warning',
+      'toast-info'
+    );
+
+
+  if (
+    type === 'error'
+  ) {
+
+    el.classList
+      .add(
+        'toast-error'
+      );
+
+  } else if (
+    type === 'warning'
+  ) {
+
+    el.classList
+      .add(
+        'toast-warning'
+      );
+
+  } else if (
+    type === 'info'
+  ) {
+
+    el.classList
+      .add(
+        'toast-info'
+      );
+  }
+
+
+  /*
+   * restart animation ทุกครั้ง
+   */
+  el.classList
+    .remove(
+      'show'
+    );
+
+
+  void el.offsetWidth;
+
+
+  el.classList
+    .add(
+      'show'
+    );
 
 
   clearTimeout(
@@ -11244,12 +11446,20 @@ function toast(message) {
   );
 
 
+  /*
+   * Popup หายเองหลัง 3 วินาที
+   */
   window.toastTimer =
     setTimeout(
-      () =>
+      () => {
+
         el.classList
-          .remove('show'),
-      2600
+          .remove(
+            'show'
+          );
+
+      },
+      3000
     );
 }
 

@@ -4582,6 +4582,223 @@ function sameAssignmentScope_(
 }
 
 
+/**
+ * ปิดรายการจัดกะ "อนาคต" ของ scope เดียวกัน
+ * เพื่อไม่ให้รายการเก่ากลับมาทับรายการใหม่
+ *
+ * ตัวอย่าง:
+ * เดิม TEAM B เริ่ม 26/08 = เช้า
+ * ใหม่ TEAM B เริ่ม 25/08 = ดึก
+ *
+ * เมื่อบันทึกรายการใหม่:
+ * - รายการ TEAM B วันที่ 26/08 เดิมจะถูกปิด
+ * - รายการเก่าที่เริ่มก่อน 25/08 ยังเก็บไว้สำหรับประวัติ
+ *
+ * Scope ต้องตรงกันทั้งหมด:
+ * scopeType + scopeValue + teamFilter
+ *
+ * ดังนั้น TEAM จะไม่ไปปิด POSITION
+ * และ POSITION จะไม่ไปปิด EMPLOYEE
+ */
+function supersedeFutureAssignments_(
+  newAssignment,
+  assignments
+) {
+
+  const newStart =
+    String(
+      newAssignment.startDate || ''
+    ).trim();
+
+
+  if (!newStart) {
+    return 0;
+  }
+
+
+  const futureIds =
+    assignments
+      .filter(
+        old => {
+
+          if (
+            String(
+              old.active || 'TRUE'
+            ).toUpperCase() === 'FALSE'
+          ) {
+            return false;
+          }
+
+
+          if (
+            !sameAssignmentScope_(
+              old,
+              newAssignment
+            )
+          ) {
+            return false;
+          }
+
+
+          const oldStart =
+            String(
+              old.startDate || ''
+            ).trim();
+
+
+          if (!oldStart) {
+            return false;
+          }
+
+
+          return (
+            oldStart >=
+            newStart
+          );
+        }
+      )
+      .map(
+        old =>
+          String(
+            old.assignmentId || ''
+          ).trim()
+      )
+      .filter(Boolean);
+
+
+  if (
+    !futureIds.length
+  ) {
+    return 0;
+  }
+
+
+  const idSet =
+    new Set(
+      futureIds
+    );
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.ASSIGNMENTS
+      );
+
+
+  const rows =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  if (
+    rows.length < 2
+  ) {
+    return 0;
+  }
+
+
+  const headers =
+    rows[0]
+      .map(
+        value =>
+          String(
+            value || ''
+          ).trim()
+      );
+
+
+  const idIndex =
+    headers.indexOf(
+      'assignmentId'
+    );
+
+
+  const activeIndex =
+    headers.indexOf(
+      'active'
+    );
+
+
+  const updatedIndex =
+    headers.indexOf(
+      'updatedAt'
+    );
+
+
+  if (
+    idIndex < 0 ||
+    activeIndex < 0
+  ) {
+
+    throw new Error(
+      'โครงสร้าง DB_Assignments ไม่ครบ'
+    );
+  }
+
+
+  const now =
+    nowText_();
+
+
+  let count = 0;
+
+
+  for (
+    let r = 1;
+    r < rows.length;
+    r++
+  ) {
+
+    const assignmentId =
+      String(
+        rows[r][idIndex] || ''
+      ).trim();
+
+
+    if (
+      !idSet.has(
+        assignmentId
+      )
+    ) {
+      continue;
+    }
+
+
+    sheet
+      .getRange(
+        r + 1,
+        activeIndex + 1
+      )
+      .setValue(
+        'FALSE'
+      );
+
+
+    if (
+      updatedIndex >= 0
+    ) {
+
+      sheet
+        .getRange(
+          r + 1,
+          updatedIndex + 1
+        )
+        .setValue(
+          now
+        );
+    }
+
+
+    count++;
+  }
+
+
+  return count;
+}
+
+
 function appendObjectRow_(
   sheetName,
   object
@@ -4854,6 +5071,16 @@ function saveAssignment(data) {
   }
 
 
+  /*
+   * รายการใหม่ต้องชนะรายการอนาคตเดิมของ scope เดียวกัน
+   */
+  const supersededCount =
+    supersedeFutureAssignments_(
+      newAssignment,
+      assignments
+    );
+
+
   appendObjectRow_(
     APP.SHEETS.ASSIGNMENTS,
     newAssignment
@@ -4863,6 +5090,9 @@ function saveAssignment(data) {
   return {
 
     ok: true,
+
+    supersededCount:
+      supersededCount,
 
     message:
       resetCycle
