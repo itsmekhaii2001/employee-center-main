@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 
 <head>
@@ -3584,29 +3584,7 @@ th:nth-child(2) {
 </div>
 
 
-<div
-  class="card"
-  style="margin-top:18px"
->
 
-  <div class="section-title">
-
-    <div>
-
-      <h2>
-        ประวัติการจัดกะ
-      </h2>
-
-    </div>
-
-  </div>
-
-  <div
-    class="table-wrap"
-    id="assignmentTable"
-  ></div>
-
-</div>
 
 
 </section>
@@ -3849,7 +3827,7 @@ th:nth-child(2) {
     <div>
 
       <h2>
-        🕘 ประวัติการแก้กะ
+        🕘 ประวัติการแก้กะรายบุคคล
       </h2>
 
       <p>
@@ -3973,6 +3951,34 @@ th:nth-child(2) {
 
 </div>
 
+
+<div
+  class="card"
+  style="margin-top:18px"
+>
+
+  <div class="section-title">
+
+    <div>
+
+      <h2>
+        📋 ประวัติการจัดกะ
+      </h2>
+
+      <p>
+        ดูรายการที่เคยนำเซตกะไปใช้กับ TEAM ตำแหน่ง หรือพนักงาน รวมทั้งรายการที่ปิดแล้ว
+      </p>
+
+    </div>
+
+  </div>
+
+  <div
+    class="table-wrap"
+    id="assignmentTable"
+  ></div>
+
+</div>
 
 </section>
 
@@ -4452,8 +4458,8 @@ const PAGE_META = {
   ],
 
   shiftHistory: [
-    'ประวัติการแก้กะ',
-    'ตรวจสอบการเปลี่ยนกะรายบุคคลย้อนหลัง'
+    'ประวัติแก้กะ',
+    'รวมประวัติการจัดกะและการแก้กะรายบุคคล'
   ]
 };
 
@@ -4903,6 +4909,13 @@ if (
   if (
     page === 'shiftHistory'
   ) {
+
+    /*
+     * หน้านี้รวมทั้ง:
+     * - ประวัติการจัดกะ
+     * - ประวัติการแก้กะรายบุคคล
+     */
+    renderAssignments();
 
     loadShiftHistory();
   }
