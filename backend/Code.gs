@@ -4602,7 +4602,8 @@ function sameAssignmentScope_(
  */
 function supersedeFutureAssignments_(
   newAssignment,
-  assignments
+  assignments,
+  excludeAssignmentId
 ) {
 
   const newStart =
@@ -4625,6 +4626,19 @@ function supersedeFutureAssignments_(
             String(
               old.active || 'TRUE'
             ).toUpperCase() === 'FALSE'
+          ) {
+            return false;
+          }
+
+
+          if (
+            excludeAssignmentId &&
+            String(
+              old.assignmentId || ''
+            ).trim() ===
+              String(
+                excludeAssignmentId
+              ).trim()
           ) {
             return false;
           }
@@ -4855,24 +4869,23 @@ function saveAssignment(data) {
   const now =
     nowText_();
 
+
   const startDate =
     String(
       data.startDate || ''
     ).trim();
 
-  const resetCycle =
-    data.resetCycle === true ||
-    String(
-      data.resetCycle || ''
-    ).toUpperCase() === 'TRUE';
-
 
   const setMap = {};
+
 
   getShiftSets_()
     .forEach(
       set => {
-        setMap[set.setId] = set;
+
+        setMap[
+          set.setId
+        ] = set;
       }
     );
 
@@ -4884,46 +4897,77 @@ function saveAssignment(data) {
       )
     ];
 
+
   if (!selectedSet) {
+
     throw new Error(
       'ไม่พบเซตกะที่เลือก'
     );
   }
 
 
+  /*
+   * กติกาหลัก:
+   *
+   * วันที่เริ่มใช้เซต = วันแรกของ Cycle ใหม่เสมอ
+   *
+   * ตัวอย่าง 10 ทำ / 5 หยุด
+   * เริ่ม 25/08:
+   * 25/08 - 03/09 = ทำงาน 10 วัน
+   * 04/09 - 08/09 = หยุด 5 วัน
+   * แล้ววนต่อไปเรื่อย ๆ
+   *
+   * รอบ 26-25 มีไว้ "แสดงผล" เท่านั้น
+   * ไม่มีสิทธิ์รีเซ็ต Cycle
+   */
   const newAssignment = {
 
     assignmentId:
       'ASN_' +
-      new Date().getTime(),
+      new Date().getTime() +
+      '_' +
+      Utilities.getUuid()
+        .slice(
+          0,
+          8
+        ),
 
     scopeType:
       String(
         data.scopeType
-      ),
+      )
+      .trim()
+      .toUpperCase(),
 
     scopeValue:
       String(
         data.scopeValue
-      ),
+      )
+      .trim(),
 
     teamFilter:
       String(
         data.teamFilter || ''
-      ),
+      )
+      .trim(),
 
     setId:
       String(
         data.setId
-      ),
+      )
+      .trim(),
 
     startDate:
       startDate,
 
     startShift:
       String(
-        data.startShift || ''
-      ),
+        data.startShift ||
+        selectedSet.startShift ||
+        'MORNING'
+      )
+      .trim()
+      .toUpperCase(),
 
     active:
       'TRUE',
@@ -4931,13 +4975,15 @@ function saveAssignment(data) {
     createdAt:
       now,
 
+    /*
+     * สำคัญ:
+     * ใช้วันที่ที่เลือกเป็น Anchor ของ 10/5 โดยตรง
+     */
     cycleStartDate:
-      '',
+      startDate,
 
     cycleReset:
-      resetCycle
-        ? 'TRUE'
-        : 'FALSE',
+      'TRUE',
 
     updatedAt:
       now
@@ -4949,130 +4995,15 @@ function saveAssignment(data) {
 
 
   /*
-   * กันการกดบันทึกรายการเดิมซ้ำแบบไม่ตั้งใจ
-   */
-  const exactDuplicate =
-    assignments.find(
-      old =>
-        String(
-          old.active || 'TRUE'
-        ).toUpperCase() !== 'FALSE' &&
-        sameAssignmentScope_(
-          old,
-          newAssignment
-        ) &&
-        String(old.setId) ===
-          String(newAssignment.setId) &&
-        String(old.startDate) ===
-          String(newAssignment.startDate) &&
-        String(old.startShift || '') ===
-          String(newAssignment.startShift || '')
-    );
-
-
-  if (exactDuplicate) {
-
-    return {
-
-      ok: true,
-
-      message:
-        'รายการนี้มีอยู่แล้ว ไม่ได้สร้างซ้ำ',
-
-      assignments:
-        getAssignments_()
-    };
-  }
-
-
-  const selectedCycleKey =
-    getAssignmentCycleKey_(
-      newAssignment,
-      selectedSet
-    );
-
-
-  const previousCompatible =
-    assignments
-      .filter(
-        old => {
-
-          if (
-            !sameAssignmentScope_(
-              old,
-              newAssignment
-            )
-          ) {
-            return false;
-          }
-
-          if (
-            !old.startDate ||
-            old.startDate > startDate
-          ) {
-            return false;
-          }
-
-          const oldSet =
-            setMap[old.setId] || {};
-
-          return (
-            getAssignmentCycleKey_(
-              old,
-              oldSet
-            ) ===
-            selectedCycleKey
-          );
-        }
-      )
-      .sort(
-        (a, b) => {
-
-          const dateCompare =
-            String(
-              b.startDate || ''
-            ).localeCompare(
-              String(
-                a.startDate || ''
-              )
-            );
-
-          if (dateCompare !== 0) {
-            return dateCompare;
-          }
-
-          return String(
-            b.createdAt || ''
-          ).localeCompare(
-            String(
-              a.createdAt || ''
-            )
-          );
-        }
-      )[0];
-
-
-  if (
-    resetCycle ||
-    !previousCompatible
-  ) {
-
-    newAssignment.cycleStartDate =
-      startDate;
-
-  } else {
-
-    newAssignment.cycleStartDate =
-      String(
-        previousCompatible.cycleStartDate ||
-        previousCompatible.startDate ||
-        startDate
-      );
-  }
-
-
-  /*
-   * รายการใหม่ต้องชนะรายการอนาคตเดิมของ scope เดียวกัน
+   * ถ้ามีรายการ scope เดียวกันที่เริ่ม "วันเดียวกันหรือหลังจากนี้"
+   * ให้ปิดก่อน เพื่อไม่ให้ของเก่ากลับมาทับของใหม่
+   *
+   * ตัวอย่าง:
+   * เดิม TEAM B 26/08 = เช้า
+   * ใหม่ TEAM B 25/08 = ดึก
+   *
+   * 26/08 เดิมจะถูกปิด
+   * แล้ว 25/08 ดึกจะวิ่งต่อเนื่องตาม 10/5
    */
   const supersededCount =
     supersedeFutureAssignments_(
@@ -5089,24 +5020,24 @@ function saveAssignment(data) {
 
   return {
 
-    ok: true,
+    ok:
+      true,
 
     supersededCount:
       supersededCount,
 
     message:
-      resetCycle
-        ? 'นำเซตกะไปใช้แล้ว และเริ่มนับ Cycle ใหม่จาก ' +
-          formatThaiDateServer_(startDate)
-        : previousCompatible
-          ? 'นำเซตกะไปใช้แล้ว · รอบทำงาน/หยุดนับต่อเนื่องจาก ' +
-            formatThaiDateServer_(
-              newAssignment.cycleStartDate
-            )
-          : 'นำเซตกะไปใช้แล้ว · เริ่ม Cycle ครั้งแรกจาก ' +
-            formatThaiDateServer_(
-              newAssignment.cycleStartDate
-            ),
+      'จัดกะเรียบร้อย · เริ่ม Cycle 10/5 จาก ' +
+      formatThaiDateServer_(
+        startDate
+      ) +
+      (
+        supersededCount
+          ? ' · ปิดรายการเดิมที่ทับ ' +
+            supersededCount +
+            ' รายการ'
+          : ''
+      ),
 
     assignments:
       getAssignments_()
@@ -8157,131 +8088,15 @@ function resolveCycleStartDate_(
   setMap
 ) {
 
-  const ownCycleStart =
-    String(
-      assignment.cycleStartDate ||
-      assignment.startDate ||
-      ''
-    ).trim();
-
-  const ownReset =
-    assignment.cycleReset === true ||
-    String(
-      assignment.cycleReset || ''
-    ).toUpperCase() === 'TRUE';
-
-
-  if (
-    ownReset ||
-    assignment.scopeType === 'TEAM'
-  ) {
-    return ownCycleStart;
-  }
-
-
-  const workDays =
-    Math.max(
-      1,
-      Number(
-        set.workDays || 10
-      )
-    );
-
-  const offDays =
-    Math.max(
-      0,
-      Number(
-        set.offDays || 5
-      )
-    );
-
-
-  const teamCandidates =
-    assignments
-      .filter(
-        candidate => {
-
-          if (
-            String(
-              candidate.active || 'TRUE'
-            ).toUpperCase() === 'FALSE'
-          ) {
-            return false;
-          }
-
-          if (
-            candidate.scopeType !== 'TEAM' ||
-            candidate.scopeValue !== employee.team ||
-            !candidate.startDate ||
-            candidate.startDate > date
-          ) {
-            return false;
-          }
-
-          const teamSet =
-            setMap[candidate.setId];
-
-          if (!teamSet) {
-            return false;
-          }
-
-          return (
-            Math.max(
-              1,
-              Number(
-                teamSet.workDays || 10
-              )
-            ) === workDays
-
-            &&
-
-            Math.max(
-              0,
-              Number(
-                teamSet.offDays || 5
-              )
-            ) === offDays
-          );
-        }
-      )
-      .sort(
-        (a, b) => {
-
-          const dateCompare =
-            String(
-              b.startDate || ''
-            ).localeCompare(
-              String(
-                a.startDate || ''
-              )
-            );
-
-          if (dateCompare !== 0) {
-            return dateCompare;
-          }
-
-          return String(
-            b.createdAt || ''
-          ).localeCompare(
-            String(
-              a.createdAt || ''
-            )
-          );
-        }
-      );
-
-
-  if (teamCandidates.length) {
-
-    return String(
-      teamCandidates[0].cycleStartDate ||
-      teamCandidates[0].startDate ||
-      ownCycleStart
-    ).trim();
-  }
-
-
-  return ownCycleStart;
+  /*
+   * ไม่มีการ inherit Cycle จากเดือน/TEAM/Assignment เก่า
+   * วันที่เริ่มใช้ที่เลือกตอนจัดกะ คือ Anchor ของ Cycle นี้
+   */
+  return String(
+    assignment.cycleStartDate ||
+    assignment.startDate ||
+    ''
+  ).trim();
 }
 
 

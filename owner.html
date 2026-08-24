@@ -3574,80 +3574,34 @@ th:nth-child(2) {
           line-height:1.5;
         "
       >
-        วันที่นี้ไม่ได้รีเซ็ต 10/5 อัตโนมัติ
+        วันนี้คือวันแรกของ Cycle 10/5
       </div>
 
     </div>
 
 
-    <div class="field">
+    <div
+      class="field"
+      style="grid-column:span 2"
+    >
 
-      <label>
-        กะเริ่มต้น
-      </label>
-
-      <select
-        id="assignStartShift"
-      >
-
-        <option value="">
-          ตามเซตกะ
-        </option>
-
-        <option value="MORNING">
-          ☀️ เช้า
-        </option>
-
-        <option value="NIGHT">
-          🌙 ดึก
-        </option>
-
-      </select>
-
-    </div>
-
-
-    <div class="field span-2">
-
-      <label
+      <div
         style="
-          display:flex;
-          align-items:flex-start;
-          gap:9px;
-          padding:11px 12px;
-          border:1px solid var(--border);
-          border-radius:11px;
-          background:#fafbfc;
-          cursor:pointer;
+          min-height:72px;
+          padding:14px 16px;
+          border:1px solid #cfe7f6;
+          border-radius:12px;
+          background:linear-gradient(135deg,#eef9ff,#f5f1ff);
+          color:#5f6f88;
+          font-size:11px;
+          line-height:1.6;
+          font-weight:750;
         "
       >
-        <input
-          id="assignResetCycle"
-          type="checkbox"
-          style="
-            width:18px;
-            height:18px;
-            margin-top:1px;
-            flex:0 0 auto;
-          "
-        >
-
-        <span>
-          <strong>🔄 เริ่มนับ 10/5 ใหม่จากวันที่นี้</strong>
-          <span
-            style="
-              display:block;
-              margin-top:3px;
-              color:#8a94a4;
-              font-size:10px;
-              font-weight:500;
-              line-height:1.5;
-            "
-          >
-            ปกติไม่ต้องติ๊ก ระบบจะนับทำงาน/หยุดต่อเนื่องจาก Cycle เดิม
-          </span>
-        </span>
-      </label>
+        🔁 <b>วันที่เริ่มใช้เซต = วันแรกของ Cycle</b><br>
+        ระบบจะนับ <b>ทำงาน 10 วัน → หยุด 5 วัน</b> ต่อเนื่องจากวันที่นี้ไปเรื่อย ๆ
+        และจะไม่เริ่มใหม่เมื่อเปลี่ยนรอบ 26–25
+      </div>
 
     </div>
 
@@ -4620,15 +4574,6 @@ function initializeUI() {
     'assignStartDate',
     STATE.today
   );
-
-  const resetCycleBox =
-    document.getElementById(
-      'assignResetCycle'
-    );
-
-  if (resetCycleBox) {
-    resetCycleBox.checked = false;
-  }
 
   setValue(
     'calendarAnchor',
@@ -7013,9 +6958,7 @@ function saveAssignmentForm() {
       ),
 
     resetCycle:
-      document.getElementById(
-        'assignResetCycle'
-      )?.checked === true
+      true
   };
 
 
@@ -7040,22 +6983,7 @@ function saveAssignmentForm() {
 
         STATE.assignments =
           res.assignments;
-
-
-        const resetBox =
-          document.getElementById(
-            'assignResetCycle'
-          );
-
-
-        if (resetBox) {
-
-          resetBox.checked =
-            false;
-        }
-
-
-        renderAssignments();
+renderAssignments();
 
 
         refreshDashboard();
