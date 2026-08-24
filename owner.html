@@ -3823,7 +3823,7 @@ th:nth-child(2) {
       </h2>
 
       <p>
-        รวมกำลังคน เพศ TEAM และกะตามวันที่
+        รวมกำลังคน เพศ TEAM และกะ โดยอ้างอิงวันที่มุมขวาบน
       </p>
 
     </div>
@@ -3831,20 +3831,35 @@ th:nth-child(2) {
   </div>
 
 
-  <div class="actions">
+  <div
+    class="actions"
+    style="
+      align-items:center;
+      justify-content:flex-start;
+    "
+  >
 
-    <input
-      id="manpowerDate"
-      type="date"
-      style="max-width:220px"
+    <div
+      style="
+        padding:10px 14px;
+        border:1px solid #dfe7ef;
+        border-radius:12px;
+        background:#f8fbff;
+        color:#667085;
+        font-size:11px;
+        font-weight:800;
+      "
     >
-
-    <button
-      class="btn btn-primary"
-      onclick="loadManpower()"
-    >
-      คำนวณ
-    </button>
+      📅 กำลังคำนวณตามวันที่
+      <span
+        id="manpowerReferenceDate"
+        style="
+          color:#3f8f68;
+          font-weight:950;
+        "
+      ></span>
+      ที่แสดงมุมขวาบน
+    </div>
 
   </div>
 
@@ -4245,13 +4260,21 @@ function loadApp() {
 
 function initializeUI() {
 
-  document.getElementById(
-    'todayBadge'
-  ).textContent =
+  const todayBadge =
+    document.getElementById(
+      'todayBadge'
+    );
+
+
+  todayBadge.textContent =
     '📅 ' +
     formatThaiDate(
       STATE.today
     );
+
+
+  todayBadge.title =
+    'วันที่อ้างอิงของระบบ';
 
 
   setValue(
@@ -4272,12 +4295,6 @@ function initializeUI() {
     'calendarAnchor',
     STATE.today
   );
-
-  setValue(
-    'manpowerDate',
-    STATE.today
-  );
-
 
   if (STATE.round) {
 
@@ -8690,17 +8707,26 @@ function renderSchedule(data) {
 
 function loadManpower() {
 
+  /*
+   * หน้า "กำลังคน" ใช้วันที่อ้างอิงเดียวกับ Badge มุมขวาบน
+   * ไม่ต้องเลือกวันที่ซ้ำในหน้า
+   */
   const date =
-    value(
-      'manpowerDate'
+    STATE.today;
+
+
+  const refBox =
+    document.getElementById(
+      'manpowerReferenceDate'
     );
 
 
-  if (!date) {
+  if (refBox) {
 
-    return toast(
-      'กรุณาเลือกวันที่'
-    );
+    refBox.textContent =
+      formatThaiDate(
+        date
+      );
   }
 
 
@@ -8724,12 +8750,20 @@ function loadManpower() {
           data
         );
 
+
         setLoading(false);
       }
     )
 
     .withFailureHandler(
-      showServerError
+      err => {
+
+        setLoading(false);
+
+        showServerError(
+          err
+        );
+      }
     )
 
     .getManpower(date);
