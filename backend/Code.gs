@@ -3830,7 +3830,7 @@ function deleteShiftSet(
 
 
 /* =========================================================
-   TEAM PLANNER — ตารางกะหลัก TEAM A / B / C
+   TEAM PLANNER — แบบร่างเปรียบเทียบ TEAM A / B / C
 ========================================================= */
 
 function getTeamPlanner(request) {
@@ -3888,7 +3888,7 @@ function saveTeamPlanner(request) {
   if (rows.length) sheet.getRange(2,1,rows.length,6).setValues(rows);
 
   const planner = getTeamPlanner({anchorDate:String(request?.anchorDate || todayText_())});
-  return {ok:true,message:'บันทึกตาราง TEAM A / B / C แล้ว และนำไปใช้กับตารางกะจริง',planner:planner};
+  return {ok:true,message:'บันทึกแบบร่าง TEAM A / B / C แล้ว',planner:planner};
 }
 
 function getTeamPlannerMap_() {
@@ -3948,520 +3948,6 @@ function sanitizePlannerOverrides_(input) {
   });
   return result;
 }
-
-
-
-/* =========================================================
-   TEAM PLANNER → EFFECTIVE SCHEDULE
-
-   ลำดับความสำคัญ:
-   1) แก้กะรายบุคคลรายวัน (DB_ShiftOverrides)
-   2) ตาราง TEAM ที่บันทึกไว้ใน DB_TeamPlanner
-      - เป็นตัวกำหนด "ทำงาน / หยุด / ไม่มีกะ" ของทั้ง TEAM
-   3) Assignment แบบ POSITION / EMPLOYEE
-      - ถ้าวัน TEAM เป็นวันทำงาน สามารถกำหนดเช้า/ดึกเฉพาะตำแหน่ง/บุคคลได้
-   4) ถ้า TEAM ยังไม่มี Planner ที่บันทึกไว้ → ใช้ Assignment เดิมตามปกติ
-========================================================= */
-
-function getEffectiveTeamPlannerMap_(
-  setMap
-) {
-
-  const savedMap =
-    getTeamPlannerMap_();
-
-
-  const result = {};
-
-
-  Object
-    .entries(
-      savedMap
-    )
-    .forEach(
-      (
-        [team, row]
-      ) => {
-
-        const setId =
-          String(
-            row.setId || ''
-          ).trim();
-
-
-        const cycleStartDate =
-          String(
-            row.cycleStartDate || ''
-          ).trim();
-
-
-        const set =
-          setMap[
-            setId
-          ];
-
-
-        if (
-          !team ||
-          !set ||
-          !cycleStartDate
-        ) {
-          return;
-        }
-
-
-        result[
-          team
-        ] = {
-
-          team:
-            team,
-
-          setId:
-            setId,
-
-          set:
-            set,
-
-          cycleStartDate:
-            cycleStartDate,
-
-          startShift:
-            String(
-              row.startShift ||
-              set.startShift ||
-              'MORNING'
-            )
-            .trim()
-            .toUpperCase(),
-
-          overrides:
-            parsePlannerOverrides_(
-              row.overridesJson
-            )
-        };
-      }
-    );
-
-
-  return result;
-}
-
-
-function resolveEffectiveTeamPlannerShift_(
-  employee,
-  date,
-  teamPlannerMap
-) {
-
-  if (
-    !teamPlannerMap
-  ) {
-    return null;
-  }
-
-
-  const planner =
-    teamPlannerMap[
-      employee.team
-    ];
-
-
-  if (!planner) {
-    return null;
-  }
-
-
-  const override =
-    String(
-      planner.overrides?.[
-        date
-      ] || ''
-    )
-    .trim()
-    .toUpperCase();
-
-
-  const isOverride =
-    [
-      'MORNING',
-      'NIGHT',
-      'OFF',
-      'UNSET'
-    ].includes(
-      override
-    );
-
-
-  const shift =
-    isOverride
-      ? override
-      : calculateTeamPlannerShift_(
-          planner.set,
-          planner.cycleStartDate,
-          date,
-          planner.startShift
-        );
-
-
-  return {
-
-    shift:
-      shift,
-
-    source:
-      isOverride
-        ? 'TEAM_PLANNER_OVERRIDE'
-        : 'TEAM_PLANNER',
-
-    setName:
-      planner.set.setName || ''
-  };
-}
-
-
-/**
- * กำหนดเฉพาะเช้า/ดึกของ Assignment ระดับ POSITION/EMPLOYEE
- * โดยไม่ให้วันหยุดของ Assignment ไปทับวันทำงาน/วันหยุดของ TEAM Planner
- */
-function calculateSpecificAssignmentWorkShift_(
-  employee,
-  date,
-  assignment,
-  setMap,
-  assignments
-) {
-
-  if (
-    !assignment ||
-    ![
-      'POSITION',
-      'EMPLOYEE'
-    ].includes(
-      assignment.scopeType
-    )
-  ) {
-    return null;
-  }
-
-
-  const set =
-    setMap[
-      assignment.setId
-    ];
-
-
-  if (!set) {
-    return null;
-  }
-
-
-  const baseShift =
-    String(
-      assignment.startShift ||
-      set.startShift ||
-      'MORNING'
-    )
-    .trim()
-    .toUpperCase();
-
-
-  let shift =
-    String(
-      set.fixedShift ||
-      baseShift
-    )
-    .trim()
-    .toUpperCase();
-
-
-  if (
-    set.alternate
-  ) {
-
-    const cycleStartDate =
-      resolveCycleStartDate_(
-        employee,
-        date,
-        assignment,
-        set,
-        assignments,
-        setMap
-      );
-
-
-    const diff =
-      dayDiff_(
-        cycleStartDate,
-        date
-      );
-
-
-    if (
-      diff >= 0
-    ) {
-
-      const workDays =
-        Math.max(
-          1,
-          Number(
-            set.workDays || 10
-          )
-        );
-
-
-      const offDays =
-        Math.max(
-          0,
-          Number(
-            set.offDays || 5
-          )
-        );
-
-
-      const cycleLength =
-        Math.max(
-          1,
-          workDays +
-          offDays
-        );
-
-
-      const cycleIndex =
-        Math.floor(
-          diff /
-          cycleLength
-        );
-
-
-      shift =
-        cycleIndex % 2 === 1
-          ? baseShift === 'MORNING'
-            ? 'NIGHT'
-            : 'MORNING'
-          : baseShift;
-    }
-  }
-
-
-  if (
-    ![
-      'MORNING',
-      'NIGHT'
-    ].includes(
-      shift
-    )
-  ) {
-
-    shift =
-      baseShift === 'NIGHT'
-        ? 'NIGHT'
-        : 'MORNING';
-  }
-
-
-  return {
-
-    shift:
-      shift,
-
-    source:
-      assignment.scopeType,
-
-    setName:
-      set.setName || ''
-  };
-}
-
-
-function calculateAssignmentShiftOnly_(
-  employee,
-  date,
-  assignment,
-  setMap,
-  assignments
-) {
-
-  if (!assignment) {
-
-    return {
-      shift:
-        'UNSET',
-
-      source:
-        'NONE',
-
-      setName:
-        ''
-    };
-  }
-
-
-  const set =
-    setMap[
-      assignment.setId
-    ];
-
-
-  if (!set) {
-
-    return {
-      shift:
-        'UNSET',
-
-      source:
-        'NONE',
-
-      setName:
-        ''
-    };
-  }
-
-
-  const cycleStartDate =
-    resolveCycleStartDate_(
-      employee,
-      date,
-      assignment,
-      set,
-      assignments,
-      setMap
-    );
-
-
-  const diff =
-    dayDiff_(
-      cycleStartDate,
-      date
-    );
-
-
-  if (
-    diff < 0
-  ) {
-
-    return {
-      shift:
-        'UNSET',
-
-      source:
-        'NONE',
-
-      setName:
-        ''
-    };
-  }
-
-
-  const workDays =
-    Math.max(
-      1,
-      Number(
-        set.workDays || 10
-      )
-    );
-
-
-  const offDays =
-    Math.max(
-      0,
-      Number(
-        set.offDays || 5
-      )
-    );
-
-
-  const cycleLength =
-    Math.max(
-      1,
-      workDays +
-      offDays
-    );
-
-
-  const cycleIndex =
-    Math.floor(
-      diff /
-      cycleLength
-    );
-
-
-  const dayInCycle =
-    diff %
-    cycleLength;
-
-
-  if (
-    dayInCycle >=
-    workDays
-  ) {
-
-    return {
-      shift:
-        'OFF',
-
-      source:
-        assignment.scopeType,
-
-      setName:
-        set.setName
-    };
-  }
-
-
-  const baseShift =
-    String(
-      assignment.startShift ||
-      set.startShift ||
-      'MORNING'
-    )
-    .trim()
-    .toUpperCase();
-
-
-  let shift =
-    baseShift;
-
-
-  if (
-    set.alternate
-  ) {
-
-    if (
-      cycleIndex % 2 === 1
-    ) {
-
-      shift =
-        baseShift === 'MORNING'
-          ? 'NIGHT'
-          : 'MORNING';
-    }
-
-  } else {
-
-    shift =
-      String(
-        set.fixedShift ||
-        baseShift
-      )
-      .trim()
-      .toUpperCase();
-  }
-
-
-  return {
-
-    shift:
-      shift,
-
-    source:
-      assignment.scopeType,
-
-    setName:
-      set.setName
-  };
-}
-
 
 
 /* =========================================================
@@ -5255,12 +4741,6 @@ function getEmployeeCalendar(
     getAssignments_();
 
 
-  const teamPlannerMap =
-    getEffectiveTeamPlannerMap_(
-      setMap
-    );
-
-
   const overrides =
     getOverrideMap_(
       range.from,
@@ -5278,8 +4758,7 @@ function getEmployeeCalendar(
             date,
             setMap,
             assignments,
-            overrides,
-            teamPlannerMap
+            overrides
           );
 
 
@@ -5289,8 +4768,7 @@ function getEmployeeCalendar(
             date,
             setMap,
             assignments,
-            {},
-            teamPlannerMap
+            {}
           );
 
 
@@ -5521,12 +4999,6 @@ function saveShiftOverridesBatch(
       getAssignments_();
 
 
-    const teamPlannerMap =
-      getEffectiveTeamPlannerMap_(
-        setMap
-      );
-
-
     /*
      * อ่าน DB_ShiftOverrides เพียง 1 ครั้ง
      * แล้วแก้เฉพาะแถวที่เกี่ยวข้อง
@@ -5622,8 +5094,7 @@ function saveShiftOverridesBatch(
             date,
             setMap,
             assignments,
-            {},
-            teamPlannerMap
+            {}
           );
 
 
@@ -7126,12 +6597,6 @@ function getScheduleInternal_(
     getAssignments_();
 
 
-  const teamPlannerMap =
-    getEffectiveTeamPlannerMap_(
-      setMap
-    );
-
-
   const overrides =
     getOverrideMap_(
       from,
@@ -7171,8 +6636,7 @@ function getScheduleInternal_(
                   date,
                   setMap,
                   assignments,
-                  overrides,
-                  teamPlannerMap
+                  overrides
                 );
 
 
@@ -7485,16 +6949,15 @@ function getEmployeePublicSchedule(query, anchorDate) {
   const setMap = {};
   getShiftSets_().forEach(set => setMap[set.setId] = set);
   const assignments = getAssignments_();
-  const teamPlannerMap = getEffectiveTeamPlannerMap_(setMap);
   const overrides = getOverrideMap_(range.from, range.to);
 
   const days = dates.map(date => {
-    const result = calculateEmployeeShift_(employee,date,setMap,assignments,overrides,teamPlannerMap);
+    const result = calculateEmployeeShift_(employee,date,setMap,assignments,overrides);
     return {date:date, shift:result.shift};
   });
 
   const todayResult = calculateEmployeeShift_(
-    employee,today,setMap,assignments,getOverrideMap_(today,today),teamPlannerMap
+    employee,today,setMap,assignments,getOverrideMap_(today,today)
   );
 
   return {
@@ -7887,13 +7350,9 @@ function calculateEmployeeShift_(
   date,
   setMap,
   assignments,
-  overrideMap,
-  teamPlannerMap
+  overrideMap
 ) {
 
-  /*
-   * 1) รายบุคคลรายวัน สูงสุด
-   */
   const overrideKey =
     employee.employeeId +
     '|' +
@@ -7902,12 +7361,8 @@ function calculateEmployeeShift_(
 
   const overrideRow =
     overrideMap &&
-    overrideMap[
-      overrideKey
-    ]
-      ? overrideMap[
-          overrideKey
-        ]
+    overrideMap[overrideKey]
+      ? overrideMap[overrideKey]
       : null;
 
 
@@ -7944,22 +7399,6 @@ function calculateEmployeeShift_(
   }
 
 
-  /*
-   * โหลด TEAM Planner เมื่อ caller ยังไม่ได้ส่งมา
-   * การเรียกแบบตารางหลายคนควรส่ง map เดียวเข้ามา
-   */
-  if (
-    teamPlannerMap ===
-    undefined
-  ) {
-
-    teamPlannerMap =
-      getEffectiveTeamPlannerMap_(
-        setMap
-      );
-  }
-
-
   const assignment =
     resolveAssignment_(
       employee,
@@ -7968,95 +7407,176 @@ function calculateEmployeeShift_(
     );
 
 
-  /*
-   * 2) TEAM Planner = ฐานจริงของ TEAM
-   */
-  const teamResult =
-    resolveEffectiveTeamPlannerShift_(
-      employee,
-      date,
-      teamPlannerMap
-    );
+  if (!assignment) {
 
+    return {
 
-  if (
-    teamResult
-  ) {
+      shift:
+        'UNSET',
 
-    /*
-     * วันหยุด / ไม่มีกะ ของ TEAM
-     * ให้ทั้ง TEAM ยึดตามนี้
-     */
-    if (
-      [
-        'OFF',
-        'UNSET'
-      ].includes(
-        teamResult.shift
-      )
-    ) {
+      source:
+        'NONE',
 
-      return teamResult;
-    }
-
-
-    /*
-     * ถ้า TEAM เป็นวันทำงาน:
-     * Assignment ระดับ POSITION / EMPLOYEE
-     * ยังสามารถบังคับเช้า/ดึกเฉพาะกลุ่มได้
-     *
-     * ตัวอย่าง: การตลาดเข้าเช้าคงที่
-     */
-    if (
-      assignment &&
-      [
-        'POSITION',
-        'EMPLOYEE'
-      ].includes(
-        assignment.scopeType
-      )
-    ) {
-
-      const specific =
-        calculateSpecificAssignmentWorkShift_(
-          employee,
-          date,
-          assignment,
-          setMap,
-          assignments
-        );
-
-
-      if (
-        specific &&
-        [
-          'MORNING',
-          'NIGHT'
-        ].includes(
-          specific.shift
-        )
-      ) {
-
-        return specific;
-      }
-    }
-
-
-    return teamResult;
+      setName:
+        ''
+    };
   }
 
 
-  /*
-   * 3) TEAM ที่ยังไม่ได้บันทึก Planner
-   * ใช้ Assignment เดิมเหมือนระบบก่อนหน้า
-   */
-  return calculateAssignmentShiftOnly_(
-    employee,
-    date,
-    assignment,
-    setMap,
-    assignments
-  );
+  const set =
+    setMap[
+      assignment.setId
+    ];
+
+
+  if (!set) {
+
+    return {
+
+      shift:
+        'UNSET',
+
+      source:
+        'NONE',
+
+      setName:
+        ''
+    };
+  }
+
+
+  const cycleStartDate =
+    resolveCycleStartDate_(
+      employee,
+      date,
+      assignment,
+      set,
+      assignments,
+      setMap
+    );
+
+
+  const diff =
+    dayDiff_(
+      cycleStartDate,
+      date
+    );
+
+
+  if (diff < 0) {
+
+    return {
+
+      shift:
+        'UNSET',
+
+      source:
+        'NONE',
+
+      setName:
+        ''
+    };
+  }
+
+
+  const workDays =
+    Math.max(
+      1,
+      Number(
+        set.workDays || 10
+      )
+    );
+
+
+  const offDays =
+    Math.max(
+      0,
+      Number(
+        set.offDays || 5
+      )
+    );
+
+
+  const cycleLength =
+    workDays +
+    offDays;
+
+
+  const cycleIndex =
+    Math.floor(
+      diff /
+      cycleLength
+    );
+
+
+  const dayInCycle =
+    diff %
+    cycleLength;
+
+
+  if (
+    dayInCycle >=
+    workDays
+  ) {
+
+    return {
+
+      shift:
+        'OFF',
+
+      source:
+        assignment.scopeType,
+
+      setName:
+        set.setName
+    };
+  }
+
+
+  const baseShift =
+    assignment.startShift ||
+    set.startShift ||
+    'MORNING';
+
+
+  let shift =
+    baseShift;
+
+
+  if (
+    set.alternate
+  ) {
+
+    if (
+      cycleIndex % 2 === 1
+    ) {
+
+      shift =
+        baseShift ===
+        'MORNING'
+          ? 'NIGHT'
+          : 'MORNING';
+    }
+
+  } else {
+
+    shift =
+      set.fixedShift ||
+      baseShift;
+  }
+
+
+  return {
+
+    shift:
+      shift,
+
+    source:
+      assignment.scopeType,
+
+    setName:
+      set.setName
+  };
 }
 
 
