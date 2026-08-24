@@ -9,7 +9,7 @@
     .app{width:min(1500px,calc(100% - 24px));margin:18px auto 40px}.header{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:14px}.brand{display:flex;align-items:center;gap:12px}.logo{width:56px;height:56px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:27px;background:linear-gradient(135deg,#7ddbd0,#8ca5f6)}.title{font-size:22px;font-weight:900}.sub{color:var(--muted);font-size:12px}.pill{padding:8px 13px;border-radius:99px;background:#e7f9eb;color:#3b9660;font-size:11px;font-weight:850}.header-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.home-btn{min-height:36px;padding:0 13px;border:1px solid var(--border);border-radius:11px;background:#fff;color:#667085;font-size:11px;font-weight:850;box-shadow:0 5px 16px rgba(59,78,106,.05)}.home-btn:hover{background:#f8faff}
     .tabs{display:flex;gap:8px;padding:10px;border:1px solid var(--border);border-radius:18px;background:#fff;margin-bottom:14px}.tab{min-height:44px;padding:0 18px;border:0;border-radius:12px;background:transparent;color:#738095;font-weight:850}.tab.active{color:#fff;background:linear-gradient(135deg,#4aa2c8,#7164c8)}
     .page{display:none}.page.active{display:block}.card{padding:20px;border:1px solid var(--border);border-radius:22px;background:#fff;box-shadow:0 12px 34px rgba(59,78,106,.06)}.section-title{font-size:21px;font-weight:900}.section-sub{margin-top:4px;color:var(--muted);font-size:12px}
-    .search{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:16px}.input{height:48px;padding:0 15px;border:1px solid #dbe3ec;border-radius:13px;outline:none}.input:focus,.team-search:focus{border-color:#8dcfe9;box-shadow:0 0 0 3px rgba(141,207,233,.16)}.btn{min-height:48px;padding:0 20px;border:0;border-radius:13px;color:#fff;font-weight:850;background:linear-gradient(135deg,#4aa2c8,#7164c8)}.soft{min-height:36px;padding:0 12px;border:1px solid var(--border);border-radius:10px;background:#f7f9fc;color:#637083;font-size:11px;font-weight:800}
+    .search{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:16px}.input{height:48px;padding:0 15px;border:1px solid #dbe3ec;border-radius:13px;outline:none}.input:focus,.team-search:focus{border-color:#8dcfe9;box-shadow:0 0 0 3px rgba(141,207,233,.16)}.btn{min-height:48px;padding:0 20px;border:0;border-radius:13px;color:#fff;font-weight:850;background:linear-gradient(135deg,#4aa2c8,#7164c8)}.soft{min-height:36px;padding:0 12px;border:1px solid var(--border);border-radius:10px;background:#f7f9fc;color:#637083;font-size:11px;font-weight:800}.export-btn{min-height:36px;padding:0 13px;border:1px solid #b9d9c8;border-radius:10px;background:linear-gradient(135deg,#eaf9f1,#f2f7ff);color:#3b8062;font-size:11px;font-weight:900;box-shadow:0 5px 14px rgba(71,139,105,.08)}.export-btn:hover{transform:translateY(-1px);box-shadow:0 7px 18px rgba(71,139,105,.12)}
     .result{margin-top:18px}.emp-head{padding:18px;border-radius:18px;background:linear-gradient(135deg,#eaf8ff,#fff,#f0ebff)}.emp-row,.round-row,.team-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.emp-name{font-size:24px;font-weight:900}.emp-meta,.round-text{color:#718096;font-size:11px}.round-row{margin-top:14px}.round-actions,.chips{display:flex;gap:6px;flex-wrap:wrap}
     .calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-top:14px}.weekday{text-align:center;color:#7b8798;font-size:10px;font-weight:850}.day{min-height:105px;padding:10px;border:1px solid var(--border);border-radius:13px;background:#fff}.day.today{border:2px solid #75b7d2;box-shadow:0 0 0 3px rgba(117,183,210,.12)}.day-date{font-size:11px;font-weight:900}.day-name{font-size:8px;color:#98a2b3}.today-tag{display:inline-block;margin-top:5px;padding:2px 6px;border-radius:99px;background:#344054;color:#fff;font-size:7px;font-weight:900}
     .shift{display:inline-flex;align-items:center;justify-content:center;min-width:58px;padding:6px 9px;border:1px solid;border-radius:10px;font-size:10px;font-weight:850;white-space:nowrap}.sm{color:var(--yt);background:var(--yellow);border-color:var(--yb)}.sn{color:var(--pt);background:var(--purple);border-color:var(--pb)}.so{color:var(--rt);background:var(--red);border-color:var(--rb)}.su{color:var(--gt);background:var(--gray);border-color:var(--gb)}
@@ -40,6 +40,8 @@
     @media(max-width:760px){.app{width:calc(100% - 12px);margin-top:8px}.pill{display:none}.tabs{padding:6px;gap:4px}.tab{flex:1;padding:0 6px;font-size:11px}.card{padding:14px}.search{grid-template-columns:1fr}.calendar{grid-template-columns:repeat(2,minmax(0,1fr))}.weekday{display:none}.team-search{width:100%}.team-filter-bar{gap:5px}.team-filter{flex:1;min-width:70px;padding:0 7px}.sticky-emp{min-width:150px;max-width:150px}.sticky-team{left:150px;min-width:75px}.wrap{max-height:calc(100vh - 310px)}}
     @media(max-width:420px){.calendar{grid-template-columns:1fr}.title{font-size:18px}}
   </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <title>Employee Center · ตารางกะพนักงาน</title>
 </head>
 <body>
@@ -152,7 +154,7 @@ function loadMySchedule(anchorDate){
   });
 }
 
-function renderMine(data){const e=data.employee;const names=['จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์','อาทิตย์'];let h=`<div class="emp-head"><div class="emp-row"><div><div class="emp-name">${esc(e.nickname)}</div><div class="emp-meta">${esc(e.employeeId)} · ${esc(e.team||'-')} · ${esc(e.position||'-')}</div></div>${badge(data.todayShift)}</div><div class="round-row"><div class="round-text">รอบ ${thaiDate(data.round.from)} - ${thaiDate(data.round.to)}</div><div class="round-actions"><button class="soft" onclick="moveMine(-1)">‹ รอบก่อน</button><button class="soft" onclick="moveMine(0)">รอบปัจจุบัน</button><button class="soft" onclick="moveMine(1)">รอบถัดไป ›</button></div></div></div><div class="calendar">`;
+function renderMine(data){const e=data.employee;const names=['จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์','อาทิตย์'];let h=`<div class="emp-head"><div class="emp-row"><div><div class="emp-name">${esc(e.nickname)}</div><div class="emp-meta">${esc(e.employeeId)} · ${esc(e.team||'-')} · ${esc(e.position||'-')}</div></div>${badge(data.todayShift)}</div><div class="round-row"><div class="round-text">รอบ ${thaiDate(data.round.from)} - ${thaiDate(data.round.to)}</div><div class="round-actions"><button class="soft" onclick="moveMine(-1)">‹ รอบก่อน</button><button class="soft" onclick="moveMine(0)">รอบปัจจุบัน</button><button class="soft" onclick="moveMine(1)">รอบถัดไป ›</button><button class="export-btn" type="button" onclick="exportMyScheduleXlsx()">📥 Excel</button></div></div></div><div class="calendar">`;
   names.forEach(n=>h+=`<div class="weekday">${n}</div>`);const first=parseDate(data.days[0]?.date);if(first){const i=first.getDay()===0?6:first.getDay()-1;for(let x=0;x<i;x++)h+='<div></div>';}
   data.days.forEach(d=>{const today=d.date===data.today;h+=`<div class="day ${today?'today':''}"><div class="day-date">${shortDate(d.date)}</div><div class="day-name">${weekday(parseDate(d.date))}</div>${today?'<div class="today-tag">วันนี้</div>':''}<div style="margin-top:9px">${badge(d.shift)}</div></div>`;});h+='</div>';document.getElementById('mineResult').innerHTML=h;}
 
@@ -292,6 +294,7 @@ function renderTeam(){
         <button class="soft" onclick="moveTeam(-1)">‹ รอบก่อน</button>
         <button class="soft" onclick="moveTeam(0)">รอบปัจจุบัน</button>
         <button class="soft" onclick="moveTeam(1)">รอบถัดไป ›</button>
+        <button class="export-btn" type="button" onclick="exportTeamScheduleXlsx()">📥 Excel</button>
       </div>
     </div>
 
@@ -365,6 +368,347 @@ function renderTeam(){
 }
 
 function moveTeam(dir){if(!STATE.teamData)return;if(dir===0)return loadTeamSchedule(STATE.teamData.today);const ref=dir<0?STATE.teamData.round.from:STATE.teamData.round.to;const d=parseDate(ref);d.setDate(d.getDate()+(dir<0?-1:1));loadTeamSchedule(dateInput(d));}
+
+
+
+function ensureXlsx(){
+  if(
+    typeof XLSX === 'undefined' ||
+    !XLSX.utils
+  ){
+    alert(
+      'ยังโหลดระบบ Excel ไม่สำเร็จ กรุณารีเฟรชหน้าแล้วลองใหม่'
+    );
+    return false;
+  }
+
+  return true;
+}
+
+
+function shiftText(shift){
+  if(shift==='MORNING')return 'เช้า';
+  if(shift==='NIGHT')return 'ดึก';
+  if(shift==='OFF')return 'หยุด';
+  return 'ไม่มีกะ';
+}
+
+
+function safeFilePart(value){
+  return String(value||'')
+    .trim()
+    .replace(/[\\/:*?"<>|]+/g,'-')
+    .replace(/\s+/g,'_')
+    .slice(0,80) || 'ALL';
+}
+
+
+function xlsxDateLabel(text){
+  const d = parseDate(text);
+  if(!d)return String(text||'');
+
+  return String(d.getDate()).padStart(2,'0') +
+    '/' +
+    String(d.getMonth()+1).padStart(2,'0') +
+    '/' +
+    d.getFullYear();
+}
+
+
+function exportMyScheduleXlsx(){
+  if(!ensureXlsx())return;
+
+  const data = STATE.myData;
+
+  if(!data || !data.employee){
+    alert('กรุณาเปิดตารางกะของพนักงานก่อน');
+    return;
+  }
+
+  const e = data.employee;
+
+  const rows = [
+    ['ตารางกะพนักงาน'],
+    ['รหัสพนักงาน',e.employeeId],
+    ['ชื่อเล่น',e.nickname],
+    ['TEAM',e.team||'-'],
+    ['ตำแหน่ง',e.position||'-'],
+    ['รอบ',xlsxDateLabel(data.round.from)+' - '+xlsxDateLabel(data.round.to)],
+    [],
+    ['วันที่','วัน','กะ']
+  ];
+
+  (data.days||[]).forEach(day=>{
+    rows.push([
+      xlsxDateLabel(day.date),
+      weekday(parseDate(day.date)),
+      shiftText(day.shift)
+    ]);
+  });
+
+  const ws =
+    XLSX.utils.aoa_to_sheet(rows);
+
+  ws['!cols'] = [
+    {wch:16},
+    {wch:18},
+    {wch:16}
+  ];
+
+  ws['!merges'] = [
+    {
+      s:{r:0,c:0},
+      e:{r:0,c:2}
+    }
+  ];
+
+  ws['!autofilter'] = {
+    ref:'A8:C'+rows.length
+  };
+
+  const wb =
+    XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(
+    wb,
+    ws,
+    'ตารางกะ'
+  );
+
+  const fileName =
+    'ตารางกะ_' +
+    safeFilePart(e.employeeId) +
+    '_' +
+    safeFilePart(data.round.from) +
+    '_ถึง_' +
+    safeFilePart(data.round.to) +
+    '.xlsx';
+
+  XLSX.writeFile(
+    wb,
+    fileName
+  );
+}
+
+
+function getVisibleTeamRows(){
+  const data = STATE.teamData;
+
+  if(!data){
+    return [];
+  }
+
+  const q =
+    String(
+      STATE.teamFilter || ''
+    )
+    .trim()
+    .toLowerCase();
+
+  let rows =
+    [...(data.rows||[])];
+
+  if(
+    STATE.teamChoice &&
+    STATE.teamChoice !== 'ALL'
+  ){
+    rows =
+      rows.filter(
+        row =>
+          String(
+            row.team||''
+          )
+          .trim()
+          .toUpperCase() ===
+          STATE.teamChoice
+      );
+  }
+
+  if(q){
+    rows =
+      rows.filter(
+        row =>
+          [
+            row.employeeId,
+            row.nickname,
+            row.team,
+            row.position
+          ]
+          .join(' ')
+          .toLowerCase()
+          .includes(q)
+      );
+  }
+
+  return rows;
+}
+
+
+function exportTeamScheduleXlsx(){
+  if(!ensureXlsx())return;
+
+  const data =
+    STATE.teamData;
+
+  if(!data){
+    alert('กรุณาเปิดตารางกะทีมก่อน');
+    return;
+  }
+
+  const visibleRows =
+    getVisibleTeamRows();
+
+  if(!visibleRows.length){
+    alert('ไม่มีข้อมูลตามตัวกรองที่เลือก');
+    return;
+  }
+
+  const filterName =
+    STATE.teamChoice &&
+    STATE.teamChoice !== 'ALL'
+      ? STATE.teamChoice
+      : 'ทุก TEAM';
+
+  const searchText =
+    String(
+      STATE.teamFilter||''
+    ).trim();
+
+  const meta = [
+    ['ตารางกะพนักงาน'],
+    [
+      'รอบ',
+      xlsxDateLabel(data.round.from) +
+      ' - ' +
+      xlsxDateLabel(data.round.to)
+    ],
+    ['TEAM',filterName],
+    [
+      'ค้นหา',
+      searchText || '-'
+    ],
+    [
+      'จำนวน',
+      visibleRows.length + ' คน'
+    ],
+    []
+  ];
+
+  const header = [
+    'รหัสพนักงาน',
+    'ชื่อเล่น',
+    'TEAM',
+    'ตำแหน่ง'
+  ];
+
+  (data.dates||[]).forEach(date=>{
+    header.push(
+      xlsxDateLabel(date) +
+      ' ' +
+      weekday(parseDate(date))
+    );
+  });
+
+  const sheetRows = [
+    ...meta,
+    header
+  ];
+
+  visibleRows.forEach(row=>{
+    const line = [
+      row.employeeId||'',
+      row.nickname||'',
+      row.team||'',
+      row.position||''
+    ];
+
+    const dayMap = {};
+
+    (row.days||[]).forEach(day=>{
+      dayMap[day.date] =
+        shiftText(day.shift);
+    });
+
+    (data.dates||[]).forEach(date=>{
+      line.push(
+        dayMap[date] || 'ไม่มีกะ'
+      );
+    });
+
+    sheetRows.push(line);
+  });
+
+  const ws =
+    XLSX.utils.aoa_to_sheet(
+      sheetRows
+    );
+
+  const dateColumnCount =
+    (data.dates||[]).length;
+
+  ws['!cols'] = [
+    {wch:15},
+    {wch:18},
+    {wch:12},
+    {wch:18},
+    ...Array.from(
+      {length:dateColumnCount},
+      ()=>({wch:15})
+    )
+  ];
+
+  ws['!merges'] = [
+    {
+      s:{r:0,c:0},
+      e:{
+        r:0,
+        c:Math.max(
+          3,
+          3 + dateColumnCount
+        )
+      }
+    }
+  ];
+
+  const lastCol =
+    XLSX.utils.encode_col(
+      3 + dateColumnCount
+    );
+
+  const lastRow =
+    sheetRows.length;
+
+  ws['!autofilter'] = {
+    ref:
+      'A7:' +
+      lastCol +
+      lastRow
+  };
+
+  const wb =
+    XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(
+    wb,
+    ws,
+    'ตารางกะทีม'
+  );
+
+  const fileName =
+    'ตารางกะพนักงาน_' +
+    safeFilePart(filterName) +
+    '_' +
+    safeFilePart(data.round.from) +
+    '_ถึง_' +
+    safeFilePart(data.round.to) +
+    '.xlsx';
+
+  XLSX.writeFile(
+    wb,
+    fileName
+  );
+}
+
 
 
 function apiJsonp(action, params){
