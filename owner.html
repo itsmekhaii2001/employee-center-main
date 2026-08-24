@@ -2851,22 +2851,7 @@ th:nth-child(2) {
         </button>
 
 
-        <button
-          class="submenu-btn"
-          type="button"
-          data-page="individual"
-          onclick="openPage('individual',this)"
-        >
-
-          <span class="submenu-icon">
-            👤
-          </span>
-
-          <span class="submenu-text">
-            แก้กะรายบุคคล
-          </span>
-
-        </button>
+        
 
 
         <button
@@ -3797,18 +3782,27 @@ th:nth-child(2) {
 
 
 
-</section>
 
-
-<!-- INDIVIDUAL CALENDAR -->
-
-<section
-  class="page"
-  id="page-individual"
+<div
+  style="
+    margin-top:20px;
+    margin-bottom:-2px;
+    padding:12px 15px;
+    border:1px solid #e4e8f2;
+    border-radius:14px;
+    background:linear-gradient(135deg,#f8fbff,#faf7ff);
+    color:#68758a;
+    font-size:11px;
+    font-weight:850;
+    line-height:1.6;
+  "
 >
+  💡 <b>จัดกะหลักก่อน</b> แล้วใช้ “แก้กะรายบุคคล” ด้านล่าง
+  เมื่อต้องการปรับเฉพาะบางวันของพนักงาน
+</div>
 
 
-<div class="card">
+<div class="card" style="margin-top:18px">
 
 
   <div class="section-title">
@@ -3820,7 +3814,7 @@ th:nth-child(2) {
       </h2>
 
       <p>
-        เลือกประเภทกะ แล้วลากผ่านวันที่ต้องการได้เลย
+        ใช้ปรับเฉพาะบางวันของพนักงาน หลังจากจัดกะหลักแล้ว · เลือกประเภทกะแล้วลากผ่านวันที่ได้เลย
       </p>
 
     </div>
@@ -3882,8 +3876,12 @@ th:nth-child(2) {
 
 </div>
 
-
 </section>
+
+
+
+
+
 
 
 <!-- SCHEDULE -->
@@ -4643,7 +4641,7 @@ const PAGE_META = {
 
   assign: [
     'จัดกะ',
-    'นำเซตกะไปใช้กับพนักงาน'
+    'จัดกะหลักและแก้กะรายบุคคลในหน้าเดียว'
   ],
 
   individual: [
