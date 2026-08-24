@@ -7835,115 +7835,117 @@ function getShiftForEmployeeDate_(
 }
 
 
-function calculateEmployeeShift_(
+/**
+ * หา TEAM assignment ที่มีผลจริงของพนักงาน ณ วันที่นั้น
+ * ไม่สน POSITION/EMPLOYEE priority
+ */
+function resolveTeamAssignmentForEmployee_(
   employee,
   date,
-  setMap,
-  assignments,
-  overrideMap
+  assignments
 ) {
 
-  const overrideKey =
-    employee.employeeId +
-    '|' +
-    date;
+  return assignments
+    .filter(
+      item => {
+
+        if (
+          String(
+            item.active || 'TRUE'
+          ).toUpperCase() === 'FALSE'
+        ) {
+          return false;
+        }
 
 
-  const overrideRow =
-    overrideMap &&
-    overrideMap[overrideKey]
-      ? overrideMap[overrideKey]
-      : null;
+        if (
+          String(
+            item.scopeType || ''
+          ).toUpperCase() !== 'TEAM'
+        ) {
+          return false;
+        }
 
 
-  const overrideShift =
-    String(
-      overrideRow?.shift || ''
+        if (
+          String(
+            item.scopeValue || ''
+          ).trim() !==
+          String(
+            employee.team || ''
+          ).trim()
+        ) {
+          return false;
+        }
+
+
+        const startDate =
+          String(
+            item.startDate || ''
+          ).trim();
+
+
+        return (
+          !!startDate &&
+          startDate <= date
+        );
+      }
     )
-    .trim()
-    .toUpperCase();
+    .sort(
+      (a, b) => {
+
+        const byDate =
+          String(
+            b.startDate || ''
+          ).localeCompare(
+            String(
+              a.startDate || ''
+            )
+          );
 
 
-  if (
-    [
-      'MORNING',
-      'NIGHT',
-      'OFF',
-      'UNSET'
-    ].includes(
-      overrideShift
-    )
-  ) {
-
-    return {
-
-      shift:
-        overrideShift,
-
-      source:
-        'OVERRIDE',
-
-      setName:
-        'แก้กะรายบุคคล'
-    };
-  }
+        if (byDate) {
+          return byDate;
+        }
 
 
-  const assignment =
-    resolveAssignment_(
-      employee,
-      date,
-      assignments
-    );
+        return String(
+          b.createdAt || ''
+        ).localeCompare(
+          String(
+            a.createdAt || ''
+          )
+        );
+      }
+    )[0] || null;
+}
 
 
-  if (!assignment) {
-
-    return {
-
-      shift:
-        'UNSET',
-
-      source:
-        'NONE',
-
-      setName:
-        ''
-    };
-  }
-
-
-  const set =
-    setMap[
-      assignment.setId
-    ];
-
-
-  if (!set) {
-
-    return {
-
-      shift:
-        'UNSET',
-
-      source:
-        'NONE',
-
-      setName:
-        ''
-    };
-  }
-
+/**
+ * คำนวณสถานะของ 1 assignment จาก Cycle ของมันเอง
+ */
+function calculateAssignmentCycleState_(
+  date,
+  assignment,
+  set
+) {
 
   const cycleStartDate =
-    resolveCycleStartDate_(
-      employee,
-      date,
-      assignment,
-      set,
-      assignments,
-      setMap
-    );
+    String(
+      assignment.cycleStartDate ||
+      assignment.startDate ||
+      ''
+    ).trim();
+
+
+  if (!cycleStartDate) {
+
+    return {
+      shift: 'UNSET',
+      cycleIndex: 0,
+      dayInCycle: -1
+    };
+  }
 
 
   const diff =
@@ -7956,15 +7958,9 @@ function calculateEmployeeShift_(
   if (diff < 0) {
 
     return {
-
-      shift:
-        'UNSET',
-
-      source:
-        'NONE',
-
-      setName:
-        ''
+      shift: 'UNSET',
+      cycleIndex: 0,
+      dayInCycle: -1
     };
   }
 
@@ -7988,8 +7984,10 @@ function calculateEmployeeShift_(
 
 
   const cycleLength =
-    workDays +
-    offDays;
+    Math.max(
+      1,
+      workDays + offDays
+    );
 
 
   const cycleIndex =
@@ -8005,45 +8003,39 @@ function calculateEmployeeShift_(
 
 
   if (
-    dayInCycle >=
-    workDays
+    dayInCycle >= workDays
   ) {
 
     return {
-
-      shift:
-        'OFF',
-
-      source:
-        assignment.scopeType,
-
-      setName:
-        set.setName
+      shift: 'OFF',
+      cycleIndex,
+      dayInCycle
     };
   }
 
 
   const baseShift =
-    assignment.startShift ||
-    set.startShift ||
-    'MORNING';
+    String(
+      assignment.startShift ||
+      set.startShift ||
+      'MORNING'
+    )
+    .trim()
+    .toUpperCase();
 
 
   let shift =
     baseShift;
 
 
-  if (
-    set.alternate
-  ) {
+  if (set.alternate) {
 
     if (
       cycleIndex % 2 === 1
     ) {
 
       shift =
-        baseShift ===
-        'MORNING'
+        baseShift === 'MORNING'
           ? 'NIGHT'
           : 'MORNING';
     }
@@ -8051,15 +8043,298 @@ function calculateEmployeeShift_(
   } else {
 
     shift =
-      set.fixedShift ||
-      baseShift;
+      String(
+        set.fixedShift ||
+        baseShift
+      )
+      .trim()
+      .toUpperCase();
   }
 
 
   return {
+    shift,
+    cycleIndex,
+    dayInCycle
+  };
+}
 
+
+function calculateEmployeeShift_(
+  employee,
+  date,
+  setMap,
+  assignments,
+  overrideMap
+) {
+
+  /*
+   * 1) แก้กะรายบุคคลรายวัน สำคัญที่สุด
+   */
+  const overrideKey =
+    employee.employeeId +
+    '|' +
+    date;
+
+
+  const overrideRow =
+    overrideMap &&
+    overrideMap[
+      overrideKey
+    ]
+      ? overrideMap[
+          overrideKey
+        ]
+      : null;
+
+
+  const overrideShift =
+    String(
+      overrideRow?.shift || ''
+    )
+    .trim()
+    .toUpperCase();
+
+
+  if (
+    [
+      'MORNING',
+      'NIGHT',
+      'OFF',
+      'UNSET'
+    ].includes(
+      overrideShift
+    )
+  ) {
+
+    return {
+      shift:
+        overrideShift,
+
+      source:
+        'OVERRIDE',
+
+      setName:
+        'แก้กะรายบุคคล'
+    };
+  }
+
+
+  /*
+   * 2) หา Assignment ที่มี priority สูงสุด
+   * EMPLOYEE > POSITION+TEAM > POSITION > TEAM
+   */
+  const assignment =
+    resolveAssignment_(
+      employee,
+      date,
+      assignments
+    );
+
+
+  if (!assignment) {
+
+    return {
+      shift:
+        'UNSET',
+
+      source:
+        'NONE',
+
+      setName:
+        ''
+    };
+  }
+
+
+  const set =
+    setMap[
+      assignment.setId
+    ];
+
+
+  if (!set) {
+
+    return {
+      shift:
+        'UNSET',
+
+      source:
+        'NONE',
+
+      setName:
+        ''
+    };
+  }
+
+
+  /*
+   * =====================================================
+   * POSITION
+   *
+   * ตำแหน่ง "ไม่มีสิทธิ์สร้างวันหยุดคนละรอบกับ TEAM"
+   *
+   * ต้องอ่านวันทำงาน/หยุดจาก TEAM ก่อนเสมอ
+   *
+   * ตัวอย่าง:
+   * TEAM B = หยุดวันที่ 31
+   * การตลาด TEAM B = เช้าคงที่
+   *
+   * 31 ต้อง "หยุด"
+   * ไม่ใช่เช้า
+   *
+   * ส่วนวันที่ TEAM B ทำงาน:
+   * การตลาดสามารถเป็นเช้าคงที่ได้ตามเซตตำแหน่ง
+   * =====================================================
+   */
+  if (
+    String(
+      assignment.scopeType || ''
+    ).toUpperCase() ===
+    'POSITION'
+  ) {
+
+    const teamAssignment =
+      resolveTeamAssignmentForEmployee_(
+        employee,
+        date,
+        assignments
+      );
+
+
+    if (teamAssignment) {
+
+      const teamSet =
+        setMap[
+          teamAssignment.setId
+        ];
+
+
+      if (teamSet) {
+
+        const teamState =
+          calculateAssignmentCycleState_(
+            date,
+            teamAssignment,
+            teamSet
+          );
+
+
+        /*
+         * TEAM เป็นเจ้าของ "ทำงาน/หยุด"
+         */
+        if (
+          teamState.shift === 'OFF'
+        ) {
+
+          return {
+            shift:
+              'OFF',
+
+            source:
+              'POSITION_TEAM_CYCLE',
+
+            setName:
+              set.setName
+          };
+        }
+
+
+        if (
+          teamState.shift === 'UNSET'
+        ) {
+
+          return {
+            shift:
+              'UNSET',
+
+            source:
+              'POSITION_TEAM_CYCLE',
+
+            setName:
+              set.setName
+          };
+        }
+
+
+        /*
+         * วันนี้ TEAM ทำงาน
+         * ใช้เซต POSITION กำหนดเฉพาะ "เช้า/ดึก"
+         *
+         * ถ้า POSITION เป็นสลับกะ
+         * ให้สลับตามรอบของ TEAM ไม่ใช่สร้าง Cycle ใหม่
+         */
+        const baseShift =
+          String(
+            assignment.startShift ||
+            set.startShift ||
+            'MORNING'
+          )
+          .trim()
+          .toUpperCase();
+
+
+        let positionShift =
+          baseShift;
+
+
+        if (set.alternate) {
+
+          if (
+            teamState.cycleIndex %
+            2 === 1
+          ) {
+
+            positionShift =
+              baseShift === 'MORNING'
+                ? 'NIGHT'
+                : 'MORNING';
+          }
+
+        } else {
+
+          positionShift =
+            String(
+              set.fixedShift ||
+              baseShift
+            )
+            .trim()
+            .toUpperCase();
+        }
+
+
+        return {
+          shift:
+            positionShift,
+
+          source:
+            assignment.teamFilter
+              ? 'POSITION_TEAM'
+              : 'POSITION',
+
+          setName:
+            set.setName
+        };
+      }
+    }
+  }
+
+
+  /*
+   * 3) TEAM / EMPLOYEE
+   * ใช้ Cycle ของ Assignment ตัวเองตามปกติ
+   */
+  const state =
+    calculateAssignmentCycleState_(
+      date,
+      assignment,
+      set
+    );
+
+
+  return {
     shift:
-      shift,
+      state.shift,
 
     source:
       assignment.scopeType,
@@ -8071,13 +8346,9 @@ function calculateEmployeeShift_(
 
 
 /**
- * หา "จุดอ้างอิง Cycle" แยกจากวันที่เริ่มใช้รายการ
- *
- * ความสำคัญ:
- * 1) ถ้ารายการนี้สั่ง resetCycle -> ใช้ cycleStartDate ของรายการนี้
- * 2) ถ้าเป็น POSITION/EMPLOYEE และมี TEAM เดียวกันที่ใช้ work/off เท่ากัน
- *    ให้ยึด Cycle ของ TEAM เพื่อให้วันหยุดตรงกัน แต่กะเช้า/ดึกยัง override ได้
- * 3) นอกนั้นใช้ cycleStartDate ที่สืบทอดมา
+ * จุดอ้างอิง Cycle:
+ * TEAM เป็นเจ้าของรอบทำงาน/หยุด
+ * POSITION/EMPLOYEE ที่ใช้ work/off เท่ากัน จะเกาะ Cycle ของ TEAM
  */
 function resolveCycleStartDate_(
   employee,
@@ -8089,14 +8360,209 @@ function resolveCycleStartDate_(
 ) {
 
   /*
-   * ไม่มีการ inherit Cycle จากเดือน/TEAM/Assignment เก่า
-   * วันที่เริ่มใช้ที่เลือกตอนจัดกะ คือ Anchor ของ Cycle นี้
+   * กติกา Cycle ที่ถูกต้อง:
+   *
+   * TEAM
+   * = ใช้วันที่เริ่มของ TEAM เป็น Anchor ของ 10/5 โดยตรง
+   *
+   * POSITION / EMPLOYEE
+   * = ถ้าใช้จำนวนวันทำงาน/วันหยุดเท่ากับ TEAM
+   *   ให้ "เกาะ Cycle ของ TEAM"
+   *   เพื่อให้วันทำงาน/วันหยุดตรงกับ TEAM นั้น
+   *
+   * ตัวอย่าง:
+   * TEAM B อยู่ Cycle ของ B
+   * การตลาด TEAM B ตั้งเป็น "เช้าคงที่"
+   *
+   * ผล:
+   * - วันทำงาน/หยุด ต้องตรงกับ TEAM B
+   * - แต่ในวันทำงาน การตลาดยังเป็นกะเช้าตามเซตตำแหน่ง
+   *
+   * รอบ 26-25 เป็นเพียงกรอบแสดงผล ไม่มีผลกับ Cycle
    */
-  return String(
-    assignment.cycleStartDate ||
-    assignment.startDate ||
-    ''
-  ).trim();
+
+  const ownCycleStart =
+    String(
+      assignment.cycleStartDate ||
+      assignment.startDate ||
+      ''
+    ).trim();
+
+
+  if (
+    String(
+      assignment.scopeType || ''
+    ).toUpperCase() ===
+    'TEAM'
+  ) {
+
+    return ownCycleStart;
+  }
+
+
+  const assignmentWorkDays =
+    Math.max(
+      1,
+      Number(
+        set?.workDays || 10
+      )
+    );
+
+
+  const assignmentOffDays =
+    Math.max(
+      0,
+      Number(
+        set?.offDays || 5
+      )
+    );
+
+
+  /*
+   * หา TEAM assignment ของพนักงานคนนี้โดยตรง
+   * ไม่ใช้ resolveAssignment_ เพราะ POSITION/EMPLOYEE
+   * มี priority สูงกว่า TEAM
+   */
+  const teamAssignment =
+    assignments
+      .filter(
+        item => {
+
+          if (
+            String(
+              item.active || 'TRUE'
+            ).toUpperCase() ===
+            'FALSE'
+          ) {
+            return false;
+          }
+
+
+          if (
+            String(
+              item.scopeType || ''
+            ).toUpperCase() !==
+            'TEAM'
+          ) {
+            return false;
+          }
+
+
+          if (
+            String(
+              item.scopeValue || ''
+            ).trim() !==
+            String(
+              employee.team || ''
+            ).trim()
+          ) {
+            return false;
+          }
+
+
+          const startDate =
+            String(
+              item.startDate || ''
+            ).trim();
+
+
+          return (
+            !!startDate &&
+            startDate <= date
+          );
+        }
+      )
+      .sort(
+        (a, b) => {
+
+          const dateCompare =
+            String(
+              b.startDate || ''
+            ).localeCompare(
+              String(
+                a.startDate || ''
+              )
+            );
+
+
+          if (
+            dateCompare !== 0
+          ) {
+            return dateCompare;
+          }
+
+
+          return String(
+            b.createdAt || ''
+          ).localeCompare(
+            String(
+              a.createdAt || ''
+            )
+          );
+        }
+      )[0];
+
+
+  if (!teamAssignment) {
+
+    return ownCycleStart;
+  }
+
+
+  const teamSet =
+    setMap[
+      teamAssignment.setId
+    ];
+
+
+  if (!teamSet) {
+
+    return ownCycleStart;
+  }
+
+
+  const teamWorkDays =
+    Math.max(
+      1,
+      Number(
+        teamSet.workDays || 10
+      )
+    );
+
+
+  const teamOffDays =
+    Math.max(
+      0,
+      Number(
+        teamSet.offDays || 5
+      )
+    );
+
+
+  /*
+   * เกาะ Cycle ของ TEAM เฉพาะเมื่อโครง work/off เท่ากัน
+   * เช่น 10/5 กับ 10/5
+   */
+  if (
+    assignmentWorkDays ===
+      teamWorkDays &&
+    assignmentOffDays ===
+      teamOffDays
+  ) {
+
+    return String(
+      teamAssignment.cycleStartDate ||
+      teamAssignment.startDate ||
+      ownCycleStart
+    ).trim();
+  }
+
+
+  /*
+   * ถ้าตำแหน่งใช้ Cycle คนละแบบ เช่น 8/2
+   * ให้ใช้ Anchor ของตัวเอง
+   */
+  return ownCycleStart;
 }
 
 
@@ -8158,6 +8624,10 @@ function resolveAssignment_(
           }
 
 
+          /*
+           * POSITION แบบระบุ TEAM
+           * ใช้เฉพาะ TEAM นั้นเท่านั้น
+           */
           if (
             assignment.teamFilter &&
             assignment.teamFilter !==
@@ -8194,36 +8664,81 @@ function resolveAssignment_(
   }
 
 
-  const priority = {
-    TEAM: 1,
-    POSITION: 2,
-    EMPLOYEE: 3
-  };
+  /*
+   * Priority:
+   *
+   * 400 = EMPLOYEE
+   * 300 = POSITION ที่ระบุ TEAM
+   * 250 = POSITION ทุก TEAM
+   * 100 = TEAM
+   *
+   * ดังนั้น:
+   * "การตลาด + TEAM B"
+   * จะไม่ถูก "การตลาดทุก TEAM" หรือ TEAM A มาทับ
+   */
+  function assignmentPriority_(
+    assignment
+  ) {
+
+    if (
+      assignment.scopeType ===
+      'EMPLOYEE'
+    ) {
+
+      return 400;
+    }
+
+
+    if (
+      assignment.scopeType ===
+      'POSITION'
+    ) {
+
+      return assignment.teamFilter
+        ? 300
+        : 250;
+    }
+
+
+    if (
+      assignment.scopeType ===
+      'TEAM'
+    ) {
+
+      return 100;
+    }
+
+
+    return 0;
+  }
 
 
   matches.sort(
     (a, b) => {
 
-      const p =
-        priority[
-          b.scopeType
-        ] -
-        priority[
-          a.scopeType
-        ];
+      const priorityCompare =
+        assignmentPriority_(
+          b
+        ) -
+        assignmentPriority_(
+          a
+        );
 
 
-      if (p !== 0) {
-        return p;
+      if (
+        priorityCompare !== 0
+      ) {
+
+        return priorityCompare;
       }
 
 
       const dateCompare =
         String(
-          b.startDate
+          b.startDate || ''
         ).localeCompare(
           String(
-            a.startDate
+            a.startDate || ''
           )
         );
 
@@ -8231,6 +8746,7 @@ function resolveAssignment_(
       if (
         dateCompare !== 0
       ) {
+
         return dateCompare;
       }
 

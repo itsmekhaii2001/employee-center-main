@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="th">
 
 <head>
@@ -3336,45 +3336,7 @@ th:nth-child(2) {
 
 </div>
 
-<div class="card team-planner-card">
-  <div class="section-title">
-    <div>
-      <h2>📅 วางแผนและเปรียบเทียบ TEAM A / B / C</h2>
-      <p>เลือกเซตกะของแต่ละ TEAM แล้ววางเทียบกัน 3 แถวแบบปฏิทินแนวยาว · ลากปรับรายวันได้ · ใช้สำหรับเปรียบเทียบก่อนจัดกะจริง</p>
-    </div>
-  </div>
 
-  <div class="team-planner-note">
-    💡 ส่วนนี้เป็น <b>แผนเปรียบเทียบ</b> ก่อนจัดกะจริง · เลือกเซตกะ + วันเริ่ม Cycle ของแต่ละ TEAM แล้วระบบจะวางกะให้อัตโนมัติ · กดค้างแล้วลากเพื่อปรับหลายวัน · กด <b>↩ ตามเซตกะ</b> เพื่อคืนวันนั้นกลับไปตามรูปแบบเซต
-  </div>
-
-  <div class="team-planner-toolbar">
-    <div class="team-planner-round" id="teamPlannerRound">กำลังโหลดรอบ...</div>
-    <div class="actions">
-      <button class="btn btn-soft btn-sm" onclick="moveTeamPlannerRound(-1)">‹ รอบก่อน</button>
-      <button class="btn btn-soft btn-sm" onclick="moveTeamPlannerRound(0)">รอบปัจจุบัน</button>
-      <button class="btn btn-soft btn-sm" onclick="moveTeamPlannerRound(1)">รอบถัดไป ›</button>
-    </div>
-  </div>
-
-  <div class="team-planner-brushes">
-    <button class="brush-btn brush-morning" data-team-planner-brush="MORNING" onclick="setTeamPlannerBrush('MORNING',this)">☀️ กะเช้า</button>
-    <button class="brush-btn brush-night" data-team-planner-brush="NIGHT" onclick="setTeamPlannerBrush('NIGHT',this)">🌙 กะดึก</button>
-    <button class="brush-btn brush-off active" data-team-planner-brush="OFF" onclick="setTeamPlannerBrush('OFF',this)">❤️ วันหยุด</button>
-    <button class="brush-btn brush-unset" data-team-planner-brush="UNSET" onclick="setTeamPlannerBrush('UNSET',this)">🚫 ไม่มีกะ</button>
-    <button class="brush-btn" data-team-planner-brush="AUTO" onclick="setTeamPlannerBrush('AUTO',this)">↩ ตามเซตกะ</button>
-  </div>
-
-  <div class="team-planner-scroll" id="teamPlannerScroll">
-    <div class="team-planner-empty" id="teamPlannerArea">กำลังโหลดแผน TEAM...</div>
-  </div>
-
-  <div class="team-planner-actions">
-    <button class="btn btn-primary" onclick="saveTeamPlanner()">💾 บันทึกแบบร่าง TEAM</button>
-    <button class="btn btn-soft" onclick="loadTeamPlanner(true)">ยกเลิกการแก้ไข</button>
-    <span class="team-planner-count" id="teamPlannerChangeCount">ยังไม่มีการแก้ไข</span>
-  </div>
-</div>
 
 </section>
 
@@ -4916,16 +4878,7 @@ function openPage(
 
     refreshDashboard();
   }
-
-
-  if (
-    page === 'shiftSets'
-  ) {
-    loadTeamPlanner();
-  }
-
-
-  if (
+if (
     page === 'schedule' &&
     !document
       .getElementById(
