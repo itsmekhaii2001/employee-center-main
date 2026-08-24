@@ -1,4 +1,145 @@
+<!DOCTYPE html>
+<html lang="th">
 
+<head>
+
+<base target="_top">
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1"
+>
+
+<!-- GitHub OWNER bridge: ต้องโหลดก่อนโค้ดระบบหลัก -->
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/owner.js"></script>
+
+<title>
+  ศูนย์บริหารพนักงาน
+</title>
+
+
+<style>
+
+:root {
+
+  --green:#81d7b7;
+  --green-soft:#e9f9f2;
+  --green-deep:#3fa985;
+
+  --blue:#7bc3e7;
+  --blue-soft:#e8f5fc;
+  --blue-deep:#408fb9;
+
+  --purple:#a99be2;
+  --purple-soft:#f0ecfb;
+  --purple-deep:#7462bd;
+
+  --red:#e87984;
+  --red-soft:#ffe8eb;
+  --red-deep:#c84f5a;
+
+  --bg:#f6f9fc;
+  --card:#ffffff;
+
+  --text:#344054;
+  --muted:#7c8798;
+  --border:#e3e8ef;
+
+  --danger:#e8747e;
+  --danger-soft:#fff0f2;
+
+  --warning:#efba65;
+  --warning-soft:#fff7e8;
+
+  --shadow:
+    0 12px 35px
+    rgba(64,84,110,.07);
+
+  --radius:18px;
+}
+
+
+* {
+  box-sizing:border-box;
+}
+
+
+body {
+
+  margin:0;
+
+  background:var(--bg);
+
+  color:var(--text);
+
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Noto Sans Thai",
+    Arial,
+    sans-serif;
+}
+
+
+button,
+input,
+select {
+
+  font:inherit;
+}
+
+
+button {
+  cursor:pointer;
+}
+
+
+/* =========================
+   APP
+========================= */
+
+.app {
+
+  display:flex;
+
+  min-height:100vh;
+}
+
+
+.sidebar {
+
+  width:250px;
+
+  position:fixed;
+
+  left:0;
+  top:0;
+  bottom:0;
+
+  padding:20px 15px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #fff,
+      #f3fbff 50%,
+      #f8f4ff
+    );
+
+  border-right:
+    1px solid var(--border);
+
+  z-index:100;
+}
+
+
+.brand {
+
+  display:flex;
 
   align-items:center;
 
@@ -3362,6 +3503,7 @@ th:nth-child(2) {
 
       <button
         class="btn btn-primary"
+        id="calendarOpenButton"
         onclick="loadIndividualCalendar()"
       >
         เปิดปฏิทิน
@@ -6605,6 +6747,152 @@ function disableAssignment(id) {
    CALENDAR
 ========================= */
 
+
+/* =========================================================
+   INDIVIDUAL CALENDAR — LOCAL LOADING ONLY
+   หน้านี้ไม่ใช้ Loading กลางของทั้งระบบ
+========================================================= */
+
+function setCalendarOpenBusy(
+  busy
+) {
+
+  const button =
+    document.getElementById(
+      'calendarOpenButton'
+    );
+
+
+  if (!button) {
+    return;
+  }
+
+
+  button.disabled =
+    !!busy;
+
+
+  button.textContent =
+    busy
+      ? '⏳ กำลังเปิดปฏิทิน...'
+      : 'เปิดปฏิทิน';
+}
+
+
+function setCalendarSaveBusy(
+  busy
+) {
+
+  const button =
+    document.getElementById(
+      'calendarSaveButton'
+    );
+
+
+  if (!button) {
+    return;
+  }
+
+
+  button.disabled =
+    !!busy;
+
+
+  button.textContent =
+    busy
+      ? '⏳ กำลังบันทึก...'
+      : '💾 บันทึกวันที่แก้ไข';
+}
+
+
+function setCalendarNoteBusy(
+  busy
+) {
+
+  [
+    'calendarNoteSaveButton',
+    'calendarNoteDeleteButton'
+  ]
+  .forEach(
+    id => {
+
+      const button =
+        document.getElementById(
+          id
+        );
+
+
+      if (!button) {
+        return;
+      }
+
+
+      button.disabled =
+        !!busy;
+    }
+  );
+
+
+  const saveButton =
+    document.getElementById(
+      'calendarNoteSaveButton'
+    );
+
+
+  if (saveButton) {
+
+    saveButton.textContent =
+      busy
+        ? '⏳ กำลังบันทึก...'
+        : '💾 บันทึกหมายเหตุ';
+  }
+}
+
+
+function showCalendarLocalLoading(
+  message
+) {
+
+  setHtml(
+    'calendarArea',
+    `
+      <div
+        style="
+          margin-top:14px;
+          padding:18px;
+          border:1px solid #e1e7ef;
+          border-radius:14px;
+          background:#f8fbff;
+          color:#667085;
+          text-align:center;
+          font-size:12px;
+          font-weight:800;
+        "
+      >
+        ⏳ ${escapeHtml(message || 'กำลังโหลดปฏิทิน...')}
+      </div>
+    `
+  );
+}
+
+
+function showCalendarLocalError(
+  error
+) {
+
+  console.error(
+    error
+  );
+
+
+  toast(
+    error?.message ||
+    String(error) ||
+    'เกิดข้อผิดพลาด'
+  );
+}
+
+
 function loadIndividualCalendar() {
 
   const employeeId =
@@ -6628,7 +6916,18 @@ function loadIndividualCalendar() {
   }
 
 
-  setLoading(true);
+  /*
+   * ใช้ Loading เฉพาะในพื้นที่ปฏิทิน
+   * ไม่เปิดกล่อง "กำลังโหลดข้อมูล..." กลางทั้งระบบ
+   */
+  setCalendarOpenBusy(
+    true
+  );
+
+
+  showCalendarLocalLoading(
+    'กำลังโหลดปฏิทินพนักงาน...'
+  );
 
 
   google.script.run
@@ -6636,20 +6935,50 @@ function loadIndividualCalendar() {
     .withSuccessHandler(
       data => {
 
+        setCalendarOpenBusy(
+          false
+        );
+
+
         STATE.calendar =
           data;
+
 
         STATE.calendarEdits =
           {};
 
-        renderIndividualCalendar();
 
-        setLoading(false);
+        renderIndividualCalendar();
       }
     )
 
     .withFailureHandler(
-      showServerError
+      err => {
+
+        setCalendarOpenBusy(
+          false
+        );
+
+
+        if (
+          STATE.calendar
+        ) {
+
+          renderIndividualCalendar();
+
+        } else {
+
+          setHtml(
+            'calendarArea',
+            ''
+          );
+        }
+
+
+        showCalendarLocalError(
+          err
+        );
+      }
     )
 
     .getEmployeeCalendar({
@@ -7009,6 +7338,7 @@ function renderIndividualCalendar() {
 
     <button
       class="btn btn-primary"
+      id="calendarSaveButton"
       onclick="saveCalendarChanges()"
     >
       💾 บันทึกวันที่แก้ไข
@@ -7364,6 +7694,7 @@ function openCalendarNoteEditor(
             ? `
               <button
                 class="btn btn-danger"
+                id="calendarNoteDeleteButton"
                 onclick="deleteCalendarNote()"
               >
                 ลบหมายเหตุ
@@ -7381,6 +7712,7 @@ function openCalendarNoteEditor(
 
         <button
           class="btn btn-primary"
+          id="calendarNoteSaveButton"
           onclick="saveCalendarNote()"
         >
           💾 บันทึกหมายเหตุ
@@ -7527,7 +7859,12 @@ function sendCalendarNote(
     target.element;
 
 
-  setLoading(true);
+  /*
+   * หน้านี้ใช้ Loading เฉพาะปุ่มใน Modal
+   */
+  setCalendarNoteBusy(
+    true
+  );
 
 
   google.script.run
@@ -7535,7 +7872,9 @@ function sendCalendarNote(
     .withSuccessHandler(
       res => {
 
-        setLoading(false);
+        setCalendarNoteBusy(
+          false
+        );
 
 
         if (
@@ -7563,10 +7902,6 @@ function sendCalendarNote(
         }
 
 
-        /*
-         * อัปเดตข้อมูลใน STATE ด้วย
-         * เพื่อเปิด modal ซ้ำโดยไม่ต้องโหลดปฏิทินใหม่
-         */
         const day =
           STATE.calendar
             .days
@@ -7586,6 +7921,7 @@ function sendCalendarNote(
 
         closeCalendarNoteEditor();
 
+
         toast(
           res.message
         );
@@ -7595,9 +7931,12 @@ function sendCalendarNote(
     .withFailureHandler(
       err => {
 
-        setLoading(false);
+        setCalendarNoteBusy(
+          false
+        );
 
-        showServerError(
+
+        showCalendarLocalError(
           err
         );
       }
@@ -7675,7 +8014,13 @@ function saveCalendarChanges() {
   }
 
 
-  setLoading(true);
+  /*
+   * ใช้ Loading เฉพาะปุ่ม Save
+   * จึงไม่มี Notification กลางหน้าค้างอีก
+   */
+  setCalendarSaveBusy(
+    true
+  );
 
 
   google.script.run
@@ -7683,11 +8028,9 @@ function saveCalendarChanges() {
     .withSuccessHandler(
       res => {
 
-        /*
-         * จบ Loading ทันทีหลัง Backend บันทึกสำเร็จ
-         * ไม่ Reload Dashboard และปฏิทินทั้งรอบอีก
-         */
-        setLoading(false);
+        setCalendarSaveBusy(
+          false
+        );
 
 
         const savedItems =
@@ -7752,11 +8095,6 @@ function saveCalendarChanges() {
         );
 
 
-        /*
-         * เคลียร์รายการแก้ไขบน Browser
-         * แล้ว render จาก STATE เดิมทันที
-         * ไม่มีการยิง API รอบสอง
-         */
         STATE.calendarEdits =
           {};
 
@@ -7766,6 +8104,7 @@ function saveCalendarChanges() {
 
 
         renderIndividualCalendar();
+
 
         updateCalendarChangeCount();
 
@@ -7780,9 +8119,12 @@ function saveCalendarChanges() {
     .withFailureHandler(
       err => {
 
-        setLoading(false);
+        setCalendarSaveBusy(
+          false
+        );
 
-        showServerError(
+
+        showCalendarLocalError(
           err
         );
       }
