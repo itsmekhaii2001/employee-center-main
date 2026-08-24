@@ -3142,7 +3142,7 @@ th:nth-child(2) {
   <div class="section-title">
     <div>
       <h2>📅 วางแผนและเปรียบเทียบ TEAM A / B / C</h2>
-      <p>เลือกเซตกะของแต่ละ TEAM แล้ววางเทียบกัน 3 แถวแบบปฏิทินแนวยาว · ลากปรับรายวันได้ · บันทึกแล้วมีผลกับตารางกะจริง</p>
+      <p>เลือกเซตกะของแต่ละ TEAM แล้ววางเทียบกัน 3 แถวแบบปฏิทินแนวยาว · ลากปรับรายวันได้ · ใช้สำหรับเปรียบเทียบก่อนจัดกะจริง</p>
     </div>
   </div>
 
@@ -3172,7 +3172,7 @@ th:nth-child(2) {
   </div>
 
   <div class="team-planner-actions">
-    <button class="btn btn-primary" onclick="saveTeamPlanner()">💾 บันทึกตาราง TEAM</button>
+    <button class="btn btn-primary" onclick="saveTeamPlanner()">💾 บันทึกแบบร่าง TEAM</button>
     <button class="btn btn-soft" onclick="loadTeamPlanner(true)">ยกเลิกการแก้ไข</button>
     <span class="team-planner-count" id="teamPlannerChangeCount">ยังไม่มีการแก้ไข</span>
   </div>
@@ -3200,7 +3200,7 @@ th:nth-child(2) {
       </h2>
 
       <p>
-        ใช้เซตกะกับ TEAM ตำแหน่ง หรือพนักงาน
+        เลือก TEAM และตำแหน่งได้ชัดเจน หรือจัดกะรายบุคคล
       </p>
 
       <div
@@ -3255,34 +3255,93 @@ th:nth-child(2) {
     </div>
 
 
-    <div class="field">
+    <div
+      class="field"
+      id="assignTeamBox"
+    >
 
-      <label id="assignScopeLabel">
+      <label>
         TEAM
       </label>
 
       <select
-        id="assignScopeValue"
+        id="assignTeamSelect"
       ></select>
+
+      <div
+        id="assignTeamHint"
+        style="
+          margin-top:6px;
+          color:#8a94a4;
+          font-size:10px;
+          line-height:1.45;
+        "
+      >
+        เลือก TEAM ที่ต้องการจัดกะ
+      </div>
 
     </div>
 
 
     <div
       class="field"
-      id="assignTeamBox"
+      id="assignPositionBox"
+    >
+
+      <label>
+        ตำแหน่ง
+      </label>
+
+      <select
+        id="assignPositionSelect"
+      ></select>
+
+      <div
+        id="assignPositionHint"
+        style="
+          margin-top:6px;
+          color:#8a94a4;
+          font-size:10px;
+          line-height:1.45;
+        "
+      >
+        ใช้เมื่อต้องการจัดกะเฉพาะตำแหน่ง
+      </div>
+
+    </div>
+
+
+    <div
+      class="field"
+      id="assignEmployeeBox"
       style="display:none"
     >
 
       <label>
-        จำกัดเฉพาะ TEAM
+        พนักงาน
       </label>
 
       <select
-        id="assignTeamFilter"
+        id="assignEmployeeSelect"
       ></select>
 
     </div>
+
+
+    <!-- hidden compatibility field -->
+    <select
+      id="assignScopeValue"
+      style="display:none"
+      aria-hidden="true"
+      tabindex="-1"
+    ></select>
+
+    <select
+      id="assignTeamFilter"
+      style="display:none"
+      aria-hidden="true"
+      tabindex="-1"
+    ></select>
 
 
     <div class="field">
@@ -4742,6 +4801,20 @@ function refreshAllDropdowns() {
 
 
   fillSelect(
+    'assignTeamSelect',
+    STATE.teams,
+    'เลือก TEAM'
+  );
+
+
+  fillSelect(
+    'assignPositionSelect',
+    STATE.positions,
+    'เลือกตำแหน่ง'
+  );
+
+
+  fillSelect(
     'assignTeamFilter',
     STATE.teams,
     'ทุก TEAM'
@@ -4808,6 +4881,14 @@ function refreshEmployeeDropdowns() {
     'historyEmployee',
     options,
     'พนักงานทั้งหมด'
+  );
+
+
+
+  fillObjectSelect(
+    'assignEmployeeSelect',
+    options,
+    'เลือกพนักงาน'
   );
 }
 
@@ -6332,7 +6413,7 @@ function saveTeamPlanner() {
       STATE.teamPlannerDirty = false;
       renderTeamPlanner();
       updateTeamPlannerChangeCount();
-      toast(res.message || 'บันทึกตาราง TEAM แล้ว');
+      toast(res.message || 'บันทึกแบบร่าง TEAM แล้ว');
     })
     .withFailureHandler(showServerError)
     .saveTeamPlanner(payload);
@@ -6351,91 +6432,167 @@ function updateAssignScope() {
     );
 
 
-  const teamBox =
+  const teamSelect =
     document.getElementById(
-      'assignTeamBox'
+      'assignTeamSelect'
     );
 
 
+  const positionSelect =
+    document.getElementById(
+      'assignPositionSelect'
+    );
+
+
+  const employeeBox =
+    document.getElementById(
+      'assignEmployeeBox'
+    );
+
+
+  const teamHint =
+    document.getElementById(
+      'assignTeamHint'
+    );
+
+
+  const positionHint =
+    document.getElementById(
+      'assignPositionHint'
+    );
+
+
+  /*
+   * TEAM:
+   * - TEAM ต้องเลือก
+   * - ตำแหน่งไม่ใช้
+   */
   if (
     type === 'TEAM'
   ) {
 
-    setText(
-      'assignScopeLabel',
-      'TEAM'
-    );
+    teamSelect.disabled =
+      false;
 
 
-    fillSelect(
-      'assignScopeValue',
-      STATE.teams,
-      'เลือก TEAM'
-    );
+    positionSelect.disabled =
+      true;
 
 
-    teamBox.style.display =
+    positionSelect.value =
+      '';
+
+
+    employeeBox.style.display =
       'none';
+
+
+    teamHint.textContent =
+      'เลือก TEAM ที่ต้องการจัดกะ';
+
+
+    positionHint.textContent =
+      'โหมด TEAM จะใช้กับทุกตำแหน่งใน TEAM';
+
+
+    positionSelect.style.opacity =
+      '.55';
+
+
+    return;
   }
 
 
+  /*
+   * POSITION:
+   * - ตำแหน่งต้องเลือก
+   * - TEAM เลือกได้ ถ้าเว้นว่าง = ทุก TEAM
+   */
   if (
     type === 'POSITION'
   ) {
 
-    setText(
-      'assignScopeLabel',
-      'ตำแหน่ง'
-    );
+    teamSelect.disabled =
+      false;
 
 
-    fillSelect(
-      'assignScopeValue',
-      STATE.positions,
-      'เลือกตำแหน่ง'
-    );
+    positionSelect.disabled =
+      false;
 
 
-    teamBox.style.display =
-      '';
+    employeeBox.style.display =
+      'none';
+
+
+    teamHint.textContent =
+      'เว้นว่าง = ใช้ตำแหน่งนี้ทุก TEAM';
+
+
+    positionHint.textContent =
+      'เลือกตำแหน่งที่ต้องการจัดกะ';
+
+
+    positionSelect.style.opacity =
+      '1';
+
+
+    /*
+     * ต้องมีตัวเลือก "ทุก TEAM"
+     */
+    if (
+      teamSelect.options.length &&
+      teamSelect.options[0].value !== ''
+    ) {
+
+      teamSelect.insertAdjacentHTML(
+        'afterbegin',
+        '<option value="">ทุก TEAM</option>'
+      );
+    }
+
+
+    return;
   }
 
 
+  /*
+   * EMPLOYEE:
+   * - ใช้เฉพาะพนักงาน
+   */
   if (
     type === 'EMPLOYEE'
   ) {
 
-    setText(
-      'assignScopeLabel',
-      'พนักงาน'
-    );
+    teamSelect.disabled =
+      true;
 
 
-    fillObjectSelect(
-      'assignScopeValue',
-
-      STATE.employees
-        .filter(
-          e =>
-            e.status !== 'ออก'
-        )
-        .map(e => ({
-
-          value:
-            e.employeeId,
-
-          label:
-            e.employeeId +
-            ' · ' +
-            e.nickname
-        })),
-
-      'เลือกพนักงาน'
-    );
+    positionSelect.disabled =
+      true;
 
 
-    teamBox.style.display =
-      'none';
+    teamSelect.value =
+      '';
+
+
+    positionSelect.value =
+      '';
+
+
+    positionSelect.style.opacity =
+      '.55';
+
+
+    employeeBox.style.display =
+      '';
+
+
+    teamHint.textContent =
+      'โหมดพนักงาน ไม่ต้องเลือก TEAM';
+
+
+    positionHint.textContent =
+      'โหมดพนักงาน ไม่ต้องเลือกตำแหน่ง';
   }
 }
 
@@ -6448,22 +6605,73 @@ function saveAssignmentForm() {
     );
 
 
+  const selectedTeam =
+    value(
+      'assignTeamSelect'
+    );
+
+
+  const selectedPosition =
+    value(
+      'assignPositionSelect'
+    );
+
+
+  const selectedEmployee =
+    value(
+      'assignEmployeeSelect'
+    );
+
+
+  let scopeValue =
+    '';
+
+
+  let teamFilter =
+    '';
+
+
+  if (
+    type === 'TEAM'
+  ) {
+
+    scopeValue =
+      selectedTeam;
+  }
+
+
+  if (
+    type === 'POSITION'
+  ) {
+
+    scopeValue =
+      selectedPosition;
+
+
+    teamFilter =
+      selectedTeam;
+  }
+
+
+  if (
+    type === 'EMPLOYEE'
+  ) {
+
+    scopeValue =
+      selectedEmployee;
+  }
+
+
   const data = {
 
     scopeType:
       type,
 
     scopeValue:
-      value(
-        'assignScopeValue'
-      ),
+      scopeValue,
 
     teamFilter:
-      type === 'POSITION'
-        ? value(
-            'assignTeamFilter'
-          )
-        : '',
+      teamFilter,
 
     setId:
       value(
@@ -6488,13 +6696,45 @@ function saveAssignmentForm() {
 
 
   if (
-    !data.scopeValue ||
+    type === 'TEAM' &&
+    !selectedTeam
+  ) {
+
+    return toast(
+      'กรุณาเลือก TEAM'
+    );
+  }
+
+
+  if (
+    type === 'POSITION' &&
+    !selectedPosition
+  ) {
+
+    return toast(
+      'กรุณาเลือกตำแหน่ง'
+    );
+  }
+
+
+  if (
+    type === 'EMPLOYEE' &&
+    !selectedEmployee
+  ) {
+
+    return toast(
+      'กรุณาเลือกพนักงาน'
+    );
+  }
+
+
+  if (
     !data.setId ||
     !data.startDate
   ) {
 
     return toast(
-      'กรุณากรอกข้อมูลให้ครบ'
+      'กรุณาเลือกเซตกะและวันที่เริ่มใช้'
     );
   }
 
@@ -6510,22 +6750,34 @@ function saveAssignmentForm() {
         STATE.assignments =
           res.assignments;
 
+
         const resetBox =
           document.getElementById(
             'assignResetCycle'
           );
 
-        if (resetBox) {
-          resetBox.checked = false;
+
+        if (
+          resetBox
+        ) {
+
+          resetBox.checked =
+            false;
         }
+
 
         renderAssignments();
 
+
         refreshDashboard();
+
 
         setLoading(false);
 
-        toast(res.message);
+
+        toast(
+          res.message
+        );
       }
     )
 
@@ -6533,7 +6785,9 @@ function saveAssignmentForm() {
       showServerError
     )
 
-    .saveAssignment(data);
+    .saveAssignment(
+      data
+    );
 }
 
 
