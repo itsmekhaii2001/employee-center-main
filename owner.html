@@ -1,145 +1,4 @@
-<!DOCTYPE html>
-<html lang="th">
 
-<head>
-
-<base target="_top">
-
-<meta charset="UTF-8">
-
-<meta
-  name="viewport"
-  content="width=device-width, initial-scale=1"
->
-
-<!-- GitHub OWNER bridge: ต้องโหลดก่อนโค้ดระบบหลัก -->
-<script src="./assets/js/api.js"></script>
-<script src="./assets/js/owner.js"></script>
-
-<title>
-  ศูนย์บริหารพนักงาน
-</title>
-
-
-<style>
-
-:root {
-
-  --green:#81d7b7;
-  --green-soft:#e9f9f2;
-  --green-deep:#3fa985;
-
-  --blue:#7bc3e7;
-  --blue-soft:#e8f5fc;
-  --blue-deep:#408fb9;
-
-  --purple:#a99be2;
-  --purple-soft:#f0ecfb;
-  --purple-deep:#7462bd;
-
-  --red:#e87984;
-  --red-soft:#ffe8eb;
-  --red-deep:#c84f5a;
-
-  --bg:#f6f9fc;
-  --card:#ffffff;
-
-  --text:#344054;
-  --muted:#7c8798;
-  --border:#e3e8ef;
-
-  --danger:#e8747e;
-  --danger-soft:#fff0f2;
-
-  --warning:#efba65;
-  --warning-soft:#fff7e8;
-
-  --shadow:
-    0 12px 35px
-    rgba(64,84,110,.07);
-
-  --radius:18px;
-}
-
-
-* {
-  box-sizing:border-box;
-}
-
-
-body {
-
-  margin:0;
-
-  background:var(--bg);
-
-  color:var(--text);
-
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    "Noto Sans Thai",
-    Arial,
-    sans-serif;
-}
-
-
-button,
-input,
-select {
-
-  font:inherit;
-}
-
-
-button {
-  cursor:pointer;
-}
-
-
-/* =========================
-   APP
-========================= */
-
-.app {
-
-  display:flex;
-
-  min-height:100vh;
-}
-
-
-.sidebar {
-
-  width:250px;
-
-  position:fixed;
-
-  left:0;
-  top:0;
-  bottom:0;
-
-  padding:20px 15px;
-
-  background:
-    linear-gradient(
-      180deg,
-      #fff,
-      #f3fbff 50%,
-      #f8f4ff
-    );
-
-  border-right:
-    1px solid var(--border);
-
-  z-index:100;
-}
-
-
-.brand {
-
-  display:flex;
 
   align-items:center;
 
@@ -921,6 +780,39 @@ select:focus {
 .import-preview-table table {
   min-width:760px;
 }
+
+
+/* =========================================================
+   TEAM SHIFT PLANNER
+========================================================= */
+
+.team-planner-card{margin-top:18px}
+.team-planner-note{margin:12px 0 14px;padding:11px 13px;border:1px solid #dce9f4;border-radius:12px;background:linear-gradient(135deg,#eef8ff 0%,#f3f0ff 100%);color:#5f6f88;font-size:11px;line-height:1.6}
+.team-planner-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.team-planner-round{font-size:12px;font-weight:900;color:#526173}
+.team-planner-brushes{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.team-planner-scroll{overflow:auto;max-width:100%;border:1px solid var(--border);border-radius:16px;background:#fff;overscroll-behavior:contain}
+.team-planner-grid{--planner-days:31;min-width:max-content;display:grid;grid-template-columns:310px repeat(var(--planner-days),78px);align-items:stretch;user-select:none}
+.team-planner-corner{position:sticky;left:0;top:0;z-index:8;display:flex;align-items:center;padding:11px 12px;background:#f7f9fc;border-right:1px solid var(--border);border-bottom:1px solid var(--border);font-size:11px;font-weight:900;color:#697789}
+.team-planner-date-head{position:sticky;top:0;z-index:6;min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:7px 4px;background:#f7f9fc;border-right:1px solid var(--border);border-bottom:1px solid var(--border);color:#667085;font-size:10px;font-weight:850}
+.team-planner-date-head.today{background:#ecf9f1;color:#368d63;box-shadow:inset 0 -3px 0 #77cfaa}
+.team-planner-date-main{font-size:12px;font-weight:950}
+.team-planner-left{position:sticky;left:0;z-index:5;width:310px;min-height:94px;padding:10px 12px;background:#fff;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+.team-planner-team-line{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+.team-planner-team-badge{display:inline-flex;align-items:center;justify-content:center;min-width:74px;padding:6px 10px;border-radius:999px;font-size:11px;font-weight:950}
+.team-planner-team-badge.team-a{background:#ffe1e5;color:#c85b68}
+.team-planner-team-badge.team-b{background:#fff4bf;color:#9a7600}
+.team-planner-team-badge.team-c{background:#dcf6e7;color:#3f9970}
+.team-planner-config{display:grid;grid-template-columns:minmax(0,1fr) 108px;gap:6px}
+.team-planner-config select,.team-planner-config input{width:100%;min-height:34px;padding:0 8px;border:1px solid #dfe5ed;border-radius:9px;background:#fff;color:#526173;font-family:inherit;font-size:10px;font-weight:750;outline:none}
+.team-planner-config select:focus,.team-planner-config input:focus{border-color:#9b8de0;box-shadow:0 0 0 3px rgba(124,106,214,.09)}
+.team-planner-start-shift{margin-top:6px;display:flex;align-items:center;gap:6px;color:#8993a2;font-size:9px}
+.team-planner-start-shift select{width:100px;min-height:30px;padding:0 6px;border:1px solid #dfe5ed;border-radius:8px;background:#fff;color:#526173;font-family:inherit;font-size:10px;font-weight:800}
+.team-planner-cell{min-height:94px;padding:7px 4px;display:flex;align-items:center;justify-content:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:#fff;cursor:crosshair;transition:background .08s ease,box-shadow .08s ease}
+.team-planner-cell:hover{background:#f9fbfe}.team-planner-cell.changed{box-shadow:inset 0 0 0 2px #9c8be3}.team-planner-cell.today{background:#f3fbf6}
+.team-planner-shift{width:64px;min-height:46px;padding:6px 4px;border-radius:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;font-size:9px;font-weight:900}
+.team-planner-shift.morning{background:#fff6cc;color:#9a7600;border:1px solid #f2d15c}.team-planner-shift.night{background:#eee8ff;color:#6954ba;border:1px solid #cfc2fa}.team-planner-shift.off{background:#ffe4e8;color:#c65563;border:1px solid #f6bec6}.team-planner-shift.unset{background:#f0f2f5;color:#8993a2;border:1px solid #dfe4ea}
+.team-planner-shift .small{font-size:8px;opacity:.75}.team-planner-empty{padding:28px;text-align:center;color:#8993a2;font-size:12px}.team-planner-actions{margin-top:14px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}.team-planner-count{color:#7b8798;font-size:11px}
 
 @media(max-width:900px) {
   .import-summary {
@@ -3082,6 +2974,22 @@ th:nth-child(2) {
   style="margin-top:18px"
 >
 
+  <div class="section-title">
+
+    <div>
+
+      <h2>
+        📦 เซตกะที่สร้างไว้
+      </h2>
+
+      <p>
+        เซตกะเดิมทั้งหมดอยู่ตรงนี้เหมือนเดิม · แก้ไข / ลบ / นำไปใช้ได้ตามปกติ
+      </p>
+
+    </div>
+
+  </div>
+
   <div
     class="set-list"
     id="shiftSetList"
@@ -3089,6 +2997,45 @@ th:nth-child(2) {
 
 </div>
 
+<div class="card team-planner-card">
+  <div class="section-title">
+    <div>
+      <h2>📅 วางแผนและเปรียบเทียบ TEAM A / B / C</h2>
+      <p>เลือกเซตกะเดิมของแต่ละ TEAM แล้ววางเทียบกัน 3 แถวแบบปฏิทินแนวยาว · ลากปรับรายวันได้</p>
+    </div>
+  </div>
+
+  <div class="team-planner-note">
+    💡 ส่วนนี้เป็น <b>แผนเปรียบเทียบ</b> ก่อนจัดกะจริง · เลือกเซตกะ + วันเริ่ม Cycle ของแต่ละ TEAM แล้วระบบจะวางกะให้อัตโนมัติ · กดค้างแล้วลากเพื่อปรับหลายวัน · กด <b>↩ ตามเซตกะ</b> เพื่อคืนวันนั้นกลับไปตามรูปแบบเซต
+  </div>
+
+  <div class="team-planner-toolbar">
+    <div class="team-planner-round" id="teamPlannerRound">กำลังโหลดรอบ...</div>
+    <div class="actions">
+      <button class="btn btn-soft btn-sm" onclick="moveTeamPlannerRound(-1)">‹ รอบก่อน</button>
+      <button class="btn btn-soft btn-sm" onclick="moveTeamPlannerRound(0)">รอบปัจจุบัน</button>
+      <button class="btn btn-soft btn-sm" onclick="moveTeamPlannerRound(1)">รอบถัดไป ›</button>
+    </div>
+  </div>
+
+  <div class="team-planner-brushes">
+    <button class="brush-btn brush-morning" data-team-planner-brush="MORNING" onclick="setTeamPlannerBrush('MORNING',this)">☀️ กะเช้า</button>
+    <button class="brush-btn brush-night" data-team-planner-brush="NIGHT" onclick="setTeamPlannerBrush('NIGHT',this)">🌙 กะดึก</button>
+    <button class="brush-btn brush-off active" data-team-planner-brush="OFF" onclick="setTeamPlannerBrush('OFF',this)">❤️ วันหยุด</button>
+    <button class="brush-btn brush-unset" data-team-planner-brush="UNSET" onclick="setTeamPlannerBrush('UNSET',this)">🚫 ไม่มีกะ</button>
+    <button class="brush-btn" data-team-planner-brush="AUTO" onclick="setTeamPlannerBrush('AUTO',this)">↩ ตามเซตกะ</button>
+  </div>
+
+  <div class="team-planner-scroll" id="teamPlannerScroll">
+    <div class="team-planner-empty" id="teamPlannerArea">กำลังโหลดแผน TEAM...</div>
+  </div>
+
+  <div class="team-planner-actions">
+    <button class="btn btn-primary" onclick="saveTeamPlanner()">💾 บันทึกแบบร่าง TEAM</button>
+    <button class="btn btn-soft" onclick="loadTeamPlanner(true)">ยกเลิกการแก้ไข</button>
+    <span class="team-planner-count" id="teamPlannerChangeCount">ยังไม่มีการแก้ไข</span>
+  </div>
+</div>
 
 </section>
 
@@ -4009,6 +3956,9 @@ let STATE = {
   round: null,
   dashboard: null,
 
+  dashboardDirty:
+    false,
+
   calendar: null,
 
   calendarBrush:
@@ -4020,7 +3970,25 @@ let STATE = {
     false,
 
   calendarNoteTarget:
-    null
+    null,
+
+  teamPlanner:
+    null,
+
+  teamPlannerAnchor:
+    '',
+
+  teamPlannerBrush:
+    'OFF',
+
+  teamPlannerDragging:
+    false,
+
+  teamPlannerDragTeam:
+    '',
+
+  teamPlannerDirty:
+    false
 };
 
 
@@ -4495,6 +4463,22 @@ function openPage(
       'topSub',
       meta[1]
     );
+  }
+
+
+  if (
+    page === 'dashboard' &&
+    STATE.dashboardDirty
+  ) {
+
+    refreshDashboard();
+  }
+
+
+  if (
+    page === 'shiftSets'
+  ) {
+    loadTeamPlanner();
   }
 
 
@@ -5990,6 +5974,209 @@ function renderShiftSets() {
       })
       .join('')
   );
+}
+
+
+
+/* =========================================================
+   TEAM PLANNER
+========================================================= */
+
+function loadTeamPlanner(forceReload) {
+  if (STATE.teamPlanner && !forceReload) { renderTeamPlanner(); return; }
+  const anchorDate = STATE.teamPlannerAnchor || STATE.today;
+  setHtml('teamPlannerArea','<div class="team-planner-empty">⏳ กำลังโหลดแผน TEAM...</div>');
+  google.script.run
+    .withSuccessHandler(data => {
+      STATE.teamPlanner = data;
+      STATE.teamPlannerAnchor = data.anchorDate || anchorDate;
+      STATE.teamPlannerDirty = false;
+      STATE.teamPlannerDragging = false;
+      STATE.teamPlannerDragTeam = '';
+      renderTeamPlanner();
+      updateTeamPlannerChangeCount();
+    })
+    .withFailureHandler(showServerError)
+    .getTeamPlanner({anchorDate:anchorDate});
+}
+
+function moveTeamPlannerRound(direction) {
+  if (direction === 0) {
+    STATE.teamPlannerAnchor = STATE.today;
+  } else {
+    const current = parseLocalDate(STATE.teamPlanner?.from || STATE.teamPlannerAnchor || STATE.today);
+    current.setMonth(current.getMonth() + direction);
+    STATE.teamPlannerAnchor = dateInput(current);
+  }
+  STATE.teamPlanner = null;
+  loadTeamPlanner(true);
+}
+
+function renderTeamPlanner() {
+  const data = STATE.teamPlanner;
+  if (!data || !Array.isArray(data.dates)) {
+    setHtml('teamPlannerArea','<div class="team-planner-empty">ยังไม่มีข้อมูลแผน TEAM</div>');
+    return;
+  }
+
+  setText('teamPlannerRound','รอบ ' + formatThaiDate(data.from) + ' - ' + formatThaiDate(data.to));
+
+  const head = `
+    <div class="team-planner-corner">TEAM / เซตกะ / วันเริ่ม Cycle</div>
+    ${data.dates.map(date => {
+      const d = parseLocalDate(date);
+      const weekday = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'][d.getDay()];
+      return `<div class="team-planner-date-head ${date===STATE.today?'today':''}"><div class="team-planner-date-main">${d.getDate()}/${d.getMonth()+1}</div><div>${weekday}</div></div>`;
+    }).join('')}`;
+
+  const rows = data.teams.map(row => {
+    const teamClass = row.team === 'TEAM A' ? 'team-a' : row.team === 'TEAM B' ? 'team-b' : 'team-c';
+    const setOptions = STATE.shiftSets.map(set => `<option value="${escapeAttr(set.setId)}" ${String(row.setId)===String(set.setId)?'selected':''}>${escapeHtml(set.setName)}</option>`).join('');
+    const cells = row.days.map(day => `
+      <div class="team-planner-cell ${day.date===STATE.today?'today':''}" data-team="${escapeAttr(row.team)}" data-date="${escapeAttr(day.date)}" data-auto-shift="${escapeAttr(day.autoShift)}" data-current-shift="${escapeAttr(day.shift)}" onpointerdown="teamPlannerPointerDown(event,this)" onpointerenter="teamPlannerPointerEnter(event,this)">
+        ${teamPlannerShiftHtml(day.shift,day.isOverride)}
+      </div>`).join('');
+
+    return `
+      <div class="team-planner-left">
+        <div class="team-planner-team-line">
+          <span class="team-planner-team-badge ${teamClass}">${escapeHtml(row.team)}</span>
+          <span style="color:#98a2b3;font-size:9px">${row.overrideCount||0} วันที่แก้เอง</span>
+        </div>
+        <div class="team-planner-config">
+          <select onchange="teamPlannerConfigChanged(${jsonString(row.team)},'setId',this.value)">
+            <option value="">เลือกเซตกะ</option>${setOptions}
+          </select>
+          <input type="date" value="${escapeAttr(row.cycleStartDate||data.from)}" onchange="teamPlannerConfigChanged(${jsonString(row.team)},'cycleStartDate',this.value)" title="วันเริ่ม Cycle">
+        </div>
+        <div class="team-planner-start-shift">
+          <span>กะเริ่มต้น</span>
+          <select onchange="teamPlannerConfigChanged(${jsonString(row.team)},'startShift',this.value)">
+            <option value="MORNING" ${row.startShift==='MORNING'?'selected':''}>☀️ เช้า</option>
+            <option value="NIGHT" ${row.startShift==='NIGHT'?'selected':''}>🌙 ดึก</option>
+          </select>
+        </div>
+      </div>${cells}`;
+  }).join('');
+
+  setHtml('teamPlannerArea',`<div class="team-planner-grid" style="--planner-days:${data.dates.length}">${head}${rows}</div>`);
+}
+
+function teamPlannerShiftHtml(shift,isOverride) {
+  const map = {
+    MORNING:['morning','☀️ เช้า'],
+    NIGHT:['night','🌙 ดึก'],
+    OFF:['off','❤️ หยุด'],
+    UNSET:['unset','— ไม่มีกะ']
+  };
+  const item = map[String(shift||'UNSET').toUpperCase()] || map.UNSET;
+  return `<div class="team-planner-shift ${item[0]}"><div>${item[1]}</div><div class="small">${isOverride?'แก้เอง':'ตามเซต'}</div></div>`;
+}
+
+function setTeamPlannerBrush(shift,button) {
+  STATE.teamPlannerBrush = shift;
+  document.querySelectorAll('[data-team-planner-brush]').forEach(el => el.classList.remove('active'));
+  button.classList.add('active');
+}
+
+function teamPlannerPointerDown(event,element) {
+  event.preventDefault();
+  STATE.teamPlannerDragging = true;
+  STATE.teamPlannerDragTeam = element.dataset.team;
+  paintTeamPlannerCell(element);
+}
+
+function teamPlannerPointerEnter(event,element) {
+  if (!STATE.teamPlannerDragging || element.dataset.team !== STATE.teamPlannerDragTeam) return;
+  if (event.buttons === 0 && event.pointerType === 'mouse') {
+    STATE.teamPlannerDragging = false;
+    STATE.teamPlannerDragTeam = '';
+    return;
+  }
+  paintTeamPlannerCell(element);
+}
+
+window.addEventListener('pointerup',() => {
+  STATE.teamPlannerDragging = false;
+  STATE.teamPlannerDragTeam = '';
+});
+
+function paintTeamPlannerCell(element) {
+  const row = STATE.teamPlanner?.teams?.find(item => item.team === element.dataset.team);
+  if (!row) return;
+  const date = element.dataset.date;
+  row.overrides = row.overrides || {};
+  if (STATE.teamPlannerBrush === 'AUTO') delete row.overrides[date];
+  else row.overrides[date] = STATE.teamPlannerBrush;
+  rebuildTeamPlannerDays(row);
+  STATE.teamPlannerDirty = true;
+  renderTeamPlanner();
+  updateTeamPlannerChangeCount();
+}
+
+function teamPlannerConfigChanged(team,key,value) {
+  const row = STATE.teamPlanner?.teams?.find(item => item.team === team);
+  if (!row) return;
+  row[key] = value;
+  rebuildTeamPlannerDays(row);
+  STATE.teamPlannerDirty = true;
+  renderTeamPlanner();
+  updateTeamPlannerChangeCount();
+}
+
+function rebuildTeamPlannerDays(row) {
+  const set = STATE.shiftSets.find(item => item.setId === row.setId);
+  const dates = STATE.teamPlanner?.dates || [];
+  row.days = dates.map(date => {
+    const autoShift = calculateTeamPlannerAutoShift(set,row.cycleStartDate,date,row.startShift);
+    const override = String(row.overrides?.[date] || '').toUpperCase();
+    const isOverride = ['MORNING','NIGHT','OFF','UNSET'].includes(override);
+    return {date:date,autoShift:autoShift,shift:isOverride?override:autoShift,isOverride:isOverride};
+  });
+  row.overrideCount = Object.keys(row.overrides||{}).filter(date => dates.includes(date)).length;
+}
+
+function calculateTeamPlannerAutoShift(set,cycleStartDate,date,startShift) {
+  if (!set || !cycleStartDate) return 'UNSET';
+  const diff = Math.round((parseLocalDate(date)-parseLocalDate(cycleStartDate))/86400000);
+  if (diff < 0) return 'UNSET';
+  const workDays = Math.max(1,Number(set.workDays||10));
+  const offDays = Math.max(0,Number(set.offDays||5));
+  const cycleLength = workDays + offDays;
+  if (cycleLength <= 0) return 'UNSET';
+  const cycleIndex = Math.floor(diff/cycleLength);
+  const dayInCycle = diff % cycleLength;
+  if (dayInCycle >= workDays) return 'OFF';
+  const baseShift = startShift || set.startShift || 'MORNING';
+  if (set.alternate) return cycleIndex%2===1 ? (baseShift==='MORNING'?'NIGHT':'MORNING') : baseShift;
+  return set.fixedShift || baseShift;
+}
+
+function updateTeamPlannerChangeCount() {
+  const box = document.getElementById('teamPlannerChangeCount');
+  if (!box) return;
+  box.textContent = STATE.teamPlannerDirty ? 'มีการแก้ไขที่ยังไม่ได้บันทึก' : 'บันทึกแบบร่างแล้ว';
+  box.style.color = STATE.teamPlannerDirty ? '#7a61c9' : '#7b8798';
+}
+
+function saveTeamPlanner() {
+  const data = STATE.teamPlanner;
+  if (!data) return;
+  const payload = {
+    anchorDate:data.anchorDate || STATE.teamPlannerAnchor || STATE.today,
+    teams:data.teams.map(row => ({team:row.team,setId:row.setId||'',cycleStartDate:row.cycleStartDate||data.from,startShift:row.startShift||'MORNING',overrides:row.overrides||{}}))
+  };
+  google.script.run
+    .withSuccessHandler(res => {
+      STATE.teamPlanner = res.planner;
+      STATE.teamPlannerAnchor = res.planner.anchorDate;
+      STATE.teamPlannerDirty = false;
+      renderTeamPlanner();
+      updateTeamPlannerChangeCount();
+      toast(res.message || 'บันทึกแบบร่าง TEAM แล้ว');
+    })
+    .withFailureHandler(showServerError)
+    .saveTeamPlanner(payload);
 }
 
 
@@ -7496,16 +7683,109 @@ function saveCalendarChanges() {
     .withSuccessHandler(
       res => {
 
-        toast(res.message);
+        /*
+         * จบ Loading ทันทีหลัง Backend บันทึกสำเร็จ
+         * ไม่ Reload Dashboard และปฏิทินทั้งรอบอีก
+         */
+        setLoading(false);
 
-        refreshDashboard();
 
-        loadIndividualCalendar();
+        const savedItems =
+          Array.isArray(
+            res?.savedItems
+          )
+            ? res.savedItems
+            : [];
+
+
+        savedItems.forEach(
+          saved => {
+
+            const day =
+              STATE.calendar
+                .days
+                .find(
+                  item =>
+                    item.date ===
+                    saved.date
+                );
+
+
+            if (!day) {
+              return;
+            }
+
+
+            day.shift =
+              saved.shift;
+
+
+            day.autoShift =
+              saved.autoShift;
+
+
+            day.hasOverride =
+              !!saved.hasOverride;
+
+
+            day.source =
+              saved.hasOverride
+                ? 'OVERRIDE'
+                : saved.source || 'AUTO';
+
+
+            day.setName =
+              saved.setName ||
+              day.setName ||
+              '';
+
+
+            if (
+              saved.note !==
+              undefined
+            ) {
+
+              day.note =
+                saved.note || '';
+            }
+          }
+        );
+
+
+        /*
+         * เคลียร์รายการแก้ไขบน Browser
+         * แล้ว render จาก STATE เดิมทันที
+         * ไม่มีการยิง API รอบสอง
+         */
+        STATE.calendarEdits =
+          {};
+
+
+        STATE.dashboardDirty =
+          true;
+
+
+        renderIndividualCalendar();
+
+        updateCalendarChangeCount();
+
+
+        toast(
+          res?.message ||
+          'บันทึกกะเรียบร้อยแล้ว'
+        );
       }
     )
 
     .withFailureHandler(
-      showServerError
+      err => {
+
+        setLoading(false);
+
+        showServerError(
+          err
+        );
+      }
     )
 
     .saveShiftOverridesBatch({
@@ -9378,6 +9658,9 @@ function refreshDashboard() {
 
         STATE.dashboard =
           data;
+
+        STATE.dashboardDirty =
+          false;
 
         renderDashboard();
       }

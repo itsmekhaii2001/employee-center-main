@@ -11,7 +11,8 @@ const APP = {
     ASSIGNMENTS: 'DB_Assignments',
     OVERRIDES: 'DB_ShiftOverrides',
     SHIFT_HISTORY: 'DB_ShiftHistory',
-    SETTINGS: 'DB_Settings'
+    SETTINGS: 'DB_Settings',
+    TEAM_PLANNER: 'DB_TeamPlanner'
   },
 
   POSITIONS: [
@@ -754,6 +755,18 @@ function callOwnerMethod_(
       () =>
         getEmployeeView(
           args[0]
+        ),
+
+    getTeamPlanner:
+      () =>
+        getTeamPlanner(
+          args[0]
+        ),
+
+    saveTeamPlanner:
+      () =>
+        saveTeamPlanner(
+          args[0]
         )
   };
 
@@ -1308,6 +1321,20 @@ function setupSystem_() {
       'sortOrder',
       'active',
       'createdAt',
+      'updatedAt'
+    ]
+  );
+
+
+  ensureSheet_(
+    ss,
+    APP.SHEETS.TEAM_PLANNER,
+    [
+      'team',
+      'setId',
+      'cycleStartDate',
+      'startShift',
+      'overridesJson',
       'updatedAt'
     ]
   );
@@ -3801,6 +3828,128 @@ function deleteShiftSet(
 }
 
 
+
+/* =========================================================
+   TEAM PLANNER — แบบร่างเปรียบเทียบ TEAM A / B / C
+========================================================= */
+
+function getTeamPlanner(request) {
+  const anchorDate = String(request?.anchorDate || todayText_()).trim();
+  const range = getRoundRange_(anchorDate);
+  const dates = createDateRange_(range.from,range.to,40);
+  const shiftSets = getShiftSets_();
+  const setMap = {};
+  shiftSets.forEach(set => { setMap[set.setId] = set; });
+  const savedMap = getTeamPlannerMap_();
+  const assignments = getAssignments_();
+
+  const teams = APP.DEFAULT_TEAMS.map(team => {
+    const saved = savedMap[team] || {};
+    const fallback = getDefaultTeamPlannerConfig_(team,assignments,shiftSets,range.from);
+    const setId = String(saved.setId || fallback.setId || shiftSets[0]?.setId || '');
+    const set = setMap[setId] || {};
+    const cycleStartDate = String(saved.cycleStartDate || fallback.cycleStartDate || range.from);
+    const startShift = String(saved.startShift || fallback.startShift || set.startShift || 'MORNING');
+    const overrides = parsePlannerOverrides_(saved.overridesJson);
+    const days = dates.map(date => {
+      const autoShift = calculateTeamPlannerShift_(set,cycleStartDate,date,startShift);
+      const override = String(overrides[date] || '').trim().toUpperCase();
+      const isOverride = ['MORNING','NIGHT','OFF','UNSET'].includes(override);
+      return {date:date,autoShift:autoShift,shift:isOverride?override:autoShift,isOverride:isOverride};
+    });
+    return {team:team,setId:setId,cycleStartDate:cycleStartDate,startShift:startShift,overrides:overrides,overrideCount:Object.keys(overrides).filter(date=>dates.includes(date)).length,days:days};
+  });
+
+  return {anchorDate:anchorDate,from:range.from,to:range.to,dates:dates,teams:teams};
+}
+
+function saveTeamPlanner(request) {
+  const teams = Array.isArray(request?.teams) ? request.teams : [];
+  if (!teams.length) throw new Error('ไม่พบข้อมูล TEAM ที่จะบันทึก');
+  const validSetIds = new Set(getShiftSets_().map(set => String(set.setId)));
+  const sheet = getDatabase_().getSheetByName(APP.SHEETS.TEAM_PLANNER);
+  const now = nowText_();
+  const rows = [];
+
+  APP.DEFAULT_TEAMS.forEach(team => {
+    const item = teams.find(row => String(row?.team || '').trim() === team);
+    if (!item) return;
+    const setId = String(item.setId || '').trim();
+    if (setId && !validSetIds.has(setId)) throw new Error('ไม่พบเซตกะของ ' + team);
+    const cycleStartDate = String(item.cycleStartDate || '').trim();
+    if (!cycleStartDate) throw new Error('กรุณาเลือกวันเริ่ม Cycle ของ ' + team);
+    const startShift = String(item.startShift || 'MORNING').trim().toUpperCase();
+    if (!['MORNING','NIGHT'].includes(startShift)) throw new Error('กะเริ่มต้นของ ' + team + ' ไม่ถูกต้อง');
+    const overrides = sanitizePlannerOverrides_(item.overrides);
+    rows.push([team,setId,cycleStartDate,startShift,JSON.stringify(overrides),now]);
+  });
+
+  if (sheet.getLastRow() > 1) sheet.getRange(2,1,sheet.getLastRow()-1,sheet.getLastColumn()).clearContent();
+  if (rows.length) sheet.getRange(2,1,rows.length,6).setValues(rows);
+
+  const planner = getTeamPlanner({anchorDate:String(request?.anchorDate || todayText_())});
+  return {ok:true,message:'บันทึกแบบร่าง TEAM A / B / C แล้ว',planner:planner};
+}
+
+function getTeamPlannerMap_() {
+  const sheet = getDatabase_().getSheetByName(APP.SHEETS.TEAM_PLANNER);
+  if (!sheet || sheet.getLastRow() < 2) return {};
+  const values = sheet.getDataRange().getDisplayValues();
+  const headers = values[0].map(value => String(value || '').trim());
+  const result = {};
+  values.slice(1).forEach(row => {
+    const obj = {};
+    headers.forEach((header,index) => { obj[header] = row[index]; });
+    const team = String(obj.team || '').trim();
+    if (team) result[team] = obj;
+  });
+  return result;
+}
+
+function getDefaultTeamPlannerConfig_(team,assignments,shiftSets,anchorDate) {
+  const assignment = assignments.filter(item => String(item.active || 'TRUE').toUpperCase() !== 'FALSE' && String(item.scopeType || '').toUpperCase() === 'TEAM' && String(item.scopeValue || '').trim() === team && String(item.startDate || '') <= anchorDate).sort((a,b) => String(b.startDate || '').localeCompare(String(a.startDate || '')) || String(b.createdAt || '').localeCompare(String(a.createdAt || '')))[0];
+  if (assignment) {
+    const set = shiftSets.find(item => String(item.setId) === String(assignment.setId)) || {};
+    return {setId:String(assignment.setId || ''),cycleStartDate:String(assignment.cycleStartDate || assignment.startDate || anchorDate),startShift:String(assignment.startShift || set.startShift || 'MORNING')};
+  }
+  const firstSet = shiftSets[0] || {};
+  return {setId:String(firstSet.setId || ''),cycleStartDate:anchorDate,startShift:String(firstSet.startShift || 'MORNING')};
+}
+
+function calculateTeamPlannerShift_(set,cycleStartDate,date,startShift) {
+  if (!set || !set.setId || !cycleStartDate) return 'UNSET';
+  const diff = dayDiff_(cycleStartDate,date);
+  if (diff < 0) return 'UNSET';
+  const workDays = Math.max(1,Number(set.workDays || 10));
+  const offDays = Math.max(0,Number(set.offDays || 5));
+  const cycleLength = workDays + offDays;
+  if (cycleLength <= 0) return 'UNSET';
+  const cycleIndex = Math.floor(diff/cycleLength);
+  const dayInCycle = diff % cycleLength;
+  if (dayInCycle >= workDays) return 'OFF';
+  const baseShift = String(startShift || set.startShift || 'MORNING').toUpperCase();
+  const alternate = set.alternate === true || String(set.alternate).toUpperCase() === 'TRUE';
+  if (alternate) return cycleIndex%2===1 ? (baseShift==='MORNING'?'NIGHT':'MORNING') : baseShift;
+  return String(set.fixedShift || baseShift).toUpperCase();
+}
+
+function parsePlannerOverrides_(text) {
+  if (!text) return {};
+  try { return sanitizePlannerOverrides_(JSON.parse(String(text))); } catch (_) { return {}; }
+}
+
+function sanitizePlannerOverrides_(input) {
+  const result = {};
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return result;
+  Object.entries(input).forEach(([date,shift]) => {
+    date = String(date || '').trim();
+    shift = String(shift || '').trim().toUpperCase();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date) && ['MORNING','NIGHT','OFF','UNSET'].includes(shift)) result[date] = shift;
+  });
+  return result;
+}
+
+
 /* =========================================================
    ASSIGNMENTS
 ========================================================= */
@@ -4687,7 +4836,7 @@ function saveShiftOverridesBatch(
     ).trim();
 
 
-  const items =
+  const rawItems =
     Array.isArray(
       data?.items
     )
@@ -4703,127 +4852,30 @@ function saveShiftOverridesBatch(
   }
 
 
-  if (!items.length) {
+  if (!rawItems.length) {
 
     return {
 
       ok: true,
 
       message:
-        'ไม่มีรายการเปลี่ยนแปลง'
+        'ไม่มีรายการเปลี่ยนแปลง',
+
+      savedItems:
+        []
     };
   }
 
 
-  const employee =
-    getEmployees_()
-      .find(
-        e =>
-          e.employeeId ===
-          employeeId
-      );
-
-
-  if (!employee) {
-
-    throw new Error(
-      'ไม่พบพนักงาน'
-    );
-  }
-
-
-  const setMap = {};
-
-
-  getShiftSets_()
-    .forEach(
-      set => {
-
-        setMap[
-          set.setId
-        ] = set;
-      }
-    );
-
-
-  const assignments =
-    getAssignments_();
-
-
-  const existing =
-    getSheetObjects_(
-      APP.SHEETS.OVERRIDES
-    );
-
-
-  const map =
+  /*
+   * ถ้าวันเดียวกันถูกส่งมาซ้ำ
+   * ใช้ค่าล่าสุดเพียงรายการเดียว
+   */
+  const itemMap =
     new Map();
 
 
-  existing.forEach(
-    row => {
-
-      const id =
-        String(
-          row.employeeId || ''
-        ).trim();
-
-      const date =
-        String(
-          row.date || ''
-        ).trim();
-
-
-      if (
-        !id ||
-        !date
-      ) {
-        return;
-      }
-
-
-      map.set(
-        id + '|' + date,
-        {
-          employeeId:
-            id,
-
-          date:
-            date,
-
-          shift:
-            String(
-              row.shift || 'AUTO'
-            )
-            .trim()
-            .toUpperCase() ||
-            'AUTO',
-
-          note:
-            String(
-              row.note || ''
-            ),
-
-          updatedAt:
-            row.updatedAt || ''
-        }
-      );
-    }
-  );
-
-
-  const validManualShifts = [
-    'MORNING',
-    'NIGHT',
-    'OFF',
-    'UNSET'
-  ];
-
-
-  const historyRows = [];
-
-
-  items.forEach(
+  rawItems.forEach(
     item => {
 
       const date =
@@ -4862,178 +4914,495 @@ function saveShiftOverridesBatch(
       }
 
 
-      const key =
-        employeeId +
-        '|' +
-        date;
-
-
-      const old =
-        map.get(key) || {
-          employeeId:
-            employeeId,
-          date:
-            date,
-          shift:
-            'AUTO',
-          note:
-            '',
-          updatedAt:
-            ''
-        };
-
-
-      const oldStoredShift =
-        String(
-          old.shift || 'AUTO'
-        )
-        .trim()
-        .toUpperCase() ||
-        'AUTO';
-
-
-      const automatic =
-        calculateEmployeeShift_(
-          employee,
-          date,
-          setMap,
-          assignments,
-          {}
-        );
-
-
-      const oldEffectiveShift =
-        validManualShifts.includes(
-          oldStoredShift
-        )
-          ? oldStoredShift
-          : automatic.shift;
-
-
-      const newEffectiveShift =
-        validManualShifts.includes(
-          shift
-        )
-          ? shift
-          : automatic.shift;
-
-
-      /*
-       * เก็บประวัติเมื่อ "วิธีการกำหนดกะ" เปลี่ยนจริง
-       * เช่น เช้า -> หยุด หรือ Override -> AUTO
-       */
-      if (
-        oldStoredShift !==
+      itemMap.set(
+        date,
         shift
-      ) {
-
-        historyRows.push({
-
-          historyId:
-            'HIS_' +
-            Utilities.getUuid(),
-
-          employeeId:
-            employee.employeeId,
-
-          nickname:
-            employee.nickname,
-
-          team:
-            employee.team,
-
-          position:
-            employee.position,
-
-          date:
-            date,
-
-          oldShift:
-            oldEffectiveShift,
-
-          newShift:
-            newEffectiveShift,
-
-          action:
-            shift === 'AUTO'
-              ? 'กลับไปใช้ตามเซตกะ'
-              : shift === 'UNSET'
-                ? 'กำหนดไม่มีกะ'
-                : 'แก้กะรายบุคคล',
-
-          changedAt:
-            nowText_()
-        });
-      }
-
-
-      const note =
-        String(
-          old.note || ''
-        );
-
-
-      /*
-       * ถ้ากลับไปใช้ตามเซต และไม่มีหมายเหตุ
-       * ไม่จำเป็นต้องเก็บแถวไว้
-       */
-      if (
-        shift === 'AUTO' &&
-        !note.trim()
-      ) {
-
-        map.delete(key);
-
-        return;
-      }
-
-
-      map.set(
-        key,
-        {
-          employeeId:
-            employeeId,
-
-          date:
-            date,
-
-          shift:
-            shift,
-
-          note:
-            note,
-
-          updatedAt:
-            nowText_()
-        }
       );
     }
   );
 
 
-  rewriteShiftOverrides_(
+  const items =
     Array.from(
-      map.values()
+      itemMap.entries()
     )
+    .map(
+      ([date, shift]) => ({
+        date:
+          date,
+
+        shift:
+          shift
+      })
+    );
+
+
+  if (!items.length) {
+
+    return {
+
+      ok: true,
+
+      message:
+        'ไม่มีรายการเปลี่ยนแปลง',
+
+      savedItems:
+        []
+    };
+  }
+
+
+  const lock =
+    LockService
+      .getScriptLock();
+
+
+  lock.waitLock(
+    15000
   );
 
 
-  appendShiftHistory_(
-    historyRows
-  );
+  try {
+
+    const employee =
+      getEmployees_()
+        .find(
+          e =>
+            e.employeeId ===
+            employeeId
+        );
 
 
-  return {
+    if (!employee) {
 
-    ok: true,
+      throw new Error(
+        'ไม่พบพนักงาน'
+      );
+    }
 
-    message:
-      'บันทึกกะรายบุคคลแล้ว ' +
-      items.length +
-      ' วัน'
-  };
+
+    const setMap = {};
+
+
+    getShiftSets_()
+      .forEach(
+        set => {
+
+          setMap[
+            set.setId
+          ] = set;
+        }
+      );
+
+
+    const assignments =
+      getAssignments_();
+
+
+    /*
+     * อ่าน DB_ShiftOverrides เพียง 1 ครั้ง
+     * แล้วแก้เฉพาะแถวที่เกี่ยวข้อง
+     * ไม่ล้างและเขียนทั้งตารางใหม่
+     */
+    const state =
+      loadOverrideSheetState_();
+
+
+    const validManualShifts = [
+      'MORNING',
+      'NIGHT',
+      'OFF',
+      'UNSET'
+    ];
+
+
+    const historyRows = [];
+
+    const rowWrites =
+      new Map();
+
+    const clearRows =
+      new Set();
+
+    const appendRows = [];
+
+    const availableBlankRows =
+      [...state.blankRows];
+
+
+    const savedItems = [];
+
+    let changedCount = 0;
+
+
+    items.forEach(
+      item => {
+
+        const date =
+          item.date;
+
+
+        const shift =
+          item.shift;
+
+
+        const key =
+          employeeId +
+          '|' +
+          date;
+
+
+        const oldEntry =
+          state.byKey.get(
+            key
+          );
+
+
+        const old =
+          oldEntry
+            ? oldEntry.object
+            : {
+                employeeId:
+                  employeeId,
+
+                date:
+                  date,
+
+                shift:
+                  'AUTO',
+
+                note:
+                  '',
+
+                updatedAt:
+                  ''
+              };
+
+
+        const oldStoredShift =
+          String(
+            old.shift || 'AUTO'
+          )
+          .trim()
+          .toUpperCase() ||
+          'AUTO';
+
+
+        const automatic =
+          calculateEmployeeShift_(
+            employee,
+            date,
+            setMap,
+            assignments,
+            {}
+          );
+
+
+        const oldEffectiveShift =
+          validManualShifts.includes(
+            oldStoredShift
+          )
+            ? oldStoredShift
+            : automatic.shift;
+
+
+        const newEffectiveShift =
+          validManualShifts.includes(
+            shift
+          )
+            ? shift
+            : automatic.shift;
+
+
+        const note =
+          String(
+            old.note || ''
+          );
+
+
+        const storageChanged =
+          oldStoredShift !==
+          shift;
+
+
+        if (
+          storageChanged
+        ) {
+
+          changedCount++;
+
+
+          historyRows.push({
+
+            historyId:
+              'HIS_' +
+              Utilities.getUuid(),
+
+            employeeId:
+              employee.employeeId,
+
+            nickname:
+              employee.nickname,
+
+            team:
+              employee.team,
+
+            position:
+              employee.position,
+
+            date:
+              date,
+
+            oldShift:
+              oldEffectiveShift,
+
+            newShift:
+              newEffectiveShift,
+
+            action:
+              shift === 'AUTO'
+                ? 'กลับไปใช้ตามเซตกะ'
+                : shift === 'UNSET'
+                  ? 'กำหนดไม่มีกะ'
+                  : 'แก้กะรายบุคคล',
+
+            changedAt:
+              nowText_()
+          });
+        }
+
+
+        /*
+         * AUTO + ไม่มี note = ไม่ต้องมีแถวใน DB
+         */
+        if (
+          shift === 'AUTO' &&
+          !note.trim()
+        ) {
+
+          if (
+            oldEntry &&
+            storageChanged
+          ) {
+
+            clearRows.add(
+              oldEntry.rowNumber
+            );
+          }
+
+
+          state.byKey.delete(
+            key
+          );
+
+        } else if (
+          storageChanged ||
+          !oldEntry
+        ) {
+
+          const rowObject = {
+
+            employeeId:
+              employeeId,
+
+            date:
+              date,
+
+            shift:
+              shift,
+
+            note:
+              note,
+
+            updatedAt:
+              nowText_()
+          };
+
+
+          const rowValues =
+            buildOverrideRowValues_(
+              state,
+              oldEntry?.values,
+              rowObject
+            );
+
+
+          if (oldEntry) {
+
+            rowWrites.set(
+              oldEntry.rowNumber,
+              rowValues
+            );
+
+
+            state.byKey.set(
+              key,
+              {
+                rowNumber:
+                  oldEntry.rowNumber,
+
+                values:
+                  rowValues,
+
+                object:
+                  rowObject
+              }
+            );
+
+          } else if (
+            availableBlankRows.length
+          ) {
+
+            const rowNumber =
+              availableBlankRows.shift();
+
+
+            rowWrites.set(
+              rowNumber,
+              rowValues
+            );
+
+
+            state.byKey.set(
+              key,
+              {
+                rowNumber:
+                  rowNumber,
+
+                values:
+                  rowValues,
+
+                object:
+                  rowObject
+              }
+            );
+
+          } else {
+
+            appendRows.push(
+              {
+                key:
+                  key,
+
+                values:
+                  rowValues,
+
+                object:
+                  rowObject
+              }
+            );
+          }
+        }
+
+
+        savedItems.push({
+
+          date:
+            date,
+
+          shift:
+            newEffectiveShift,
+
+          autoShift:
+            automatic.shift,
+
+          hasOverride:
+            validManualShifts
+              .includes(
+                shift
+              ),
+
+          source:
+            validManualShifts
+              .includes(
+                shift
+              )
+              ? 'OVERRIDE'
+              : automatic.source,
+
+          setName:
+            automatic.setName || '',
+
+          note:
+            note
+        });
+      }
+    );
+
+
+    /*
+     * เขียนเฉพาะแถวที่เปลี่ยน
+     */
+    writeOverrideRowsFast_(
+      state.sheet,
+      rowWrites,
+      state.lastColumn
+    );
+
+
+    clearOverrideRowsFast_(
+      state.sheet,
+      clearRows,
+      state.lastColumn
+    );
+
+
+    if (
+      appendRows.length
+    ) {
+
+      const startRow =
+        Math.max(
+          2,
+          state.sheet.getLastRow() + 1
+        );
+
+
+      state.sheet
+        .getRange(
+          startRow,
+          1,
+          appendRows.length,
+          state.lastColumn
+        )
+        .setValues(
+          appendRows.map(
+            item =>
+              item.values
+          )
+        );
+    }
+
+
+    appendShiftHistory_(
+      historyRows
+    );
+
+
+    return {
+
+      ok:
+        true,
+
+      message:
+        changedCount
+          ? 'บันทึกกะรายบุคคลแล้ว ' +
+            changedCount +
+            ' วัน'
+          : 'ข้อมูลกะเป็นค่าปัจจุบันอยู่แล้ว',
+
+      changedCount:
+        changedCount,
+
+      savedItems:
+        savedItems
+    };
+
+  } finally {
+
+    lock.releaseLock();
+  }
 }
-
 
 /**
  * เพิ่มประวัติการแก้กะ
@@ -5302,130 +5671,132 @@ function saveEmployeeDayNote(
   }
 
 
-  const existing =
-    getSheetObjects_(
-      APP.SHEETS.OVERRIDES
-    );
+  const lock =
+    LockService
+      .getScriptLock();
 
 
-  const map =
-    new Map();
-
-
-  existing.forEach(
-    row => {
-
-      const id =
-        String(
-          row.employeeId || ''
-        ).trim();
-
-      const rowDate =
-        String(
-          row.date || ''
-        ).trim();
-
-
-      if (
-        !id ||
-        !rowDate
-      ) {
-        return;
-      }
-
-
-      map.set(
-        id + '|' + rowDate,
-        {
-          employeeId:
-            id,
-
-          date:
-            rowDate,
-
-          shift:
-            String(
-              row.shift || 'AUTO'
-            )
-            .trim()
-            .toUpperCase() ||
-            'AUTO',
-
-          note:
-            String(
-              row.note || ''
-            ),
-
-          updatedAt:
-            row.updatedAt || ''
-        }
-      );
-    }
+  lock.waitLock(
+    15000
   );
 
 
-  const key =
-    employeeId +
-    '|' +
-    date;
+  try {
+
+    const state =
+      loadOverrideSheetState_();
 
 
-  const old =
-    map.get(key) || {
-      employeeId:
-        employeeId,
-      date:
-        date,
-      shift:
+    const key =
+      employeeId +
+      '|' +
+      date;
+
+
+    const oldEntry =
+      state.byKey.get(
+        key
+      );
+
+
+    const old =
+      oldEntry
+        ? oldEntry.object
+        : {
+            employeeId:
+              employeeId,
+
+            date:
+              date,
+
+            shift:
+              'AUTO',
+
+            note:
+              '',
+
+            updatedAt:
+              ''
+          };
+
+
+    let shift =
+      String(
+        old.shift || 'AUTO'
+      )
+      .trim()
+      .toUpperCase();
+
+
+    if (
+      ![
         'AUTO',
-      note:
-        '',
-      updatedAt:
-        ''
-    };
+        'MORNING',
+        'NIGHT',
+        'OFF',
+        'UNSET'
+      ].includes(
+        shift
+      )
+    ) {
+
+      shift =
+        'AUTO';
+    }
 
 
-  let shift =
-    String(
-      old.shift || 'AUTO'
-    )
-    .trim()
-    .toUpperCase();
+    /*
+     * ถ้าค่า note เดิมเท่ากัน ไม่ต้องเขียนชีต
+     */
+    if (
+      String(
+        old.note || ''
+      ) === note
+    ) {
+
+      return {
+
+        ok:
+          true,
+
+        message:
+          note
+            ? 'หมายเหตุเป็นค่าปัจจุบันอยู่แล้ว'
+            : 'ไม่มีหมายเหตุให้ลบ',
+
+        employeeId:
+          employeeId,
+
+        date:
+          date,
+
+        note:
+          note
+      };
+    }
 
 
-  if (
-    ![
-      'AUTO',
-      'MORNING',
-      'NIGHT',
-      'OFF',
-      'UNSET'
-    ].includes(
-      shift
-    )
-  ) {
+    if (
+      !note &&
+      shift === 'AUTO'
+    ) {
 
-    shift =
-      'AUTO';
-  }
+      if (oldEntry) {
 
+        state.sheet
+          .getRange(
+            oldEntry.rowNumber,
+            1,
+            1,
+            state.lastColumn
+          )
+          .clearContent();
+      }
 
-  /*
-   * ลบหมายเหตุ:
-   * ถ้าวันนี้ไม่มี override กะด้วย ก็ลบทั้งแถว
-   */
-  if (
-    !note &&
-    shift === 'AUTO'
-  ) {
+    } else {
 
-    map.delete(key);
+      const rowObject = {
 
-  } else {
-
-    map.set(
-      key,
-      {
         employeeId:
           employeeId,
 
@@ -5440,36 +5811,546 @@ function saveEmployeeDayNote(
 
         updatedAt:
           nowText_()
+      };
+
+
+      const rowValues =
+        buildOverrideRowValues_(
+          state,
+          oldEntry?.values,
+          rowObject
+        );
+
+
+      let rowNumber =
+        oldEntry?.rowNumber;
+
+
+      if (!rowNumber) {
+
+        rowNumber =
+          state.blankRows.length
+            ? state.blankRows[0]
+            : Math.max(
+                2,
+                state.sheet.getLastRow() + 1
+              );
       }
-    );
+
+
+      state.sheet
+        .getRange(
+          rowNumber,
+          1,
+          1,
+          state.lastColumn
+        )
+        .setValues([
+          rowValues
+        ]);
+    }
+
+
+    return {
+
+      ok:
+        true,
+
+      message:
+        note
+          ? 'บันทึกหมายเหตุแล้ว'
+          : 'ลบหมายเหตุแล้ว',
+
+      employeeId:
+        employeeId,
+
+      date:
+        date,
+
+      note:
+        note
+    };
+
+  } finally {
+
+    lock.releaseLock();
   }
+}
+
+/**
+ * โหลด DB_ShiftOverrides 1 ครั้ง พร้อมตำแหน่งแถวจริง
+ * ใช้สำหรับบันทึกแบบเร็วโดยไม่ rewrite ทั้งชีต
+ */
+function loadOverrideSheetState_() {
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.OVERRIDES
+      );
 
 
-  rewriteShiftOverrides_(
-    Array.from(
-      map.values()
-    )
+  const lastColumn =
+    Math.max(
+      5,
+      sheet.getLastColumn()
+    );
+
+
+  const headers =
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        lastColumn
+      )
+      .getDisplayValues()[0]
+      .map(
+        value =>
+          String(
+            value || ''
+          ).trim()
+      );
+
+
+  const required = [
+    'employeeId',
+    'date',
+    'shift',
+    'note',
+    'updatedAt'
+  ];
+
+
+  const columns = {};
+
+
+  required.forEach(
+    header => {
+
+      const index =
+        headers.indexOf(
+          header
+        );
+
+
+      if (
+        index < 0
+      ) {
+
+        throw new Error(
+          'DB_ShiftOverrides ไม่มีคอลัมน์ ' +
+          header
+        );
+      }
+
+
+      columns[
+        header
+      ] = index;
+    }
+  );
+
+
+  const lastRow =
+    sheet.getLastRow();
+
+
+  const values =
+    lastRow > 1
+      ? sheet
+          .getRange(
+            2,
+            1,
+            lastRow - 1,
+            lastColumn
+          )
+          .getDisplayValues()
+      : [];
+
+
+  const byKey =
+    new Map();
+
+
+  const blankRows = [];
+
+
+  values.forEach(
+    (
+      row,
+      index
+    ) => {
+
+      const rowNumber =
+        index + 2;
+
+
+      const employeeId =
+        String(
+          row[
+            columns.employeeId
+          ] || ''
+        ).trim();
+
+
+      const date =
+        String(
+          row[
+            columns.date
+          ] || ''
+        ).trim();
+
+
+      if (
+        !employeeId &&
+        !date
+      ) {
+
+        blankRows.push(
+          rowNumber
+        );
+
+        return;
+      }
+
+
+      if (
+        !employeeId ||
+        !date
+      ) {
+        return;
+      }
+
+
+      byKey.set(
+        employeeId +
+        '|' +
+        date,
+        {
+          rowNumber:
+            rowNumber,
+
+          values:
+            [...row],
+
+          object: {
+            employeeId:
+              employeeId,
+
+            date:
+              date,
+
+            shift:
+              String(
+                row[
+                  columns.shift
+                ] || 'AUTO'
+              )
+              .trim()
+              .toUpperCase() ||
+              'AUTO',
+
+            note:
+              String(
+                row[
+                  columns.note
+                ] || ''
+              ),
+
+            updatedAt:
+              String(
+                row[
+                  columns.updatedAt
+                ] || ''
+              )
+          }
+        }
+      );
+    }
   );
 
 
   return {
 
-    ok: true,
+    sheet:
+      sheet,
 
-    message:
-      note
-        ? 'บันทึกหมายเหตุแล้ว'
-        : 'ลบหมายเหตุแล้ว',
+    lastColumn:
+      lastColumn,
 
-    employeeId:
-      employeeId,
+    headers:
+      headers,
 
-    date:
-      date,
+    columns:
+      columns,
 
-    note:
-      note
+    byKey:
+      byKey,
+
+    blankRows:
+      blankRows
   };
+}
+
+
+/**
+ * สร้าง array สำหรับเขียน 1 แถว
+ * โดยรักษาคอลัมน์อื่นที่อาจมีอยู่ในชีต
+ */
+function buildOverrideRowValues_(
+  state,
+  existingValues,
+  rowObject
+) {
+
+  const values =
+    Array.isArray(
+      existingValues
+    )
+      ? [
+          ...existingValues
+        ]
+      : new Array(
+          state.lastColumn
+        ).fill('');
+
+
+  while (
+    values.length <
+    state.lastColumn
+  ) {
+
+    values.push('');
+  }
+
+
+  Object
+    .entries(
+      rowObject
+    )
+    .forEach(
+      (
+        [key, value]
+      ) => {
+
+        if (
+          state.columns[
+            key
+          ] === undefined
+        ) {
+          return;
+        }
+
+
+        values[
+          state.columns[
+            key
+          ]
+        ] =
+          value ?? '';
+      }
+    );
+
+
+  return values;
+}
+
+
+/**
+ * เขียนแถวที่เปลี่ยนแบบ batch เป็นช่วงติดกัน
+ */
+function writeOverrideRowsFast_(
+  sheet,
+  rowWrites,
+  lastColumn
+) {
+
+  if (
+    !rowWrites ||
+    !rowWrites.size
+  ) {
+    return;
+  }
+
+
+  const entries =
+    Array
+      .from(
+        rowWrites.entries()
+      )
+      .sort(
+        (a, b) =>
+          a[0] - b[0]
+      );
+
+
+  let startRow =
+    entries[0][0];
+
+
+  let previousRow =
+    entries[0][0];
+
+
+  let values = [
+    entries[0][1]
+  ];
+
+
+  for (
+    let i = 1;
+    i < entries.length;
+    i++
+  ) {
+
+    const [
+      rowNumber,
+      rowValues
+    ] =
+      entries[i];
+
+
+    if (
+      rowNumber ===
+      previousRow + 1
+    ) {
+
+      values.push(
+        rowValues
+      );
+
+    } else {
+
+      sheet
+        .getRange(
+          startRow,
+          1,
+          values.length,
+          lastColumn
+        )
+        .setValues(
+          values
+        );
+
+
+      startRow =
+        rowNumber;
+
+
+      values = [
+        rowValues
+      ];
+    }
+
+
+    previousRow =
+      rowNumber;
+  }
+
+
+  sheet
+    .getRange(
+      startRow,
+      1,
+      values.length,
+      lastColumn
+    )
+    .setValues(
+      values
+    );
+}
+
+
+/**
+ * ล้างเฉพาะแถวที่ต้องลบ
+ */
+function clearOverrideRowsFast_(
+  sheet,
+  clearRows,
+  lastColumn
+) {
+
+  if (
+    !clearRows ||
+    !clearRows.size
+  ) {
+    return;
+  }
+
+
+  const rows =
+    Array
+      .from(
+        clearRows
+      )
+      .sort(
+        (a, b) =>
+          a - b
+      );
+
+
+  let startRow =
+    rows[0];
+
+
+  let previousRow =
+    rows[0];
+
+
+  let count = 1;
+
+
+  for (
+    let i = 1;
+    i < rows.length;
+    i++
+  ) {
+
+    const rowNumber =
+      rows[i];
+
+
+    if (
+      rowNumber ===
+      previousRow + 1
+    ) {
+
+      count++;
+
+    } else {
+
+      sheet
+        .getRange(
+          startRow,
+          1,
+          count,
+          lastColumn
+        )
+        .clearContent();
+
+
+      startRow =
+        rowNumber;
+
+      count = 1;
+    }
+
+
+    previousRow =
+      rowNumber;
+  }
+
+
+  sheet
+    .getRange(
+      startRow,
+      1,
+      count,
+      lastColumn
+    )
+    .clearContent();
 }
 
 

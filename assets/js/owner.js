@@ -22,7 +22,8 @@
     getShiftHistory: 30000,
     getSchedule: 60000,
     getManpower: 60000,
-    getEmployeeView: 60000
+    getEmployeeView: 60000,
+    getTeamPlanner: 60000
   };
 
   /*
@@ -40,7 +41,8 @@
     'saveEmployeeDayNote',
     'saveShiftOverridesBatch',
     'saveSetting',
-    'deleteSetting'
+    'deleteSetting',
+    'saveTeamPlanner'
   ]);
 
   const READ_CACHE = new Map();
