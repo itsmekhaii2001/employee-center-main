@@ -6590,7 +6590,7 @@ function openSeatEditor(
     getSeatSideLabel(
       seatNo
     ) +
-      ' · เลือกพนักงานได้หลายคน'
+      ' · เลือกพนักงานได้หลายคนจากรายชื่อทั้งหมด'
   );
 
 
@@ -6664,36 +6664,50 @@ function handleSeatModalBackdrop(
 
 function getSeatCandidateEmployees() {
 
-  const selected =
-    new Set(
-      STATE.seatEditEmployeeIds ||
-      []
-    );
-
-
+  /*
+   * รายชื่อในหน้าจัดโต๊ะต้องเป็น "พนักงานทั้งหมด"
+   * ไม่กรองตามฝั่ง / ตำแหน่ง / TEAM
+   *
+   * ป้ายฝั่งซ้าย-ขวาเป็นเพียงชื่อโซนของโต๊ะเท่านั้น
+   */
   return (
     STATE.employees ||
     []
   )
-    .filter(
-      employee =>
-        (
-          employee.status ===
-          'ทำงาน'
-        ) ||
-        selected.has(
-          employee.employeeId
+    .slice()
+    .sort(
+      (
+        a,
+        b
+      ) => {
+
+        const teamCompare =
+          String(
+            a.team || ''
+          )
+          .localeCompare(
+            String(
+              b.team || ''
+            ),
+            'th'
+          );
+
+
+        if (teamCompare) {
+          return teamCompare;
+        }
+
+
+        return String(
+          a.employeeId || ''
         )
-    )
-    .filter(
-      employee =>
-        employeeAllowedForSeat(
-          employee,
-          STATE.seatEditSeatNo
-        ) ||
-        selected.has(
-          employee.employeeId
-        )
+        .localeCompare(
+          String(
+            b.employeeId || ''
+          ),
+          'th'
+        );
+      }
     );
 }
 
@@ -6780,7 +6794,7 @@ function renderSeatEmployeeEditor() {
 
     list.innerHTML = `
       <div class="empty" style="grid-column:1/-1;padding:22px 12px">
-        ไม่พบพนักงานของฝั่งนี้
+        ไม่พบพนักงานตามคำค้น
       </div>
     `;
 
@@ -6831,6 +6845,8 @@ function renderSeatEmployeeEditor() {
                     ${escapeHtml(employee.team || '-')}
                     ·
                     ${escapeHtml(employee.position || '-')}
+                    ·
+                    ${escapeHtml(employee.status || '-')}
                   </div>
 
                 </span>
