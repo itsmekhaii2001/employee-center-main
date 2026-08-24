@@ -3942,7 +3942,7 @@ th:nth-child(2) {
 >
 
 
-<div class="grid grid-2">
+<div class="grid grid-3">
 
 
 <div class="card">
@@ -4061,10 +4061,7 @@ th:nth-child(2) {
 </div>
 
 
-<div
-  class="card"
-  style="grid-column:1/-1"
->
+<div class="card">
 
   <div class="section-title">
 
@@ -4075,25 +4072,31 @@ th:nth-child(2) {
       </h2>
 
       <p>
-        รายการตำแหน่งที่นี่จะเชื่อมไปหน้าเพิ่มพนักงาน หน้า “จัดกะ” และตัวกรองตำแหน่งทั้งระบบ
+        ตำแหน่งจะเชื่อมไปหน้าเพิ่มพนักงาน หน้า “จัดกะ” และ Dropdown ทั้งระบบ
       </p>
 
     </div>
 
-    <div class="actions">
+    <div
+      class="actions"
+      style="
+        gap:6px;
+        flex-wrap:wrap;
+      "
+    >
 
       <button
         class="btn btn-soft btn-sm"
         onclick="goToPositionUsage('employees')"
       >
-        👤 ไปหน้าเพิ่มพนักงาน
+        👤 เพิ่มพนักงาน
       </button>
 
       <button
         class="btn btn-soft btn-sm"
         onclick="goToPositionUsage('assign')"
       >
-        📅 ไปหน้าจัดกะ
+        📅 จัดกะ
       </button>
 
     </div>
@@ -4326,7 +4329,7 @@ const PAGE_META = {
 
   settings: [
     'ตั้งค่า',
-    'จัดการ TEAM และสาขา'
+    'จัดการ TEAM สาขา และตำแหน่ง'
   ],
 
   employeeView: [
