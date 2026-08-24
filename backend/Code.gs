@@ -12,7 +12,8 @@ const APP = {
     OVERRIDES: 'DB_ShiftOverrides',
     SHIFT_HISTORY: 'DB_ShiftHistory',
     SETTINGS: 'DB_Settings',
-    TEAM_PLANNER: 'DB_TeamPlanner'
+    TEAM_PLANNER: 'DB_TeamPlanner',
+    SEATING: 'DB_Seating'
   },
 
   POSITIONS: [
@@ -679,6 +680,12 @@ function callOwnerMethod_(
           args[0]
         ),
 
+    saveSeatAssignment:
+      () =>
+        saveSeatAssignment(
+          args[0]
+        ),
+
     saveShiftSet:
       () =>
         saveShiftSet(
@@ -1204,7 +1211,7 @@ function ensureSystemReadyCached_() {
       .getScriptCache();
 
   const key =
-    'EMPLOYEE_CENTER_SYSTEM_READY_V3';
+    'EMPLOYEE_CENTER_SYSTEM_READY_V4';
 
 
   if (
@@ -1338,6 +1345,19 @@ function setupSystem_() {
       'updatedAt'
     ]
   );
+
+
+  ensureSheet_(
+    ss,
+    APP.SHEETS.SEATING,
+    [
+      'seatNo',
+      'employeeIdsJson',
+      'emailNamesJson',
+      'updatedAt'
+    ]
+  );
+
 
   seedDefaultShiftSets_();
   seedDefaultSettings_();
@@ -1970,6 +1990,9 @@ function getAppDataFast_() {
 
     assignments:
       assignments,
+
+    seatingPlan:
+      getSeatingPlan_(),
 
     importSheets:
       getImportSheets_(),
@@ -3870,6 +3893,397 @@ function deleteEmployee(
       getEmployees_()
   };
 }
+
+
+
+/* =========================================================
+   SEATING PLAN
+========================================================= */
+
+function parseStringArrayJson_(
+  text
+) {
+
+  if (!text) {
+    return [];
+  }
+
+
+  try {
+
+    const value =
+      JSON.parse(
+        String(text)
+      );
+
+
+    if (
+      !Array.isArray(
+        value
+      )
+    ) {
+      return [];
+    }
+
+
+    return value
+      .map(
+        item =>
+          String(
+            item ?? ''
+          )
+          .trim()
+      )
+      .filter(Boolean);
+
+  } catch (_) {
+
+    return [];
+  }
+}
+
+
+function uniqueCleanStrings_(
+  values,
+  maxLength
+) {
+
+  const result = [];
+  const seen = new Set();
+
+
+  (
+    Array.isArray(values)
+      ? values
+      : []
+  )
+    .forEach(
+      value => {
+
+        const cleaned =
+          String(
+            value ?? ''
+          )
+          .trim()
+          .slice(
+            0,
+            maxLength || 120
+          );
+
+
+        if (!cleaned) {
+          return;
+        }
+
+
+        const key =
+          cleaned.toUpperCase();
+
+
+        if (
+          seen.has(
+            key
+          )
+        ) {
+          return;
+        }
+
+
+        seen.add(
+          key
+        );
+
+        result.push(
+          cleaned
+        );
+      }
+    );
+
+
+  return result;
+}
+
+
+function getSeatingPlan_() {
+
+  const saved = {};
+
+
+  getSheetObjects_(
+    APP.SHEETS.SEATING
+  )
+  .forEach(
+    row => {
+
+      const seatNo =
+        Number(
+          row.seatNo
+        );
+
+
+      if (
+        !Number.isInteger(
+          seatNo
+        ) ||
+        seatNo < 1 ||
+        seatNo > 48
+      ) {
+        return;
+      }
+
+
+      saved[
+        seatNo
+      ] = {
+
+        seatNo:
+          seatNo,
+
+        employeeIds:
+          uniqueCleanStrings_(
+            parseStringArrayJson_(
+              row.employeeIdsJson
+            ),
+            80
+          ),
+
+        emailNames:
+          uniqueCleanStrings_(
+            parseStringArrayJson_(
+              row.emailNamesJson
+            ),
+            80
+          ),
+
+        updatedAt:
+          String(
+            row.updatedAt || ''
+          )
+      };
+    }
+  );
+
+
+  const result = [];
+
+
+  for (
+    let seatNo = 1;
+    seatNo <= 48;
+    seatNo++
+  ) {
+
+    result.push(
+      saved[
+        seatNo
+      ] || {
+
+        seatNo:
+          seatNo,
+
+        employeeIds:
+          [],
+
+        emailNames:
+          [],
+
+        updatedAt:
+          ''
+      }
+    );
+  }
+
+
+  return result;
+}
+
+
+function saveSeatAssignment(
+  data
+) {
+
+  data =
+    data || {};
+
+
+  const seatNo =
+    Number(
+      data.seatNo
+    );
+
+
+  if (
+    !Number.isInteger(
+      seatNo
+    ) ||
+    seatNo < 1 ||
+    seatNo > 48
+  ) {
+
+    throw new Error(
+      'หมายเลขโต๊ะไม่ถูกต้อง'
+    );
+  }
+
+
+  const employeeIds =
+    uniqueCleanStrings_(
+      data.employeeIds,
+      80
+    );
+
+
+  const emailNames =
+    uniqueCleanStrings_(
+      data.emailNames,
+      80
+    );
+
+
+  /*
+   * ตรวจว่ารหัสพนักงานยังมีอยู่จริง
+   * แต่อนุญาตหลายคนต่อ 1 โต๊ะ
+   */
+  const employeeMap = {};
+
+
+  getEmployees_()
+    .forEach(
+      employee => {
+
+        employeeMap[
+          String(
+            employee.employeeId || ''
+          )
+          .trim()
+          .toUpperCase()
+        ] = employee;
+      }
+    );
+
+
+  employeeIds
+    .forEach(
+      employeeId => {
+
+        if (
+          !employeeMap[
+            employeeId
+              .toUpperCase()
+          ]
+        ) {
+
+          throw new Error(
+            'ไม่พบพนักงานรหัส ' +
+            employeeId
+          );
+        }
+      }
+    );
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.SEATING
+      );
+
+
+  const rows =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  let foundRow =
+    0;
+
+
+  for (
+    let r = 1;
+    r < rows.length;
+    r++
+  ) {
+
+    if (
+      Number(
+        rows[r][0]
+      ) ===
+      seatNo
+    ) {
+
+      foundRow =
+        r + 1;
+
+      break;
+    }
+  }
+
+
+  const row = [
+
+    seatNo,
+
+    JSON.stringify(
+      employeeIds
+    ),
+
+    JSON.stringify(
+      emailNames
+    ),
+
+    nowText_()
+  ];
+
+
+  if (foundRow) {
+
+    sheet
+      .getRange(
+        foundRow,
+        1,
+        1,
+        row.length
+      )
+      .setValues(
+        [row]
+      );
+
+  } else {
+
+    sheet
+      .appendRow(
+        row
+      );
+  }
+
+
+  return {
+
+    ok:
+      true,
+
+    message:
+      (
+        employeeIds.length ||
+        emailNames.length
+      )
+        ? (
+            'บันทึกโต๊ะที่ ' +
+            seatNo +
+            ' แล้ว'
+          )
+        : (
+            'ล้างโต๊ะที่ ' +
+            seatNo +
+            ' แล้ว'
+          ),
+
+    seatingPlan:
+      getSeatingPlan_()
+  };
+}
+
 
 
 /* =========================================================

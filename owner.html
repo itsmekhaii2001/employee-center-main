@@ -2594,7 +2594,9 @@ th:nth-child(2) {
    SEATING PLAN
 ========================= */
 
-.seating-card{overflow:hidden}
+.seating-card{
+  overflow:hidden
+}
 
 .seating-head{
   display:flex;
@@ -2632,7 +2634,7 @@ th:nth-child(2) {
 }
 
 .seating-plan{
-  min-width:940px;
+  min-width:1080px;
   display:flex;
   flex-direction:column;
   gap:12px
@@ -2642,62 +2644,88 @@ th:nth-child(2) {
 .seating-row{
   display:grid;
   grid-template-columns:
-    repeat(5,minmax(90px,1fr))
+    repeat(5,minmax(110px,1fr))
     72px
-    repeat(3,minmax(90px,1fr));
+    repeat(3,minmax(110px,1fr));
   gap:10px;
   align-items:stretch
 }
 
 .seating-side-label{
-  min-height:34px;
+  min-height:42px;
   display:flex;
   align-items:center;
   justify-content:center;
-  border-radius:10px;
+  padding:8px 12px;
+  border-radius:12px;
   font-size:11px;
   font-weight:900;
   color:#637083;
   background:#f6f8fb;
-  border:1px solid #e6ebf2
+  border:1px solid #e6ebf2;
+  text-align:center
 }
 
-.seating-side-label.left{grid-column:1/span 5}
+.seating-side-label.left{
+  grid-column:1/span 5;
+  background:linear-gradient(135deg,#f8fbff,#f5f7ff);
+  color:#536783
+}
+
 .seating-side-label.aisle{
   grid-column:6;
   background:#fff;
   border-style:dashed;
   color:#99a3b2
 }
-.seating-side-label.right{grid-column:7/span 3}
+
+.seating-side-label.right{
+  grid-column:7/span 3;
+  background:linear-gradient(135deg,#fff8fb,#f9f5ff);
+  color:#715d83
+}
 
 .seat-box{
-  min-height:86px;
+  min-height:122px;
   padding:12px 10px;
   display:flex;
   flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:5px;
+  align-items:stretch;
+  justify-content:flex-start;
+  gap:7px;
   border:1px solid #dce5ef;
-  border-radius:16px;
+  border-radius:17px;
   background:linear-gradient(145deg,#fff 0%,#f8fbff 100%);
   color:#40516a;
-  text-align:center;
+  text-align:left;
   box-shadow:0 7px 18px rgba(73,91,119,.06);
-  transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease
+  transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;
+  cursor:pointer
 }
 
 .seat-box:hover{
   transform:translateY(-2px);
-  border-color:#bad7ec;
-  box-shadow:0 10px 24px rgba(73,91,119,.10)
+  border-color:#9fcef0;
+  box-shadow:0 12px 26px rgba(73,91,119,.11)
+}
+
+.seat-box.occupied{
+  border-color:#b8d7ee;
+  background:linear-gradient(145deg,#fff 0%,#f3f9ff 50%,#faf7ff 100%)
+}
+
+.seat-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:6px
 }
 
 .seat-number{
   font-size:12px;
   font-weight:950;
-  color:#365879
+  color:#365879;
+  white-space:nowrap
 }
 
 .seat-status{
@@ -2705,19 +2733,76 @@ th:nth-child(2) {
   align-items:center;
   justify-content:center;
   min-height:24px;
-  padding:0 9px;
+  padding:0 8px;
   border-radius:999px;
   background:#edf8f3;
   color:#4d9a78;
+  font-size:9px;
+  font-weight:900;
+  white-space:nowrap
+}
+
+.seat-box.occupied .seat-status{
+  background:#e9f3ff;
+  color:#4d78a9
+}
+
+.seat-empty{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#a0a9b7;
   font-size:10px;
-  font-weight:850
+  font-weight:800;
+  text-align:center
+}
+
+.seat-person{
+  padding:7px 8px;
+  border-radius:10px;
+  background:rgba(255,255,255,.88);
+  border:1px solid #e6edf5
+}
+
+.seat-person-main{
+  color:#35526f;
+  font-size:10px;
+  font-weight:950;
+  line-height:1.35
+}
+
+.seat-person-sub{
+  margin-top:2px;
+  color:#7b8798;
+  font-size:9px;
+  font-weight:750;
+  line-height:1.35
+}
+
+.seat-more{
+  color:#708198;
+  font-size:9px;
+  font-weight:850;
+  text-align:center
+}
+
+.seat-mails{
+  padding-top:3px;
+  border-top:1px dashed #e0e7ef;
+  color:#856f9e;
+  font-size:9px;
+  font-weight:850;
+  line-height:1.45;
+  overflow:hidden;
+  text-overflow:ellipsis
 }
 
 .seat-aisle{
   display:flex;
   align-items:center;
   justify-content:center;
-  min-height:86px;
+  min-height:122px;
   border-radius:14px;
   border:1px dashed #d7dee8;
   background:repeating-linear-gradient(
@@ -2737,9 +2822,288 @@ th:nth-child(2) {
   font-weight:800
 }
 
+
+/* SEAT EDITOR MODAL */
+
+.seat-modal{
+  position:fixed;
+  inset:0;
+  z-index:10080;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:22px;
+  background:rgba(53,67,88,.30);
+  backdrop-filter:blur(7px)
+}
+
+.seat-modal.show{
+  display:flex
+}
+
+.seat-modal-card{
+  width:min(760px,calc(100vw - 32px));
+  max-height:min(760px,calc(100vh - 38px));
+  overflow:auto;
+  border:1px solid rgba(205,218,235,.90);
+  border-radius:28px;
+  background:linear-gradient(145deg,#fff 0%,#f8fbff 52%,#fbf7ff 100%);
+  box-shadow:0 30px 90px rgba(55,69,96,.25)
+}
+
+.seat-modal-head{
+  position:sticky;
+  top:0;
+  z-index:2;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  padding:22px 24px 18px;
+  border-bottom:1px solid #e7edf4;
+  background:rgba(255,255,255,.94);
+  backdrop-filter:blur(12px)
+}
+
+.seat-modal-title{
+  margin:0;
+  color:#35455d;
+  font-size:19px;
+  font-weight:950
+}
+
+.seat-modal-sub{
+  margin-top:5px;
+  color:#7c8899;
+  font-size:11px;
+  font-weight:750;
+  line-height:1.55
+}
+
+.seat-modal-close{
+  width:38px;
+  height:38px;
+  border:0;
+  border-radius:12px;
+  background:#f1f4f8;
+  color:#6f7b8b;
+  font-size:18px;
+  font-weight:900;
+  cursor:pointer
+}
+
+.seat-modal-body{
+  padding:20px 24px 24px
+}
+
+.seat-editor-block{
+  padding:16px;
+  border:1px solid #e3eaf2;
+  border-radius:18px;
+  background:rgba(255,255,255,.78);
+  margin-bottom:14px
+}
+
+.seat-editor-label{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:10px;
+  color:#526178;
+  font-size:11px;
+  font-weight:950
+}
+
+.seat-editor-hint{
+  color:#97a1af;
+  font-size:9px;
+  font-weight:750
+}
+
+.seat-search{
+  width:100%;
+  height:42px;
+  padding:0 13px;
+  border:1px solid #dbe4ee;
+  border-radius:12px;
+  background:#fff;
+  color:#40516a;
+  font-family:inherit;
+  font-size:11px;
+  font-weight:800;
+  outline:none
+}
+
+.seat-search:focus{
+  border-color:#9bc9e8;
+  box-shadow:0 0 0 3px rgba(92,165,215,.12)
+}
+
+.seat-employee-list{
+  max-height:270px;
+  overflow:auto;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  margin-top:10px
+}
+
+.seat-employee-option{
+  display:flex;
+  align-items:flex-start;
+  gap:9px;
+  padding:10px;
+  border:1px solid #e5ebf2;
+  border-radius:12px;
+  background:#fff;
+  cursor:pointer
+}
+
+.seat-employee-option:hover{
+  border-color:#bcd9ee;
+  background:#f9fcff
+}
+
+.seat-employee-option.selected{
+  border-color:#9ccbef;
+  background:#eff8ff
+}
+
+.seat-employee-option input{
+  margin-top:3px
+}
+
+.seat-employee-name{
+  color:#3e526c;
+  font-size:10px;
+  font-weight:950;
+  line-height:1.4
+}
+
+.seat-employee-meta{
+  margin-top:2px;
+  color:#8994a4;
+  font-size:9px;
+  font-weight:750;
+  line-height:1.4
+}
+
+.seat-selected-chips,
+.seat-email-chips{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  margin-top:10px
+}
+
+.seat-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  min-height:28px;
+  padding:0 9px;
+  border-radius:999px;
+  background:#edf6ff;
+  color:#52789d;
+  font-size:9px;
+  font-weight:900
+}
+
+.seat-chip.email{
+  background:#f5efff;
+  color:#8066a1
+}
+
+.seat-chip button{
+  border:0;
+  padding:0;
+  background:transparent;
+  color:inherit;
+  font-size:12px;
+  font-weight:950;
+  cursor:pointer
+}
+
+.seat-email-entry{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:8px
+}
+
+.seat-email-add{
+  min-width:92px;
+  border:0;
+  border-radius:12px;
+  background:linear-gradient(135deg,#70b8e2,#8c79dc);
+  color:#fff;
+  font-family:inherit;
+  font-size:10px;
+  font-weight:900;
+  cursor:pointer
+}
+
+.seat-modal-actions{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+  padding-top:4px
+}
+
+.seat-modal-actions-right{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap
+}
+
+.seat-clear-btn{
+  min-height:42px;
+  padding:0 14px;
+  border:1px solid #ffd1d8;
+  border-radius:12px;
+  background:#fff4f6;
+  color:#d26477;
+  font-family:inherit;
+  font-size:10px;
+  font-weight:900;
+  cursor:pointer
+}
+
+.seat-save-btn{
+  min-height:42px;
+  padding:0 18px;
+  border:0;
+  border-radius:12px;
+  background:linear-gradient(135deg,#4ca0d1,#7b67d4);
+  color:#fff;
+  font-family:inherit;
+  font-size:10px;
+  font-weight:950;
+  cursor:pointer;
+  box-shadow:0 8px 18px rgba(98,106,202,.18)
+}
+
+.seat-cancel-btn{
+  min-height:42px;
+  padding:0 14px;
+  border:1px solid #dfe6ee;
+  border-radius:12px;
+  background:#f5f7fa;
+  color:#69778a;
+  font-family:inherit;
+  font-size:10px;
+  font-weight:900;
+  cursor:pointer
+}
+
 @media(max-width:900px){
   .seating-head{flex-direction:column}
+  .seat-employee-list{grid-template-columns:1fr}
 }
+
 
 </style>
 
@@ -3510,14 +3874,17 @@ th:nth-child(2) {
       <div class="section-title">
         <div>
           <h2>🪑 ผังที่นั่ง</h2>
-          <p>ตารางผังที่นั่ง 6 แถว · ฝั่งซ้าย 5 BOX · ฝั่งขวา 3 BOX</p>
+          <p>
+            คลิกที่โต๊ะเพื่อเลือกพนักงานได้หลายคน และใส่ชื่อเมลสั้น ๆ ได้หลายรายการ
+          </p>
         </div>
       </div>
 
       <div class="seating-summary">
         <span class="seating-summary-badge">6 แถว</span>
-        <span class="seating-summary-badge">8 BOX / แถว</span>
-        <span class="seating-summary-badge">รวม 48 ที่นั่ง</span>
+        <span class="seating-summary-badge">ซ้าย 5 โต๊ะ / แถว</span>
+        <span class="seating-summary-badge">ขวา 3 โต๊ะ / แถว</span>
+        <span class="seating-summary-badge">รวม 48 โต๊ะ</span>
       </div>
 
     </div>
@@ -4749,6 +5116,164 @@ th:nth-child(2) {
 </div>
 
 
+
+<div
+  class="seat-modal"
+  id="seatEditorModal"
+  onclick="handleSeatModalBackdrop(event)"
+>
+
+  <div class="seat-modal-card">
+
+    <div class="seat-modal-head">
+
+      <div>
+        <h3
+          class="seat-modal-title"
+          id="seatEditorTitle"
+        >
+          🪑 โต๊ะ
+        </h3>
+
+        <div
+          class="seat-modal-sub"
+          id="seatEditorSub"
+        ></div>
+      </div>
+
+      <button
+        type="button"
+        class="seat-modal-close"
+        onclick="closeSeatEditor()"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <div class="seat-modal-body">
+
+      <div class="seat-editor-block">
+
+        <div class="seat-editor-label">
+
+          <span>
+            👥 เลือกพนักงาน
+          </span>
+
+          <span
+            class="seat-editor-hint"
+            id="seatEmployeeCountHint"
+          >
+            เลือกได้มากกว่า 1 คน
+          </span>
+
+        </div>
+
+        <input
+          class="seat-search"
+          id="seatEmployeeSearch"
+          placeholder="ค้นหารหัส / ชื่อเล่น / TEAM / ตำแหน่ง"
+          oninput="filterSeatEmployeeList(this.value)"
+        >
+
+        <div
+          class="seat-selected-chips"
+          id="seatSelectedEmployees"
+        ></div>
+
+        <div
+          class="seat-employee-list"
+          id="seatEmployeeList"
+        ></div>
+
+      </div>
+
+
+      <div class="seat-editor-block">
+
+        <div class="seat-editor-label">
+
+          <span>
+            ✉️ ชื่อเมล
+          </span>
+
+          <span class="seat-editor-hint">
+            ใส่แค่ชื่อสั้น ๆ · เพิ่มได้หลายเมล
+          </span>
+
+        </div>
+
+        <div class="seat-email-entry">
+
+          <input
+            class="seat-search"
+            id="seatEmailInput"
+            placeholder="เช่น admin01, wd02"
+            onkeydown="handleSeatEmailKey(event)"
+          >
+
+          <button
+            type="button"
+            class="seat-email-add"
+            onclick="addSeatEmail()"
+          >
+            + เพิ่มเมล
+          </button>
+
+        </div>
+
+        <div
+          class="seat-email-chips"
+          id="seatEmailChips"
+        ></div>
+
+      </div>
+
+
+      <div class="seat-modal-actions">
+
+        <button
+          type="button"
+          class="seat-clear-btn"
+          onclick="clearCurrentSeat()"
+        >
+          🗑️ ล้างโต๊ะนี้
+        </button>
+
+
+        <div class="seat-modal-actions-right">
+
+          <button
+            type="button"
+            class="seat-cancel-btn"
+            onclick="closeSeatEditor()"
+          >
+            ยกเลิก
+          </button>
+
+          <button
+            type="button"
+            class="seat-save-btn"
+            id="seatSaveButton"
+            onclick="saveCurrentSeat()"
+          >
+            💾 บันทึกโต๊ะ
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
 <div
   class="toast"
   id="toast"
@@ -4786,6 +5311,20 @@ let STATE = {
   employees: [],
 
   inlineEmployeeEditId:
+    '',
+
+  seatingPlan: [],
+
+  seatEditSeatNo:
+    0,
+
+  seatEditEmployeeIds:
+    [],
+
+  seatEditEmails:
+    [],
+
+  seatEmployeeSearch:
     '',
 
   shiftSets: [],
@@ -4846,7 +5385,7 @@ const PAGE_META = {
 
   seating: [
     'ผังที่นั่ง',
-    'ผัง 6 แถว · ซ้าย 5 BOX · ขวา 3 BOX'
+    'จัดพนักงานและชื่อเมลลงโต๊ะ · รองรับหลายคนต่อโต๊ะ'
   ],
 
   shiftSets: [
@@ -5356,6 +5895,154 @@ if (
    SEATING PLAN
 ========================= */
 
+function getSeatSide(
+  seatNo
+) {
+
+  const index =
+    (
+      Number(seatNo) - 1
+    ) % 8;
+
+
+  return index < 5
+    ? 'LEFT'
+    : 'RIGHT';
+}
+
+
+function getSeatSideLabel(
+  seatNo
+) {
+
+  return getSeatSide(
+    seatNo
+  ) === 'LEFT'
+    ? 'ฝั่งซ้าย · แอดมิน / ฝาก-ถอน / Follow'
+    : 'ฝั่งขวา · การตลาด / พัฒนา / AE';
+}
+
+
+function normalizeSeatPosition(
+  value
+) {
+
+  return String(
+    value || ''
+  )
+    .trim()
+    .toLowerCase()
+    .replace(
+      /\s+/g,
+      ''
+    )
+    .replace(
+      /[-–—]/g,
+      ''
+    );
+}
+
+
+function employeeAllowedForSeat(
+  employee,
+  seatNo
+) {
+
+  const position =
+    normalizeSeatPosition(
+      employee?.position
+    );
+
+
+  if (
+    getSeatSide(
+      seatNo
+    ) === 'LEFT'
+  ) {
+
+    return (
+      position.includes(
+        'แอดมิน'
+      ) ||
+      (
+        position.includes(
+          'ฝาก'
+        ) &&
+        position.includes(
+          'ถอน'
+        )
+      ) ||
+      position.includes(
+        'follow'
+      ) ||
+      position.includes(
+        'ติดตาม'
+      )
+    );
+  }
+
+
+  return (
+    position.includes(
+      'การตลาด'
+    ) ||
+    position.includes(
+      'พัฒนา'
+    ) ||
+    position === 'ae'
+  );
+}
+
+
+function getSeatingMap() {
+
+  const map = {};
+
+
+  (
+    STATE.seatingPlan ||
+    []
+  )
+    .forEach(
+      seat => {
+
+        map[
+          Number(
+            seat.seatNo
+          )
+        ] = seat;
+      }
+    );
+
+
+  return map;
+}
+
+
+function getSeatEmployee(
+  employeeId
+) {
+
+  return (
+    STATE.employees ||
+    []
+  )
+    .find(
+      employee =>
+        String(
+          employee.employeeId || ''
+        )
+        .trim()
+        .toUpperCase() ===
+        String(
+          employeeId || ''
+        )
+        .trim()
+        .toUpperCase()
+    );
+}
+
+
 function renderSeatPlan() {
 
   const container =
@@ -5363,17 +6050,26 @@ function renderSeatPlan() {
       'seatingPlan'
     );
 
+
   if (!container) {
     return;
   }
 
-  let seatNumber = 1;
+
+  const seatingMap =
+    getSeatingMap();
+
+
+  let seatNumber =
+    1;
+
 
   let html = `
+
     <div class="seating-side-head">
 
       <div class="seating-side-label left">
-        ฝั่งซ้าย · 5 BOX
+        ฝั่งซ้าย · ทีม แอดมิน / ฝาก-ถอน / Follow
       </div>
 
       <div class="seating-side-label aisle">
@@ -5381,11 +6077,12 @@ function renderSeatPlan() {
       </div>
 
       <div class="seating-side-label right">
-        ฝั่งขวา · 3 BOX
+        ฝั่งขวา · ทีม การตลาด / พัฒนา / AE
       </div>
 
     </div>
   `;
+
 
   for (
     let row = 1;
@@ -5395,17 +6092,32 @@ function renderSeatPlan() {
 
     html += `
       <div>
-        <div class="seating-row" data-seat-row="${row}">
+
+        <div
+          class="seating-row"
+          data-seat-row="${row}"
+        >
     `;
+
 
     for (
       let left = 1;
       left <= 5;
       left++
     ) {
-      html += seatBoxHtml(seatNumber);
+
+      html +=
+        seatBoxHtml(
+          seatNumber,
+          seatingMap[
+            seatNumber
+          ]
+        );
+
+
       seatNumber++;
     }
+
 
     html += `
       <div class="seat-aisle">
@@ -5413,14 +6125,25 @@ function renderSeatPlan() {
       </div>
     `;
 
+
     for (
       let right = 1;
       right <= 3;
       right++
     ) {
-      html += seatBoxHtml(seatNumber);
+
+      html +=
+        seatBoxHtml(
+          seatNumber,
+          seatingMap[
+            seatNumber
+          ]
+        );
+
+
       seatNumber++;
     }
+
 
     html += `
         </div>
@@ -5428,39 +6151,969 @@ function renderSeatPlan() {
         <div class="seating-row-label">
           แถว ${row}
         </div>
+
       </div>
     `;
   }
 
-  container.innerHTML = html;
+
+  container.innerHTML =
+    html;
 }
 
 
-function seatBoxHtml(number) {
+function seatBoxHtml(
+  number,
+  seat
+) {
 
-  const padded =
-    String(number)
-      .padStart(
-        2,
-        '0'
+  const employeeIds =
+    Array.isArray(
+      seat?.employeeIds
+    )
+      ? seat.employeeIds
+      : [];
+
+
+  const emailNames =
+    Array.isArray(
+      seat?.emailNames
+    )
+      ? seat.emailNames
+      : [];
+
+
+  const people =
+    employeeIds
+      .map(
+        employeeId =>
+          getSeatEmployee(
+            employeeId
+          )
+      )
+      .filter(Boolean);
+
+
+  const occupied =
+    (
+      employeeIds.length > 0 ||
+      emailNames.length > 0
+    );
+
+
+  let peopleHtml = '';
+
+
+  people
+    .slice(
+      0,
+      3
+    )
+    .forEach(
+      employee => {
+
+        peopleHtml += `
+          <div class="seat-person">
+
+            <div class="seat-person-main">
+              ${escapeHtml(employee.employeeId)}
+              ·
+              ${escapeHtml(employee.nickname || '-')}
+            </div>
+
+            <div class="seat-person-sub">
+              ${escapeHtml(employee.team || '-')}
+              ·
+              ${escapeHtml(employee.position || '-')}
+            </div>
+
+          </div>
+        `;
+      }
+    );
+
+
+  if (
+    employeeIds.length >
+    3
+  ) {
+
+    peopleHtml += `
+      <div class="seat-more">
+        + อีก ${
+          employeeIds.length - 3
+        } คน
+      </div>
+    `;
+  }
+
+
+  const emailPreview =
+    emailNames
+      .slice(
+        0,
+        3
+      )
+      .map(
+        value =>
+          escapeHtml(
+            value
+          )
+      )
+      .join(
+        ' · '
       );
 
+
   return `
+
     <div
-      class="seat-box"
+      class="
+        seat-box
+        ${
+          occupied
+            ? 'occupied'
+            : ''
+        }
+      "
       data-seat="${number}"
-      title="ที่นั่ง ${padded}"
+      onclick="openSeatEditor(${number})"
+      title="คลิกเพื่อจัดโต๊ะที่ ${number}"
     >
-      <div class="seat-number">
-        BOX ${padded}
+
+      <div class="seat-top">
+
+        <div class="seat-number">
+          โต๊ะที่ ${number}
+        </div>
+
+        <div class="seat-status">
+          ${
+            occupied
+              ? (
+                  employeeIds.length
+                    ? employeeIds.length + ' คน'
+                    : 'มีเมล'
+                )
+              : 'ว่าง'
+          }
+        </div>
+
       </div>
 
-      <div class="seat-status">
-        ว่าง
-      </div>
+
+      ${
+        occupied
+          ? peopleHtml
+          : `
+              <div class="seat-empty">
+                + คลิกเพื่อเลือกพนักงาน
+              </div>
+            `
+      }
+
+
+      ${
+        emailNames.length
+          ? `
+              <div class="seat-mails">
+                ✉️ ${emailPreview}
+                ${
+                  emailNames.length > 3
+                    ? ' · +' + (emailNames.length - 3)
+                    : ''
+                }
+              </div>
+            `
+          : ''
+      }
+
     </div>
   `;
 }
+
+
+function openSeatEditor(
+  seatNo
+) {
+
+  seatNo =
+    Number(
+      seatNo
+    );
+
+
+  if (
+    !Number.isFinite(
+      seatNo
+    ) ||
+    seatNo < 1 ||
+    seatNo > 48
+  ) {
+    return;
+  }
+
+
+  const seat =
+    getSeatingMap()[
+      seatNo
+    ] || {};
+
+
+  STATE.seatEditSeatNo =
+    seatNo;
+
+
+  STATE.seatEditEmployeeIds =
+    Array.isArray(
+      seat.employeeIds
+    )
+      ? [
+          ...seat.employeeIds
+        ]
+      : [];
+
+
+  STATE.seatEditEmails =
+    Array.isArray(
+      seat.emailNames
+    )
+      ? [
+          ...seat.emailNames
+        ]
+      : [];
+
+
+  STATE.seatEmployeeSearch =
+    '';
+
+
+  setText(
+    'seatEditorTitle',
+    '🪑 โต๊ะที่ ' +
+      seatNo
+  );
+
+
+  setText(
+    'seatEditorSub',
+    getSeatSideLabel(
+      seatNo
+    ) +
+      ' · เลือกพนักงานได้หลายคน'
+  );
+
+
+  setValue(
+    'seatEmployeeSearch',
+    ''
+  );
+
+
+  setValue(
+    'seatEmailInput',
+    ''
+  );
+
+
+  renderSeatEmployeeEditor();
+
+  renderSeatEmailChips();
+
+
+  document
+    .getElementById(
+      'seatEditorModal'
+    )
+    ?.classList
+    .add(
+      'show'
+    );
+}
+
+
+function closeSeatEditor() {
+
+  document
+    .getElementById(
+      'seatEditorModal'
+    )
+    ?.classList
+    .remove(
+      'show'
+    );
+
+
+  STATE.seatEditSeatNo =
+    0;
+
+  STATE.seatEditEmployeeIds =
+    [];
+
+  STATE.seatEditEmails =
+    [];
+
+  STATE.seatEmployeeSearch =
+    '';
+}
+
+
+function handleSeatModalBackdrop(
+  event
+) {
+
+  if (
+    event?.target?.id ===
+    'seatEditorModal'
+  ) {
+
+    closeSeatEditor();
+  }
+}
+
+
+function getSeatCandidateEmployees() {
+
+  const selected =
+    new Set(
+      STATE.seatEditEmployeeIds ||
+      []
+    );
+
+
+  return (
+    STATE.employees ||
+    []
+  )
+    .filter(
+      employee =>
+        (
+          employee.status ===
+          'ทำงาน'
+        ) ||
+        selected.has(
+          employee.employeeId
+        )
+    )
+    .filter(
+      employee =>
+        employeeAllowedForSeat(
+          employee,
+          STATE.seatEditSeatNo
+        ) ||
+        selected.has(
+          employee.employeeId
+        )
+    );
+}
+
+
+function filterSeatEmployeeList(
+  search
+) {
+
+  STATE.seatEmployeeSearch =
+    String(
+      search || ''
+    )
+    .trim()
+    .toLowerCase();
+
+
+  renderSeatEmployeeEditor();
+}
+
+
+function renderSeatEmployeeEditor() {
+
+  const list =
+    document.getElementById(
+      'seatEmployeeList'
+    );
+
+
+  const chips =
+    document.getElementById(
+      'seatSelectedEmployees'
+    );
+
+
+  if (
+    !list ||
+    !chips
+  ) {
+    return;
+  }
+
+
+  const selected =
+    new Set(
+      STATE.seatEditEmployeeIds ||
+      []
+    );
+
+
+  let employees =
+    getSeatCandidateEmployees();
+
+
+  const q =
+    STATE.seatEmployeeSearch;
+
+
+  if (q) {
+
+    employees =
+      employees
+        .filter(
+          employee =>
+            [
+              employee.employeeId,
+              employee.nickname,
+              employee.team,
+              employee.position
+            ]
+            .join(
+              ' '
+            )
+            .toLowerCase()
+            .includes(
+              q
+            )
+        );
+  }
+
+
+  if (
+    !employees.length
+  ) {
+
+    list.innerHTML = `
+      <div class="empty" style="grid-column:1/-1;padding:22px 12px">
+        ไม่พบพนักงานของฝั่งนี้
+      </div>
+    `;
+
+  } else {
+
+    list.innerHTML =
+      employees
+        .map(
+          employee => {
+
+            const checked =
+              selected.has(
+                employee.employeeId
+              );
+
+
+            return `
+              <label
+                class="
+                  seat-employee-option
+                  ${
+                    checked
+                      ? 'selected'
+                      : ''
+                  }
+                "
+              >
+
+                <input
+                  type="checkbox"
+                  ${
+                    checked
+                      ? 'checked'
+                      : ''
+                  }
+                  onchange='toggleSeatEmployee(${jsonString(employee.employeeId)},this.checked)'
+                >
+
+                <span>
+
+                  <div class="seat-employee-name">
+                    ${escapeHtml(employee.employeeId)}
+                    ·
+                    ${escapeHtml(employee.nickname || '-')}
+                  </div>
+
+                  <div class="seat-employee-meta">
+                    ${escapeHtml(employee.team || '-')}
+                    ·
+                    ${escapeHtml(employee.position || '-')}
+                  </div>
+
+                </span>
+
+              </label>
+            `;
+          }
+        )
+        .join(
+          ''
+        );
+  }
+
+
+  chips.innerHTML =
+    (
+      STATE.seatEditEmployeeIds ||
+      []
+    )
+      .map(
+        employeeId => {
+
+          const employee =
+            getSeatEmployee(
+              employeeId
+            );
+
+
+          return `
+            <span class="seat-chip">
+
+              ${
+                employee
+                  ? (
+                      escapeHtml(
+                        employee.employeeId
+                      ) +
+                      ' · ' +
+                      escapeHtml(
+                        employee.nickname ||
+                        '-'
+                      )
+                    )
+                  : escapeHtml(
+                      employeeId
+                    )
+              }
+
+              <button
+                type="button"
+                onclick='removeSeatEmployee(${jsonString(employeeId)})'
+              >
+                ×
+              </button>
+
+            </span>
+          `;
+        }
+      )
+      .join(
+        ''
+      );
+
+
+  setText(
+    'seatEmployeeCountHint',
+    (
+      STATE.seatEditEmployeeIds ||
+      []
+    ).length
+      ? (
+          'เลือกแล้ว ' +
+          STATE.seatEditEmployeeIds.length +
+          ' คน'
+        )
+      : 'เลือกได้มากกว่า 1 คน'
+  );
+}
+
+
+function toggleSeatEmployee(
+  employeeId,
+  checked
+) {
+
+  const current =
+    new Set(
+      STATE.seatEditEmployeeIds ||
+      []
+    );
+
+
+  if (checked) {
+
+    current.add(
+      employeeId
+    );
+
+  } else {
+
+    current.delete(
+      employeeId
+    );
+  }
+
+
+  STATE.seatEditEmployeeIds =
+    [
+      ...current
+    ];
+
+
+  renderSeatEmployeeEditor();
+}
+
+
+function removeSeatEmployee(
+  employeeId
+) {
+
+  STATE.seatEditEmployeeIds =
+    (
+      STATE.seatEditEmployeeIds ||
+      []
+    )
+      .filter(
+        id =>
+          id !==
+          employeeId
+      );
+
+
+  renderSeatEmployeeEditor();
+}
+
+
+function handleSeatEmailKey(
+  event
+) {
+
+  if (
+    event.key ===
+    'Enter' ||
+    event.key ===
+    ','
+  ) {
+
+    event.preventDefault();
+
+    addSeatEmail();
+  }
+}
+
+
+function addSeatEmail() {
+
+  const input =
+    document.getElementById(
+      'seatEmailInput'
+    );
+
+
+  if (!input) {
+    return;
+  }
+
+
+  const raw =
+    String(
+      input.value || ''
+    );
+
+
+  const names =
+    raw
+      .split(
+        /[,;\n]+/
+      )
+      .map(
+        value =>
+          value.trim()
+      )
+      .filter(Boolean);
+
+
+  if (
+    !names.length
+  ) {
+    return;
+  }
+
+
+  const current =
+    new Set(
+      STATE.seatEditEmails ||
+      []
+    );
+
+
+  names
+    .forEach(
+      name => {
+
+        /*
+         * เมลเป็น "ชื่อสั้น ๆ" เท่านั้น
+         * จึงไม่บังคับรูปแบบ @domain
+         */
+        current.add(
+          name.slice(
+            0,
+            80
+          )
+        );
+      }
+    );
+
+
+  STATE.seatEditEmails =
+    [
+      ...current
+    ];
+
+
+  input.value =
+    '';
+
+
+  renderSeatEmailChips();
+}
+
+
+function renderSeatEmailChips() {
+
+  const container =
+    document.getElementById(
+      'seatEmailChips'
+    );
+
+
+  if (!container) {
+    return;
+  }
+
+
+  if (
+    !STATE.seatEditEmails
+      ?.length
+  ) {
+
+    container.innerHTML = `
+      <span
+        style="
+          color:#a0a9b7;
+          font-size:9px;
+          font-weight:750;
+        "
+      >
+        ยังไม่มีชื่อเมล
+      </span>
+    `;
+
+    return;
+  }
+
+
+  container.innerHTML =
+    STATE.seatEditEmails
+      .map(
+        (
+          email,
+          index
+        ) => `
+          <span class="seat-chip email">
+
+            ✉️
+            ${escapeHtml(email)}
+
+            <button
+              type="button"
+              onclick="removeSeatEmail(${index})"
+            >
+              ×
+            </button>
+
+          </span>
+        `
+      )
+      .join(
+        ''
+      );
+}
+
+
+function removeSeatEmail(
+  index
+) {
+
+  STATE.seatEditEmails =
+    (
+      STATE.seatEditEmails ||
+      []
+    )
+      .filter(
+        (
+          _,
+          i
+        ) =>
+          i !==
+          Number(index)
+      );
+
+
+  renderSeatEmailChips();
+}
+
+
+function saveCurrentSeat() {
+
+  if (
+    !STATE.seatEditSeatNo
+  ) {
+    return;
+  }
+
+
+  /*
+   * ถ้าพิมพ์ชื่อเมลค้างไว้ในช่อง
+   * ให้เพิ่มเข้า array ก่อนบันทึกด้วย
+   */
+  const emailInput =
+    document.getElementById(
+      'seatEmailInput'
+    );
+
+
+  if (
+    String(
+      emailInput?.value || ''
+    ).trim()
+  ) {
+
+    addSeatEmail();
+  }
+
+
+  const button =
+    document.getElementById(
+      'seatSaveButton'
+    );
+
+
+  if (button) {
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      '⏳ บันทึก...';
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      res => {
+
+        STATE.seatingPlan =
+          res.seatingPlan ||
+          [];
+
+
+        renderSeatPlan();
+
+        closeSeatEditor();
+
+
+        toast(
+          res.message ||
+          'บันทึกผังที่นั่งแล้ว'
+        );
+      }
+    )
+
+    .withFailureHandler(
+      err => {
+
+        if (button) {
+
+          button.disabled =
+            false;
+
+          button.textContent =
+            '💾 บันทึกโต๊ะ';
+        }
+
+
+        showServerError(
+          err
+        );
+      }
+    )
+
+    .saveSeatAssignment({
+      seatNo:
+        STATE.seatEditSeatNo,
+
+      employeeIds:
+        STATE.seatEditEmployeeIds,
+
+      emailNames:
+        STATE.seatEditEmails
+    });
+}
+
+
+function clearCurrentSeat() {
+
+  if (
+    !STATE.seatEditSeatNo
+  ) {
+    return;
+  }
+
+
+  if (
+    !confirm(
+      'ล้างพนักงานและชื่อเมลของโต๊ะที่ ' +
+      STATE.seatEditSeatNo +
+      ' ใช่ไหม?'
+    )
+  ) {
+    return;
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      res => {
+
+        STATE.seatingPlan =
+          res.seatingPlan ||
+          [];
+
+
+        renderSeatPlan();
+
+        closeSeatEditor();
+
+
+        toast(
+          'ล้างโต๊ะแล้ว'
+        );
+      }
+    )
+
+    .withFailureHandler(
+      showServerError
+    )
+
+    .saveSeatAssignment({
+      seatNo:
+        STATE.seatEditSeatNo,
+
+      employeeIds:
+        [],
+
+      emailNames:
+        []
+    });
+}
+
+
 
 
 /* =========================
