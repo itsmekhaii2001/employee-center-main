@@ -3142,7 +3142,7 @@ th:nth-child(2) {
   <div class="section-title">
     <div>
       <h2>📅 วางแผนและเปรียบเทียบ TEAM A / B / C</h2>
-      <p>เลือกเซตกะเดิมของแต่ละ TEAM แล้ววางเทียบกัน 3 แถวแบบปฏิทินแนวยาว · ลากปรับรายวันได้</p>
+      <p>เลือกเซตกะของแต่ละ TEAM แล้ววางเทียบกัน 3 แถวแบบปฏิทินแนวยาว · ลากปรับรายวันได้ · บันทึกแล้วมีผลกับตารางกะจริง</p>
     </div>
   </div>
 
@@ -3172,7 +3172,7 @@ th:nth-child(2) {
   </div>
 
   <div class="team-planner-actions">
-    <button class="btn btn-primary" onclick="saveTeamPlanner()">💾 บันทึกแบบร่าง TEAM</button>
+    <button class="btn btn-primary" onclick="saveTeamPlanner()">💾 บันทึกตาราง TEAM</button>
     <button class="btn btn-soft" onclick="loadTeamPlanner(true)">ยกเลิกการแก้ไข</button>
     <span class="team-planner-count" id="teamPlannerChangeCount">ยังไม่มีการแก้ไข</span>
   </div>
@@ -6314,7 +6314,7 @@ function calculateTeamPlannerAutoShift(set,cycleStartDate,date,startShift) {
 function updateTeamPlannerChangeCount() {
   const box = document.getElementById('teamPlannerChangeCount');
   if (!box) return;
-  box.textContent = STATE.teamPlannerDirty ? 'มีการแก้ไขที่ยังไม่ได้บันทึก' : 'บันทึกแบบร่างแล้ว';
+  box.textContent = STATE.teamPlannerDirty ? 'มีการแก้ไขที่ยังไม่ได้บันทึก' : 'บันทึกแล้ว';
   box.style.color = STATE.teamPlannerDirty ? '#7a61c9' : '#7b8798';
 }
 
@@ -6332,7 +6332,7 @@ function saveTeamPlanner() {
       STATE.teamPlannerDirty = false;
       renderTeamPlanner();
       updateTeamPlannerChangeCount();
-      toast(res.message || 'บันทึกแบบร่าง TEAM แล้ว');
+      toast(res.message || 'บันทึกตาราง TEAM แล้ว');
     })
     .withFailureHandler(showServerError)
     .saveTeamPlanner(payload);
