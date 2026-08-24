@@ -2162,33 +2162,38 @@ th:nth-child(2) {
   left:50%;
   top:50%;
 
-  right:auto;
-  bottom:auto;
-
   z-index:10050;
 
-  min-width:280px;
-  max-width:min(520px,calc(100vw - 32px));
+  width:min(460px,calc(100vw - 34px));
+
+  min-height:170px;
 
   padding:
-    18px 22px;
+    34px 28px 26px;
 
   border:
     1px solid
-    #dfe7ef;
+    rgba(167,198,234,.55);
 
-  border-radius:18px;
+  border-radius:30px;
 
   background:
-    rgba(255,255,255,.98);
+    linear-gradient(
+      135deg,
+      rgba(255,255,255,.98) 0%,
+      rgba(245,251,255,.98) 45%,
+      rgba(244,240,255,.98) 100%
+    );
 
-  color:#344054;
+  color:#35507a;
 
-  font-size:13px;
+  font-size:17px;
 
   font-weight:900;
 
   line-height:1.55;
+
+  letter-spacing:.1px;
 
   text-align:center;
 
@@ -2197,33 +2202,85 @@ th:nth-child(2) {
   pointer-events:none;
 
   transform:
-    translate(-50%,-44%)
-    scale(.94);
+    translate(-50%,-46%)
+    scale(.92);
 
   box-shadow:
-    0 22px 70px
-    rgba(55,65,81,.20);
+    0 28px 80px rgba(103,116,155,.24),
+    0 8px 22px rgba(120,133,167,.12);
 
   backdrop-filter:
-    blur(12px);
+    blur(14px);
 
   transition:
-    opacity .18s ease,
-    transform .22s ease;
+    opacity .20s ease,
+    transform .24s cubic-bezier(.22,1,.36,1);
+
+  overflow:hidden;
 }
 
 
 .toast::before {
 
-  content:'✅';
+  content:'✨';
 
-  display:block;
+  display:flex;
 
-  margin-bottom:7px;
+  align-items:center;
+  justify-content:center;
 
-  font-size:24px;
+  width:74px;
+  height:74px;
+
+  margin:0 auto 16px;
+
+  border-radius:999px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #7dc7ef 0%,
+      #8394ef 50%,
+      #af7df0 100%
+    );
+
+  color:#fff;
+
+  font-size:34px;
 
   line-height:1;
+
+  box-shadow:
+    0 14px 28px rgba(131,148,239,.28);
+}
+
+
+.toast::after {
+
+  content:'';
+
+  position:absolute;
+
+  inset:0;
+
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(125,199,239,.22),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at top right,
+      rgba(175,125,240,.18),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at bottom center,
+      rgba(255,255,255,.55),
+      transparent 38%
+    );
+
+  pointer-events:none;
 }
 
 
@@ -2237,54 +2294,91 @@ th:nth-child(2) {
 }
 
 
-.toast.toast-error {
+.toast.toast-success {
 
-  border-color:#ffc4ca;
+  border-color:rgba(157,214,255,.72);
 
   background:
-    rgba(255,247,248,.98);
+    linear-gradient(
+      135deg,
+      rgba(249,253,255,.99) 0%,
+      rgba(238,247,255,.99) 48%,
+      rgba(242,236,255,.99) 100%
+    );
 
-  color:#b54753;
+  color:#3a5f90;
+}
+
+
+.toast.toast-success::before {
+
+  content:'💖';
+}
+
+
+.toast.toast-error {
+
+  border-color:rgba(255,193,205,.85);
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255,248,249,.99) 0%,
+      rgba(255,239,243,.99) 52%,
+      rgba(255,243,248,.99) 100%
+    );
+
+  color:#c0526d;
 }
 
 
 .toast.toast-error::before {
 
-  content:'⚠️';
+  content:'🥺';
 }
 
 
 .toast.toast-warning {
 
-  border-color:#f2d48d;
+  border-color:rgba(247,216,149,.88);
 
   background:
-    rgba(255,251,239,.98);
+    linear-gradient(
+      135deg,
+      rgba(255,252,244,.99) 0%,
+      rgba(255,246,222,.99) 55%,
+      rgba(255,250,237,.99) 100%
+    );
 
-  color:#9a6d16;
+  color:#a67818;
 }
 
 
 .toast.toast-warning::before {
 
-  content:'💡';
+  content:'🌼';
 }
 
 
 .toast.toast-info {
 
-  border-color:#c9dff5;
+  border-color:rgba(184,220,255,.82);
 
   background:
-    rgba(247,251,255,.98);
+    linear-gradient(
+      135deg,
+      rgba(247,252,255,.99) 0%,
+      rgba(235,245,255,.99) 52%,
+      rgba(241,247,255,.99) 100%
+    );
 
-  color:#3f6f9f;
+  color:#4d78a9;
 }
 
 
 .toast.toast-info::before {
 
-  content:'ℹ️';
+  content:'🫶';
 }
 
 
@@ -11918,6 +12012,7 @@ function toast(
 
   el.classList
     .remove(
+      'toast-success',
       'toast-error',
       'toast-warning',
       'toast-info'
@@ -11949,6 +12044,13 @@ function toast(
     el.classList
       .add(
         'toast-info'
+      );
+
+  } else {
+
+    el.classList
+      .add(
+        'toast-success'
       );
   }
 
