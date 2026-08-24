@@ -6429,8 +6429,30 @@ function getSchedule(
   request
 ) {
 
+  /*
+   * ตารางกะจริงทั้งหมดใช้ helper ตัวเดียว
+   * หน้า "กำลังคน" จะอ้างอิง helper นี้ด้วย
+   * เพื่อให้ยอด เช้า / ดึก / หยุด / ไม่มีกะ
+   * ตรงกับหน้าตารางกะ 100%
+   */
+  return getScheduleInternal_(
+    request,
+    null
+  );
+}
+
+
+function getScheduleInternal_(
+  request,
+  preloaded
+) {
+
   request =
     request || {};
+
+
+  preloaded =
+    preloaded || {};
 
 
   let from =
@@ -6464,7 +6486,10 @@ function getSchedule(
 
 
   let employees =
-    getEmployees_()
+    (
+      preloaded.employees ||
+      getEmployees_()
+    )
       .filter(
         e =>
           String(
@@ -6553,7 +6578,10 @@ function getSchedule(
   const setMap = {};
 
 
-  getShiftSets_()
+  (
+    preloaded.shiftSets ||
+    getShiftSets_()
+  )
     .forEach(
       set => {
 
@@ -6565,6 +6593,7 @@ function getSchedule(
 
 
   const assignments =
+    preloaded.assignments ||
     getAssignments_();
 
 
@@ -6998,50 +7027,39 @@ function getManpowerInternal_(
   preloaded
 ) {
 
-  preloaded =
-    preloaded || {};
+  /*
+   * สำคัญ:
+   * ไม่คำนวณกะแยกอีกชุดแล้ว
+   *
+   * หน้า "กำลังคน" อ่านผลจากตารางกะจริง
+   * ผ่าน getScheduleInternal_() โดยตรง
+   *
+   * ถ้าหน้าตารางกะของวันที่นี้แสดง:
+   * - เช้า 20 คน
+   * - ดึก 30 คน
+   * - หยุด 50 คน
+   *
+   * หน้ากำลังคนจะนับจาก 20 / 30 / 50 ชุดเดียวกัน
+   */
+  const schedule =
+    getScheduleInternal_(
+      {
+        from:
+          date,
+
+        to:
+          date
+      },
+      preloaded || null
+    );
 
 
-  const employees =
-    (
-      preloaded.employees ||
-      getEmployees_()
+  const rows =
+    Array.isArray(
+      schedule.rows
     )
-      .filter(
-        e =>
-          String(
-            e.status || ''
-          ).trim() === 'ทำงาน'
-      );
-
-
-  const setMap = {};
-
-
-  (
-    preloaded.shiftSets ||
-    getShiftSets_()
-  )
-    .forEach(
-      set => {
-
-        setMap[
-          set.setId
-        ] = set;
-      }
-    );
-
-
-  const assignments =
-    preloaded.assignments ||
-    getAssignments_();
-
-
-  const overrides =
-    getOverrideMap_(
-      date,
-      date
-    );
+      ? schedule.rows
+      : [];
 
 
   const summary = {
@@ -7069,17 +7087,16 @@ function getManpowerInternal_(
   const byTeamShiftGender = {};
 
 
-  employees.forEach(
-    employee => {
+  rows.forEach(
+    row => {
 
-      const result =
-        calculateEmployeeShift_(
-          employee,
-          date,
-          setMap,
-          assignments,
-          overrides
-        );
+      const rawShift =
+        String(
+          row.days?.[0]?.shift ||
+          'UNSET'
+        )
+        .trim()
+        .toUpperCase();
 
 
       const shift =
@@ -7088,48 +7105,41 @@ function getManpowerInternal_(
           'NIGHT',
           'OFF'
         ].includes(
-          result.shift
+          rawShift
         )
-          ? result.shift
+          ? rawShift
           : 'UNSET';
 
 
       const team =
-        employee.team ||
+        row.team ||
         'ไม่ระบุ TEAM';
 
 
       const position =
-        employee.position ||
+        row.position ||
         'ไม่ระบุตำแหน่ง';
 
 
       const gender =
-        employee.gender ||
+        row.gender ||
         'ไม่ระบุ';
 
 
-      summary[shift]++;
-
-
-      if (!byTeam[team]) {
-
-        byTeam[team] = {
-          MORNING: 0,
-          NIGHT: 0,
-          OFF: 0,
-          UNSET: 0
-        };
-      }
-
-      byTeam[team][shift]++;
+      summary[
+        shift
+      ]++;
 
 
       if (
-        !byPosition[position]
+        !byTeam[
+          team
+        ]
       ) {
 
-        byPosition[position] = {
+        byTeam[
+          team
+        ] = {
           MORNING: 0,
           NIGHT: 0,
           OFF: 0,
@@ -7137,7 +7147,36 @@ function getManpowerInternal_(
         };
       }
 
-      byPosition[position][shift]++;
+
+      byTeam[
+        team
+      ][
+        shift
+      ]++;
+
+
+      if (
+        !byPosition[
+          position
+        ]
+      ) {
+
+        byPosition[
+          position
+        ] = {
+          MORNING: 0,
+          NIGHT: 0,
+          OFF: 0,
+          UNSET: 0
+        };
+      }
+
+
+      byPosition[
+        position
+      ][
+        shift
+      ]++;
 
 
       incrementObject_(
@@ -7147,30 +7186,42 @@ function getManpowerInternal_(
 
 
       if (
-        !byTeamGender[team]
+        !byTeamGender[
+          team
+        ]
       ) {
 
-        byTeamGender[team] = {};
+        byTeamGender[
+          team
+        ] = {};
       }
 
+
       incrementObject_(
-        byTeamGender[team],
+        byTeamGender[
+          team
+        ],
         gender
       );
 
 
       incrementObject_(
-        byShiftGender[shift],
+        byShiftGender[
+          shift
+        ],
         gender
       );
 
 
       if (
-        !byTeamShiftGender[team]
+        !byTeamShiftGender[
+          team
+        ]
       ) {
 
-        byTeamShiftGender[team] = {
-
+        byTeamShiftGender[
+          team
+        ] = {
           MORNING: {},
           NIGHT: {},
           OFF: {},
@@ -7180,7 +7231,11 @@ function getManpowerInternal_(
 
 
       incrementObject_(
-        byTeamShiftGender[team][shift],
+        byTeamShiftGender[
+          team
+        ][
+          shift
+        ],
         gender
       );
     }
@@ -7193,7 +7248,7 @@ function getManpowerInternal_(
       date,
 
     total:
-      employees.length,
+      rows.length,
 
     summary:
       summary,
