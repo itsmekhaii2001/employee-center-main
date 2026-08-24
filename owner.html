@@ -1127,6 +1127,110 @@ tbody tr:hover td {
 }
 
 
+
+.employee-inline-row {
+
+  background:
+    linear-gradient(
+      90deg,
+      #f8fbff,
+      #fbf8ff
+    );
+}
+
+
+.employee-inline-row td {
+
+  vertical-align:middle;
+}
+
+
+.employee-inline-input,
+.employee-inline-select {
+
+  width:100%;
+
+  min-width:100px;
+
+  height:38px;
+
+  padding:
+    7px 10px;
+
+  border:
+    1px solid #d8e1ec;
+
+  border-radius:10px;
+
+  background:#fff;
+
+  color:#344054;
+
+  font-family:inherit;
+
+  font-size:11px;
+
+  font-weight:750;
+
+  outline:none;
+
+  box-shadow:none;
+}
+
+
+.employee-inline-input:focus,
+.employee-inline-select:focus {
+
+  border-color:#7fbbe0;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(86,168,214,.12);
+}
+
+
+.employee-inline-id {
+
+  display:block;
+
+  color:#344054;
+
+  font-weight:950;
+
+  white-space:nowrap;
+}
+
+
+.employee-inline-nick {
+
+  min-width:125px;
+}
+
+
+.employee-inline-actions {
+
+  display:flex;
+
+  align-items:center;
+
+  gap:6px;
+
+  flex-wrap:nowrap;
+}
+
+
+.employee-inline-save {
+
+  white-space:nowrap;
+}
+
+
+.employee-inline-cancel {
+
+  white-space:nowrap;
+}
+
+
 .emp-code {
 
   font-weight:850;
@@ -4366,6 +4470,10 @@ let STATE = {
   employeeStatus: [],
 
   employees: [],
+
+  inlineEmployeeEditId:
+    '',
+
   shiftSets: [],
   assignments: [],
   importSheets: [],
@@ -5654,60 +5762,313 @@ function saveEmployeeForm() {
 }
 
 
-function editEmployee(id) {
+function editEmployee(
+  id
+) {
 
-  const e =
+  const employee =
     STATE.employees
       .find(
-        x =>
-          x.employeeId === id
+        item =>
+          item.employeeId ===
+          id
       );
 
 
-  if (!e) return;
+  if (!employee) {
+    return;
+  }
 
 
-  setValue(
-    'empId',
-    e.employeeId
+  /*
+   * แก้ไขตรงแถวรายชื่อเลย
+   * ไม่เอาข้อมูลขึ้นไปใส่ฟอร์ม "เพิ่มพนักงาน" ด้านบนอีก
+   */
+  STATE.inlineEmployeeEditId =
+    id;
+
+
+  renderEmployees();
+
+
+  requestAnimationFrame(
+    () => {
+
+      const row =
+        document.querySelector(
+          `[data-inline-employee="${cssEscapeValue(id)}"]`
+        );
+
+
+      row
+        ?.querySelector(
+          '[data-field="nickname"]'
+        )
+        ?.focus();
+    }
   );
-
-  setValue(
-    'empNickname',
-    e.nickname
-  );
-
-  setValue(
-    'empTeam',
-    e.team
-  );
-
-  setValue(
-    'empPosition',
-    e.position
-  );
-
-  setValue(
-    'empBranch',
-    e.branch
-  );
-
-  setValue(
-    'empGender',
-    e.gender
-  );
-
-  setValue(
-    'empStatus',
-    e.status ||
-    'ทำงาน'
-  );
+}
 
 
-  window.scrollTo({
-    top:0,
-    behavior:'smooth'
-  });
+function cancelInlineEmployeeEdit() {
+
+  STATE.inlineEmployeeEditId =
+    '';
+
+
+  renderEmployees();
+}
+
+
+function inlineEmployeeOptions(
+  values,
+  selected,
+  placeholder
+) {
+
+  let html = '';
+
+
+  if (
+    placeholder !==
+    undefined
+  ) {
+
+    html += `
+      <option value="">
+        ${escapeHtml(placeholder)}
+      </option>
+    `;
+  }
+
+
+  (values || [])
+    .forEach(
+      item => {
+
+        const value =
+          String(
+            item ?? ''
+          );
+
+
+        html += `
+          <option
+            value="${escapeAttr(value)}"
+            ${
+              value ===
+              String(
+                selected ?? ''
+              )
+                ? 'selected'
+                : ''
+            }
+          >
+            ${escapeHtml(value)}
+          </option>
+        `;
+      }
+    );
+
+
+  return html;
+}
+
+
+function cssEscapeValue(
+  value
+) {
+
+  if (
+    window.CSS &&
+    typeof CSS.escape ===
+    'function'
+  ) {
+
+    return CSS.escape(
+      String(
+        value ?? ''
+      )
+    );
+  }
+
+
+  return String(
+    value ?? ''
+  )
+    .replace(
+      /\\/g,
+      '\\\\'
+    )
+    .replace(
+      /"/g,
+      '\\"'
+    );
+}
+
+
+function saveInlineEmployee(
+  id
+) {
+
+  const row =
+    document.querySelector(
+      `[data-inline-employee="${cssEscapeValue(id)}"]`
+    );
+
+
+  if (!row) {
+    return;
+  }
+
+
+  const getField =
+    field =>
+      row
+        .querySelector(
+          `[data-field="${field}"]`
+        )
+        ?.value ?? '';
+
+
+  const data = {
+
+    employeeId:
+      id,
+
+    nickname:
+      String(
+        getField(
+          'nickname'
+        )
+      ).trim(),
+
+    team:
+      getField(
+        'team'
+      ),
+
+    position:
+      getField(
+        'position'
+      ),
+
+    branch:
+      getField(
+        'branch'
+      ),
+
+    gender:
+      getField(
+        'gender'
+      ),
+
+    status:
+      getField(
+        'status'
+      ) ||
+      'ทำงาน'
+  };
+
+
+  if (!data.nickname) {
+
+    return toast(
+      'กรุณากรอกชื่อเล่น'
+    );
+  }
+
+
+  const saveButton =
+    row.querySelector(
+      '.employee-inline-save'
+    );
+
+
+  const cancelButton =
+    row.querySelector(
+      '.employee-inline-cancel'
+    );
+
+
+  if (saveButton) {
+
+    saveButton.disabled =
+      true;
+
+    saveButton.textContent =
+      '⏳ บันทึก...';
+  }
+
+
+  if (cancelButton) {
+
+    cancelButton.disabled =
+      true;
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      res => {
+
+        STATE.employees =
+          res.employees;
+
+
+        STATE.inlineEmployeeEditId =
+          '';
+
+
+        renderEmployees();
+
+        refreshEmployeeDropdowns();
+
+        /*
+         * Dashboard ค่อย refresh เมื่อกลับไปหน้า Dashboard
+         * ไม่ต้องโหลดทั้งหน้าใหม่หลังแก้พนักงาน 1 คน
+         */
+        STATE.dashboardDirty =
+          true;
+
+
+        toast(
+          res.message ||
+          'บันทึกข้อมูลพนักงานแล้ว'
+        );
+      }
+    )
+
+    .withFailureHandler(
+      err => {
+
+        if (saveButton) {
+
+          saveButton.disabled =
+            false;
+
+          saveButton.textContent =
+            '💾 บันทึก';
+        }
+
+
+        if (cancelButton) {
+
+          cancelButton.disabled =
+            false;
+        }
+
+
+        showServerError(
+          err
+        );
+      }
+    )
+
+    .saveEmployee(
+      data
+    );
 }
 
 
@@ -5932,7 +6293,178 @@ function renderEmployees() {
 
 
   rows.forEach(
-    (e,index) => {
+    (
+      e,
+      index
+    ) => {
+
+      const isEditing =
+        STATE.inlineEmployeeEditId ===
+        e.employeeId;
+
+
+      if (isEditing) {
+
+        html += `
+
+        <tr
+          class="employee-inline-row"
+          data-inline-employee="${escapeAttr(e.employeeId)}"
+        >
+
+          <td>
+            ${index + 1}
+          </td>
+
+
+          <td>
+
+            <span class="employee-inline-id">
+              ${escapeHtml(e.employeeId)}
+            </span>
+
+            <input
+              class="
+                employee-inline-input
+                employee-inline-nick
+              "
+              data-field="nickname"
+              value="${escapeAttr(e.nickname || '')}"
+              placeholder="ชื่อเล่น"
+              onkeydown="
+                if(event.key==='Enter'){
+                  saveInlineEmployee(${jsonString(e.employeeId)})
+                }
+                if(event.key==='Escape'){
+                  cancelInlineEmployeeEdit()
+                }
+              "
+            >
+
+          </td>
+
+
+          <td>
+
+            <select
+              class="employee-inline-select"
+              data-field="team"
+            >
+              ${inlineEmployeeOptions(
+                STATE.teams,
+                e.team,
+                'เลือก TEAM'
+              )}
+            </select>
+
+          </td>
+
+
+          <td>
+
+            <select
+              class="employee-inline-select"
+              data-field="position"
+            >
+              ${inlineEmployeeOptions(
+                STATE.positions,
+                e.position,
+                'เลือกตำแหน่ง'
+              )}
+            </select>
+
+          </td>
+
+
+          <td>
+
+            <select
+              class="employee-inline-select"
+              data-field="branch"
+            >
+              ${inlineEmployeeOptions(
+                STATE.branches,
+                e.branch,
+                'เลือกสาขา'
+              )}
+            </select>
+
+          </td>
+
+
+          <td>
+
+            <select
+              class="employee-inline-select"
+              data-field="gender"
+            >
+              ${inlineEmployeeOptions(
+                STATE.genders,
+                e.gender,
+                'เลือกเพศ'
+              )}
+            </select>
+
+          </td>
+
+
+          <td>
+
+            <select
+              class="employee-inline-select"
+              data-field="status"
+            >
+              ${inlineEmployeeOptions(
+                STATE.employeeStatus,
+                e.status || 'ทำงาน'
+              )}
+            </select>
+
+          </td>
+
+
+          <td>
+
+            <div class="employee-inline-actions">
+
+              <button
+                type="button"
+                class="
+                  btn
+                  btn-primary
+                  btn-sm
+                  employee-inline-save
+                "
+                onclick='saveInlineEmployee(${jsonString(e.employeeId)})'
+              >
+                💾 บันทึก
+              </button>
+
+
+              <button
+                type="button"
+                class="
+                  btn
+                  btn-soft
+                  btn-sm
+                  employee-inline-cancel
+                "
+                onclick="cancelInlineEmployeeEdit()"
+              >
+                ยกเลิก
+              </button>
+
+            </div>
+
+          </td>
+
+        </tr>
+        `;
+
+
+        return;
+      }
+
 
       html += `
 
@@ -6020,6 +6552,10 @@ function renderEmployees() {
 
 
 function clearEmployeeFilters() {
+
+  STATE.inlineEmployeeEditId =
+    '';
+
 
   setValue(
     'employeeSearch',
