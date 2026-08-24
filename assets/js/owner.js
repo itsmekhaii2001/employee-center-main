@@ -524,50 +524,120 @@
       return;
     }
 
+
     const originalSetLoading =
       window.setLoading;
 
-    let firstCycle = true;
-    let activeCount = 0;
-    let timer = null;
+
+    let firstCycle =
+      true;
+
+
+    let showTimer =
+      null;
+
+
+    let safetyTimer =
+      null;
+
 
     const mini =
       document.createElement(
         'div'
       );
 
+
     mini.id =
       'ownerMiniLoading';
+
 
     mini.textContent =
       '⏳ กำลังโหลดข้อมูล...';
 
+
     Object.assign(
       mini.style,
       {
-        display: 'none',
-        position: 'fixed',
-        left: '50%',
-        bottom: '18px',
-        transform: 'translateX(-50%)',
-        zIndex: '99998',
-        padding: '10px 16px',
-        borderRadius: '14px',
-        border: '1px solid #dfe5ee',
-        background: 'rgba(255,255,255,.96)',
-        color: '#526173',
-        fontFamily: 'inherit',
-        fontSize: '12px',
-        fontWeight: '800',
+
+        display:
+          'none',
+
+        position:
+          'fixed',
+
+        left:
+          '50%',
+
+        bottom:
+          '18px',
+
+        transform:
+          'translateX(-50%)',
+
+        zIndex:
+          '99998',
+
+        padding:
+          '10px 16px',
+
+        borderRadius:
+          '14px',
+
+        border:
+          '1px solid #dfe5ee',
+
+        background:
+          'rgba(255,255,255,.96)',
+
+        color:
+          '#526173',
+
+        fontFamily:
+          'inherit',
+
+        fontSize:
+          '12px',
+
+        fontWeight:
+          '800',
+
         boxShadow:
           '0 10px 30px rgba(45,60,85,.12)',
-        backdropFilter: 'blur(8px)'
+
+        backdropFilter:
+          'blur(8px)',
+
+        pointerEvents:
+          'none'
       }
     );
+
 
     document.body.appendChild(
       mini
     );
+
+
+    function hideLoadingUi() {
+
+      clearTimeout(
+        showTimer
+      );
+
+
+      clearTimeout(
+        safetyTimer
+      );
+
+
+      originalSetLoading(
+        false
+      );
+
+
+      mini.style.display =
+        'none';
+    }
 
 
     window.setLoading =
@@ -575,84 +645,122 @@
         show
       ) {
 
-        if (show) {
+        /*
+         * สำคัญ:
+         * ไม่ใช้ activeCount แล้ว เพราะหน้า OWNER เดิมมีบาง flow
+         * เรียก setLoading(true) ซ้อนกัน แต่ปิดไม่ครบจำนวน
+         * ทำให้กล่อง "กำลังโหลดข้อมูล..." ค้างตลอด
+         */
+        if (!show) {
 
-          activeCount++;
-
-          clearTimeout(
-            timer
-          );
-
-          timer =
-            setTimeout(
-              () => {
-
-                if (
-                  activeCount <= 0
-                ) {
-                  return;
-                }
-
-                if (
-                  firstCycle
-                ) {
-
-                  originalSetLoading(
-                    true
-                  );
-
-                } else {
-
-                  mini.style.display =
-                    'block';
-                }
-
-              },
-              firstCycle
-                ? 250
-                : 180
-            );
-
-          return;
-        }
+          hideLoadingUi();
 
 
-        activeCount =
-          Math.max(
-            0,
-            activeCount - 1
-          );
+          if (
+            firstCycle
+          ) {
+
+            firstCycle =
+              false;
+          }
 
 
-        if (
-          activeCount > 0
-        ) {
           return;
         }
 
 
         clearTimeout(
-          timer
+          showTimer
         );
 
 
-        originalSetLoading(
-          false
+        clearTimeout(
+          safetyTimer
         );
 
 
-        mini.style.display =
-          'none';
+        showTimer =
+          setTimeout(
+            () => {
 
+              if (
+                firstCycle
+              ) {
+
+                originalSetLoading(
+                  true
+                );
+
+              } else {
+
+                mini.style.display =
+                  'block';
+              }
+
+            },
+            firstCycle
+              ? 250
+              : 180
+          );
+
+
+        /*
+         * Safety auto-hide:
+         * ต่อให้ flow ไหนลืม setLoading(false)
+         * Loading จะไม่สามารถค้างบนหน้าจอถาวรได้
+         *
+         * งาน Backend ยังทำต่อได้ตามปกติ
+         * อันนี้ซ่อนเฉพาะ UI แจ้งเตือนเท่านั้น
+         */
+        safetyTimer =
+          setTimeout(
+            () => {
+
+              hideLoadingUi();
+
+
+              if (
+                firstCycle
+              ) {
+
+                firstCycle =
+                  false;
+              }
+
+            },
+            firstCycle
+              ? 12000
+              : 3500
+          );
+      };
+
+
+    /*
+     * เผื่อหน้าเปลี่ยน tab / กลับจาก background
+     * แล้ว loading เก่าค้าง
+     */
+    window.addEventListener(
+      'pageshow',
+      () => {
+
+        hideLoadingUi();
+      }
+    );
+
+
+    document.addEventListener(
+      'visibilitychange',
+      () => {
 
         if (
-          firstCycle
+          document.visibilityState ===
+          'visible'
         ) {
 
-          firstCycle =
-            false;
+          hideLoadingUi();
         }
-      };
+      }
+    );
   }
 
 
