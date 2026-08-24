@@ -680,6 +680,10 @@ function callOwnerMethod_(
           args[0]
         ),
 
+    getSeatingPlan:
+      () =>
+        getSeatingPlan(),
+
     saveSeatAssignment:
       () =>
         saveSeatAssignment(
@@ -1211,7 +1215,7 @@ function ensureSystemReadyCached_() {
       .getScriptCache();
 
   const key =
-    'EMPLOYEE_CENTER_SYSTEM_READY_V4';
+    'EMPLOYEE_CENTER_SYSTEM_READY_V3';
 
 
   if (
@@ -1342,18 +1346,6 @@ function setupSystem_() {
       'cycleStartDate',
       'startShift',
       'overridesJson',
-      'updatedAt'
-    ]
-  );
-
-
-  ensureSheet_(
-    ss,
-    APP.SHEETS.SEATING,
-    [
-      'seatNo',
-      'employeeIdsJson',
-      'emailNamesJson',
       'updatedAt'
     ]
   );
@@ -1990,9 +1982,6 @@ function getAppDataFast_() {
 
     assignments:
       assignments,
-
-    seatingPlan:
-      getSeatingPlan_(),
 
     importSheets:
       getImportSheets_(),
@@ -4004,6 +3993,39 @@ function uniqueCleanStrings_(
 }
 
 
+function ensureSeatingSheet_() {
+
+  const ss =
+    getDatabase_();
+
+
+  ensureSheet_(
+    ss,
+    APP.SHEETS.SEATING,
+    [
+      'seatNo',
+      'employeeIdsJson',
+      'emailNamesJson',
+      'updatedAt'
+    ]
+  );
+
+
+  return ss
+    .getSheetByName(
+      APP.SHEETS.SEATING
+    );
+}
+
+
+function getSeatingPlan() {
+
+  ensureSeatingSheet_();
+
+  return getSeatingPlan_();
+}
+
+
 function getSeatingPlan_() {
 
   const saved = {};
@@ -4141,10 +4163,7 @@ function saveSeatAssignment(
 
 
   const sheet =
-    getDatabase_()
-      .getSheetByName(
-        APP.SHEETS.SEATING
-      );
+    ensureSeatingSheet_();
 
 
   /*

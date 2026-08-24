@@ -5315,6 +5315,12 @@ let STATE = {
 
   seatingPlan: [],
 
+  seatingLoaded:
+    false,
+
+  seatingLoading:
+    false,
+
   seatEditSeatNo:
     0,
 
@@ -5455,6 +5461,41 @@ function loadApp() {
   setLoading(true);
 
 
+  /*
+   * ถ้า Apps Script ตอบช้าผิดปกติ
+   * อย่าปล่อยหน้าเหมือนค้างโดยไม่มีคำอธิบาย
+   */
+  clearTimeout(
+    window.ownerInitialLoadTimer
+  );
+
+
+  window.ownerInitialLoadTimer =
+    setTimeout(
+      () => {
+
+        const badge =
+          document.getElementById(
+            'todayBadge'
+          );
+
+
+        if (
+          badge &&
+          badge.textContent
+            .includes(
+              'กำลังโหลด'
+            )
+        ) {
+
+          badge.textContent =
+            '⏳ โหลดช้ากว่าปกติ...';
+        }
+      },
+      8000
+    );
+
+
   google.script.run
 
     .withSuccessHandler(
@@ -5467,6 +5508,11 @@ function loadApp() {
           );
 
 
+        clearTimeout(
+          window.ownerInitialLoadTimer
+        );
+
+
         initializeUI();
 
         setLoading(false);
@@ -5474,7 +5520,30 @@ function loadApp() {
     )
 
     .withFailureHandler(
-      showServerError
+      err => {
+
+        clearTimeout(
+          window.ownerInitialLoadTimer
+        );
+
+
+        const badge =
+          document.getElementById(
+            'todayBadge'
+          );
+
+
+        if (badge) {
+
+          badge.textContent =
+            '⚠️ โหลดข้อมูลไม่สำเร็จ';
+        }
+
+
+        showServerError(
+          err
+        );
+      }
     )
 
     .setupSystem();
@@ -5542,8 +5611,6 @@ function initializeUI() {
   refreshAllDropdowns();
 
   renderEmployees();
-
-  renderSeatPlan();
 
   renderShiftSets();
 
@@ -5867,6 +5934,14 @@ if (
 
 
   if (
+    page === 'seating'
+  ) {
+
+    loadSeatingPlan();
+  }
+
+
+  if (
     page === 'manpower'
   ) {
 
@@ -5894,6 +5969,121 @@ if (
 /* =========================
    SEATING PLAN
 ========================= */
+
+function loadSeatingPlan(
+  force
+) {
+
+  if (
+    STATE.seatingLoading
+  ) {
+    return;
+  }
+
+
+  if (
+    STATE.seatingLoaded &&
+    !force
+  ) {
+
+    renderSeatPlan();
+
+    return;
+  }
+
+
+  const container =
+    document.getElementById(
+      'seatingPlan'
+    );
+
+
+  if (container) {
+
+    container.innerHTML = `
+      <div
+        style="
+          min-height:220px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          color:#8b96a6;
+          font-size:12px;
+          font-weight:850;
+        "
+      >
+        ⏳ กำลังโหลดผังที่นั่ง...
+      </div>
+    `;
+  }
+
+
+  STATE.seatingLoading =
+    true;
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      data => {
+
+        STATE.seatingPlan =
+          Array.isArray(data)
+            ? data
+            : [];
+
+
+        STATE.seatingLoaded =
+          true;
+
+
+        STATE.seatingLoading =
+          false;
+
+
+        renderSeatPlan();
+      }
+    )
+
+    .withFailureHandler(
+      err => {
+
+        STATE.seatingLoading =
+          false;
+
+
+        if (container) {
+
+          container.innerHTML = `
+            <div
+              style="
+                min-height:220px;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                text-align:center;
+                color:#b65f70;
+                font-size:11px;
+                font-weight:850;
+                line-height:1.7;
+              "
+            >
+              โหลดผังที่นั่งไม่สำเร็จ<br>
+              กรุณาลองเปิดเมนูนี้ใหม่อีกครั้ง
+            </div>
+          `;
+        }
+
+
+        showServerError(
+          err
+        );
+      }
+    )
+
+    .getSeatingPlan();
+}
+
 
 function getSeatSide(
   seatNo
@@ -7090,6 +7280,10 @@ function saveCurrentSeat() {
         const savedSeat =
           res?.seat ||
           nextSeat;
+
+
+        STATE.seatingLoaded =
+          true;
 
 
         STATE.seatingPlan =
