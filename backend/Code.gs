@@ -4140,48 +4140,6 @@ function saveSeatAssignment(
     );
 
 
-  /*
-   * ตรวจว่ารหัสพนักงานยังมีอยู่จริง
-   * แต่อนุญาตหลายคนต่อ 1 โต๊ะ
-   */
-  const employeeMap = {};
-
-
-  getEmployees_()
-    .forEach(
-      employee => {
-
-        employeeMap[
-          String(
-            employee.employeeId || ''
-          )
-          .trim()
-          .toUpperCase()
-        ] = employee;
-      }
-    );
-
-
-  employeeIds
-    .forEach(
-      employeeId => {
-
-        if (
-          !employeeMap[
-            employeeId
-              .toUpperCase()
-          ]
-        ) {
-
-          throw new Error(
-            'ไม่พบพนักงานรหัส ' +
-            employeeId
-          );
-        }
-      }
-    );
-
-
   const sheet =
     getDatabase_()
       .getSheetByName(
@@ -4189,75 +4147,48 @@ function saveSeatAssignment(
       );
 
 
-  const rows =
-    sheet
-      .getDataRange()
-      .getDisplayValues();
+  /*
+   * เร็วกว่าแบบเดิม:
+   * - โต๊ะ 1 อยู่แถว 2
+   * - โต๊ะ 2 อยู่แถว 3
+   * - ...
+   * - โต๊ะ 48 อยู่แถว 49
+   *
+   * ไม่ต้องอ่านทั้งชีตเพื่อหาแถวทุกครั้ง
+   */
+  const targetRow =
+    seatNo + 1;
 
 
-  let foundRow =
-    0;
+  const updatedAt =
+    nowText_();
 
 
-  for (
-    let r = 1;
-    r < rows.length;
-    r++
-  ) {
-
-    if (
-      Number(
-        rows[r][0]
-      ) ===
-      seatNo
-    ) {
-
-      foundRow =
-        r + 1;
-
-      break;
-    }
-  }
-
-
-  const row = [
-
-    seatNo,
-
-    JSON.stringify(
-      employeeIds
-    ),
-
-    JSON.stringify(
-      emailNames
-    ),
-
-    nowText_()
-  ];
+  sheet
+    .getRange(
+      targetRow,
+      1,
+      1,
+      4
+    )
+    .setValues([
+      [
+        seatNo,
+        JSON.stringify(
+          employeeIds
+        ),
+        JSON.stringify(
+          emailNames
+        ),
+        updatedAt
+      ]
+    ]);
 
 
-  if (foundRow) {
-
-    sheet
-      .getRange(
-        foundRow,
-        1,
-        1,
-        row.length
-      )
-      .setValues(
-        [row]
-      );
-
-  } else {
-
-    sheet
-      .appendRow(
-        row
-      );
-  }
-
-
+  /*
+   * ไม่อ่าน DB_Seating ทั้งชีตซ้ำอีกครั้ง
+   * ส่งกลับเฉพาะโต๊ะที่เพิ่งบันทึก
+   */
   return {
 
     ok:
@@ -4279,8 +4210,20 @@ function saveSeatAssignment(
             ' แล้ว'
           ),
 
-    seatingPlan:
-      getSeatingPlan_()
+    seat: {
+
+      seatNo:
+        seatNo,
+
+      employeeIds:
+        employeeIds,
+
+      emailNames:
+        emailNames,
+
+      updatedAt:
+        updatedAt
+    }
   };
 }
 

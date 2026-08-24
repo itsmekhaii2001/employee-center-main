@@ -6967,8 +6967,8 @@ function saveCurrentSeat() {
 
 
   /*
-   * ถ้าพิมพ์ชื่อเมลค้างไว้ในช่อง
-   * ให้เพิ่มเข้า array ก่อนบันทึกด้วย
+   * ถ้ามีชื่อเมลค้างอยู่ในช่อง
+   * เพิ่มเข้า list ก่อนบันทึก
    */
   const emailInput =
     document.getElementById(
@@ -6986,40 +6986,153 @@ function saveCurrentSeat() {
   }
 
 
-  const button =
-    document.getElementById(
-      'seatSaveButton'
+  const seatNo =
+    Number(
+      STATE.seatEditSeatNo
     );
 
 
-  if (button) {
+  const nextSeat = {
 
-    button.disabled =
-      true;
+    seatNo:
+      seatNo,
 
-    button.textContent =
-      '⏳ บันทึก...';
-  }
+    employeeIds:
+      [
+        ...(
+          STATE.seatEditEmployeeIds ||
+          []
+        )
+      ],
+
+    emailNames:
+      [
+        ...(
+          STATE.seatEditEmails ||
+          []
+        )
+      ],
+
+    updatedAt:
+      ''
+  };
 
 
+  /*
+   * เก็บค่าเดิมไว้ เผื่อ server บันทึกไม่สำเร็จ
+   */
+  const previousSeat =
+    (
+      STATE.seatingPlan ||
+      []
+    )
+      .find(
+        seat =>
+          Number(
+            seat.seatNo
+          ) ===
+          seatNo
+      );
+
+
+  /*
+   * อัปเดตหน้าจอทันที ไม่รอ Apps Script
+   */
+  STATE.seatingPlan =
+    (
+      STATE.seatingPlan ||
+      []
+    )
+      .filter(
+        seat =>
+          Number(
+            seat.seatNo
+          ) !==
+          seatNo
+      );
+
+
+  STATE.seatingPlan
+    .push(
+      nextSeat
+    );
+
+
+  STATE.seatingPlan
+    .sort(
+      (
+        a,
+        b
+      ) =>
+        Number(
+          a.seatNo
+        ) -
+        Number(
+          b.seatNo
+        )
+    );
+
+
+  renderSeatPlan();
+
+  closeSeatEditor();
+
+
+  /*
+   * ค่อยบันทึกขึ้น Backend ด้านหลัง
+   * ผู้ใช้ไม่ต้องนั่งรอหน้าต่างค้าง
+   */
   google.script.run
 
     .withSuccessHandler(
       res => {
 
+        const savedSeat =
+          res?.seat ||
+          nextSeat;
+
+
         STATE.seatingPlan =
-          res.seatingPlan ||
-          [];
+          (
+            STATE.seatingPlan ||
+            []
+          )
+            .filter(
+              seat =>
+                Number(
+                  seat.seatNo
+                ) !==
+                seatNo
+            );
+
+
+        STATE.seatingPlan
+          .push(
+            savedSeat
+          );
+
+
+        STATE.seatingPlan
+          .sort(
+            (
+              a,
+              b
+            ) =>
+              Number(
+                a.seatNo
+              ) -
+              Number(
+                b.seatNo
+              )
+          );
 
 
         renderSeatPlan();
 
-        closeSeatEditor();
-
 
         toast(
-          res.message ||
-          'บันทึกผังที่นั่งแล้ว'
+          res?.message ||
+          'บันทึกโต๊ะแล้ว'
         );
       }
     )
@@ -7027,15 +7140,50 @@ function saveCurrentSeat() {
     .withFailureHandler(
       err => {
 
-        if (button) {
+        /*
+         * ถ้าบันทึกไม่สำเร็จ ให้คืนข้อมูลเดิม
+         */
+        STATE.seatingPlan =
+          (
+            STATE.seatingPlan ||
+            []
+          )
+            .filter(
+              seat =>
+                Number(
+                  seat.seatNo
+                ) !==
+                seatNo
+            );
 
-          button.disabled =
-            false;
 
-          button.textContent =
-            '💾 บันทึกโต๊ะ';
+        if (
+          previousSeat
+        ) {
+
+          STATE.seatingPlan
+            .push(
+              previousSeat
+            );
         }
 
+
+        STATE.seatingPlan
+          .sort(
+            (
+              a,
+              b
+            ) =>
+              Number(
+                a.seatNo
+              ) -
+              Number(
+                b.seatNo
+              )
+          );
+
+
+        renderSeatPlan();
 
         showServerError(
           err
@@ -7045,13 +7193,13 @@ function saveCurrentSeat() {
 
     .saveSeatAssignment({
       seatNo:
-        STATE.seatEditSeatNo,
+        seatNo,
 
       employeeIds:
-        STATE.seatEditEmployeeIds,
+        nextSeat.employeeIds,
 
       emailNames:
-        STATE.seatEditEmails
+        nextSeat.emailNames
     });
 }
 
@@ -7065,10 +7213,16 @@ function clearCurrentSeat() {
   }
 
 
+  const seatNo =
+    Number(
+      STATE.seatEditSeatNo
+    );
+
+
   if (
     !confirm(
       'ล้างพนักงานและชื่อเมลของโต๊ะที่ ' +
-      STATE.seatEditSeatNo +
+      seatNo +
       ' ใช่ไหม?'
     )
   ) {
@@ -7076,34 +7230,145 @@ function clearCurrentSeat() {
   }
 
 
+  const previousSeat =
+    (
+      STATE.seatingPlan ||
+      []
+    )
+      .find(
+        seat =>
+          Number(
+            seat.seatNo
+          ) ===
+          seatNo
+      );
+
+
+  const emptySeat = {
+
+    seatNo:
+      seatNo,
+
+    employeeIds:
+      [],
+
+    emailNames:
+      [],
+
+    updatedAt:
+      ''
+  };
+
+
+  /*
+   * ล้างหน้าจอทันที
+   */
+  STATE.seatingPlan =
+    (
+      STATE.seatingPlan ||
+      []
+    )
+      .filter(
+        seat =>
+          Number(
+            seat.seatNo
+          ) !==
+          seatNo
+      );
+
+
+  STATE.seatingPlan
+    .push(
+      emptySeat
+    );
+
+
+  STATE.seatingPlan
+    .sort(
+      (
+        a,
+        b
+      ) =>
+        Number(
+          a.seatNo
+        ) -
+        Number(
+          b.seatNo
+        )
+    );
+
+
+  renderSeatPlan();
+
+  closeSeatEditor();
+
+
   google.script.run
 
     .withSuccessHandler(
       res => {
 
-        STATE.seatingPlan =
-          res.seatingPlan ||
-          [];
-
-
-        renderSeatPlan();
-
-        closeSeatEditor();
-
-
         toast(
+          res?.message ||
           'ล้างโต๊ะแล้ว'
         );
       }
     )
 
     .withFailureHandler(
-      showServerError
+      err => {
+
+        STATE.seatingPlan =
+          (
+            STATE.seatingPlan ||
+            []
+          )
+            .filter(
+              seat =>
+                Number(
+                  seat.seatNo
+                ) !==
+                seatNo
+            );
+
+
+        if (
+          previousSeat
+        ) {
+
+          STATE.seatingPlan
+            .push(
+              previousSeat
+            );
+        }
+
+
+        STATE.seatingPlan
+          .sort(
+            (
+              a,
+              b
+            ) =>
+              Number(
+                a.seatNo
+              ) -
+              Number(
+                b.seatNo
+              )
+          );
+
+
+        renderSeatPlan();
+
+        showServerError(
+          err
+        );
+      }
     )
 
     .saveSeatAssignment({
       seatNo:
-        STATE.seatEditSeatNo,
+        seatNo,
 
       employeeIds:
         [],
