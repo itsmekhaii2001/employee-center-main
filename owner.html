@@ -2482,6 +2482,18 @@ th:nth-child(2) {
   }
 }
 
+
+
+.employee-inline-row {
+
+  outline:
+    2px solid
+    rgba(95,165,215,.20);
+
+  outline-offset:
+    -2px;
+}
+
 </style>
 
 </head>
@@ -5762,7 +5774,7 @@ function saveEmployeeForm() {
 }
 
 
-function editEmployee(
+function startInlineEmployeeEdit(
   id
 ) {
 
@@ -5781,9 +5793,53 @@ function editEmployee(
 
 
   /*
-   * แก้ไขตรงแถวรายชื่อเลย
-   * ไม่เอาข้อมูลขึ้นไปใส่ฟอร์ม "เพิ่มพนักงาน" ด้านบนอีก
+   * จำตำแหน่ง Scroll ไว้ก่อน render ตารางใหม่
+   * เพื่อไม่ให้หน้ากระโดดขึ้นฟอร์มด้านบน
    */
+  const currentScrollY =
+    window.scrollY;
+
+
+  /*
+   * ล้างค่าในฟอร์มเพิ่มพนักงานด้านบน
+   * แต่ไม่เลื่อนหน้า
+   */
+  setValue(
+    'empId',
+    ''
+  );
+
+  setValue(
+    'empNickname',
+    ''
+  );
+
+  setValue(
+    'empTeam',
+    ''
+  );
+
+  setValue(
+    'empPosition',
+    ''
+  );
+
+  setValue(
+    'empBranch',
+    ''
+  );
+
+  setValue(
+    'empGender',
+    ''
+  );
+
+  setValue(
+    'empStatus',
+    'ทำงาน'
+  );
+
+
   STATE.inlineEmployeeEditId =
     id;
 
@@ -5791,8 +5847,18 @@ function editEmployee(
   renderEmployees();
 
 
+  /*
+   * บังคับให้อยู่ตำแหน่งเดิม
+   * แล้ว focus ช่องชื่อโดยไม่ให้ browser scroll เอง
+   */
   requestAnimationFrame(
     () => {
+
+      window.scrollTo(
+        0,
+        currentScrollY
+      );
+
 
       const row =
         document.querySelector(
@@ -5800,14 +5866,46 @@ function editEmployee(
         );
 
 
-      row
-        ?.querySelector(
-          '[data-field="nickname"]'
-        )
-        ?.focus();
+      const nicknameInput =
+        row
+          ?.querySelector(
+            '[data-field="nickname"]'
+          );
+
+
+      if (nicknameInput) {
+
+        try {
+
+          nicknameInput.focus({
+            preventScroll: true
+          });
+
+        } catch (error) {
+
+          /*
+           * browser เก่าบางตัวไม่รองรับ preventScroll
+           */
+          nicknameInput.focus();
+
+          window.scrollTo(
+            0,
+            currentScrollY
+          );
+        }
+      }
     }
   );
 }
+
+
+/*
+ * compatibility:
+ * ถ้ามีส่วนเก่าเรียก editEmployee() อยู่
+ * ให้ส่งต่อเข้า inline edit เท่านั้น
+ */
+window.editEmployee =
+  startInlineEmployeeEdit;
 
 
 function cancelInlineEmployeeEdit() {
@@ -6513,13 +6611,15 @@ function renderEmployees() {
           <div class="actions">
 
             <button
+              type="button"
               class="btn btn-soft btn-sm"
-              onclick='editEmployee(${jsonString(e.employeeId)})'
+              onclick='startInlineEmployeeEdit(${jsonString(e.employeeId)})'
             >
               แก้ไข
             </button>
 
             <button
+              type="button"
               class="btn btn-danger btn-sm"
               onclick='removeEmployee(${jsonString(e.employeeId)})'
             >
