@@ -2588,6 +2588,159 @@ th:nth-child(2) {
     -2px;
 }
 
+
+
+/* =========================
+   SEATING PLAN
+========================= */
+
+.seating-card{overflow:hidden}
+
+.seating-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:18px
+}
+
+.seating-summary{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap
+}
+
+.seating-summary-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:34px;
+  padding:0 12px;
+  border:1px solid #dfe7ef;
+  border-radius:999px;
+  background:#f8fafc;
+  color:#68758a;
+  font-size:11px;
+  font-weight:850
+}
+
+.seating-plan-scroll{
+  width:100%;
+  overflow-x:auto;
+  padding-bottom:8px
+}
+
+.seating-plan{
+  min-width:940px;
+  display:flex;
+  flex-direction:column;
+  gap:12px
+}
+
+.seating-side-head,
+.seating-row{
+  display:grid;
+  grid-template-columns:
+    repeat(5,minmax(90px,1fr))
+    72px
+    repeat(3,minmax(90px,1fr));
+  gap:10px;
+  align-items:stretch
+}
+
+.seating-side-label{
+  min-height:34px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+  font-size:11px;
+  font-weight:900;
+  color:#637083;
+  background:#f6f8fb;
+  border:1px solid #e6ebf2
+}
+
+.seating-side-label.left{grid-column:1/span 5}
+.seating-side-label.aisle{
+  grid-column:6;
+  background:#fff;
+  border-style:dashed;
+  color:#99a3b2
+}
+.seating-side-label.right{grid-column:7/span 3}
+
+.seat-box{
+  min-height:86px;
+  padding:12px 10px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  border:1px solid #dce5ef;
+  border-radius:16px;
+  background:linear-gradient(145deg,#fff 0%,#f8fbff 100%);
+  color:#40516a;
+  text-align:center;
+  box-shadow:0 7px 18px rgba(73,91,119,.06);
+  transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease
+}
+
+.seat-box:hover{
+  transform:translateY(-2px);
+  border-color:#bad7ec;
+  box-shadow:0 10px 24px rgba(73,91,119,.10)
+}
+
+.seat-number{
+  font-size:12px;
+  font-weight:950;
+  color:#365879
+}
+
+.seat-status{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:24px;
+  padding:0 9px;
+  border-radius:999px;
+  background:#edf8f3;
+  color:#4d9a78;
+  font-size:10px;
+  font-weight:850
+}
+
+.seat-aisle{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:86px;
+  border-radius:14px;
+  border:1px dashed #d7dee8;
+  background:repeating-linear-gradient(
+    135deg,#fbfcfe,#fbfcfe 8px,#f5f7fa 8px,#f5f7fa 16px
+  );
+  color:#9aa4b3;
+  font-size:10px;
+  font-weight:900;
+  writing-mode:vertical-rl;
+  letter-spacing:1px
+}
+
+.seating-row-label{
+  margin-top:4px;
+  color:#9aa4b3;
+  font-size:10px;
+  font-weight:800
+}
+
+@media(max-width:900px){
+  .seating-head{flex-direction:column}
+}
+
 </style>
 
 </head>
@@ -2754,6 +2907,24 @@ th:nth-child(2) {
 
           <span class="submenu-text">
             ข้อมูลพนักงาน
+          </span>
+
+        </button>
+
+
+        <button
+          class="submenu-btn"
+          type="button"
+          data-page="seating"
+          onclick="openPage('seating',this)"
+        >
+
+          <span class="submenu-icon">
+            🪑
+          </span>
+
+          <span class="submenu-text">
+            ผังที่นั่ง
           </span>
 
         </button>
@@ -3320,6 +3491,45 @@ th:nth-child(2) {
 
 </div>
 
+
+</section>
+
+
+
+<!-- SEATING PLAN -->
+
+<section
+  class="page"
+  id="page-seating"
+>
+
+  <div class="card seating-card">
+
+    <div class="seating-head">
+
+      <div class="section-title">
+        <div>
+          <h2>🪑 ผังที่นั่ง</h2>
+          <p>ตารางผังที่นั่ง 6 แถว · ฝั่งซ้าย 5 BOX · ฝั่งขวา 3 BOX</p>
+        </div>
+      </div>
+
+      <div class="seating-summary">
+        <span class="seating-summary-badge">6 แถว</span>
+        <span class="seating-summary-badge">8 BOX / แถว</span>
+        <span class="seating-summary-badge">รวม 48 ที่นั่ง</span>
+      </div>
+
+    </div>
+
+    <div class="seating-plan-scroll">
+      <div
+        class="seating-plan"
+        id="seatingPlan"
+      ></div>
+    </div>
+
+  </div>
 
 </section>
 
@@ -4634,6 +4844,11 @@ const PAGE_META = {
     'ข้อมูลพนักงานทั้งหมด'
   ],
 
+  seating: [
+    'ผังที่นั่ง',
+    'ผัง 6 แถว · ซ้าย 5 BOX · ขวา 3 BOX'
+  ],
+
   shiftSets: [
     'เซตกะ',
     'สร้างรูปแบบกะไว้ใช้งาน'
@@ -4788,6 +5003,8 @@ function initializeUI() {
   refreshAllDropdowns();
 
   renderEmployees();
+
+  renderSeatPlan();
 
   renderShiftSets();
 
@@ -5131,6 +5348,118 @@ if (
 
     loadShiftHistory();
   }
+}
+
+
+
+/* =========================
+   SEATING PLAN
+========================= */
+
+function renderSeatPlan() {
+
+  const container =
+    document.getElementById(
+      'seatingPlan'
+    );
+
+  if (!container) {
+    return;
+  }
+
+  let seatNumber = 1;
+
+  let html = `
+    <div class="seating-side-head">
+
+      <div class="seating-side-label left">
+        ฝั่งซ้าย · 5 BOX
+      </div>
+
+      <div class="seating-side-label aisle">
+        ทางเดิน
+      </div>
+
+      <div class="seating-side-label right">
+        ฝั่งขวา · 3 BOX
+      </div>
+
+    </div>
+  `;
+
+  for (
+    let row = 1;
+    row <= 6;
+    row++
+  ) {
+
+    html += `
+      <div>
+        <div class="seating-row" data-seat-row="${row}">
+    `;
+
+    for (
+      let left = 1;
+      left <= 5;
+      left++
+    ) {
+      html += seatBoxHtml(seatNumber);
+      seatNumber++;
+    }
+
+    html += `
+      <div class="seat-aisle">
+        ทางเดิน
+      </div>
+    `;
+
+    for (
+      let right = 1;
+      right <= 3;
+      right++
+    ) {
+      html += seatBoxHtml(seatNumber);
+      seatNumber++;
+    }
+
+    html += `
+        </div>
+
+        <div class="seating-row-label">
+          แถว ${row}
+        </div>
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+}
+
+
+function seatBoxHtml(number) {
+
+  const padded =
+    String(number)
+      .padStart(
+        2,
+        '0'
+      );
+
+  return `
+    <div
+      class="seat-box"
+      data-seat="${number}"
+      title="ที่นั่ง ${padded}"
+    >
+      <div class="seat-number">
+        BOX ${padded}
+      </div>
+
+      <div class="seat-status">
+        ว่าง
+      </div>
+    </div>
+  `;
 }
 
 
