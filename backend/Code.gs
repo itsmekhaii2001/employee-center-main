@@ -1204,7 +1204,7 @@ function ensureSystemReadyCached_() {
       .getScriptCache();
 
   const key =
-    'EMPLOYEE_CENTER_SYSTEM_READY_V2';
+    'EMPLOYEE_CENTER_SYSTEM_READY_V3';
 
 
   if (
@@ -1341,6 +1341,12 @@ function setupSystem_() {
 
   seedDefaultShiftSets_();
   seedDefaultSettings_();
+
+  /*
+   * ดึงตำแหน่งเดิมที่เคยมีอยู่ใน Dropdown
+   * ให้แสดงในหน้า Settings ด้วย
+   */
+  migrateLegacyPositionsToSettings_();
 
   /*
    * รอบตาราง 26-25 เป็นเพียงรอบแสดงผล/รายงาน
@@ -1538,6 +1544,218 @@ function seedDefaultShiftSets_() {
 }
 
 
+function migrateLegacyPositionsToSettings_() {
+
+  const props =
+    PropertiesService
+      .getScriptProperties();
+
+
+  const migrationKey =
+    'POSITION_SETTINGS_MIGRATED_V1';
+
+
+  /*
+   * ทำครั้งเดียวเท่านั้น
+   * หลังจากนั้นถ้าผู้ใช้ลบตำแหน่งเอง ระบบจะไม่สร้างกลับมาใหม่
+   */
+  if (
+    props.getProperty(
+      migrationKey
+    ) === 'TRUE'
+  ) {
+    return;
+  }
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.SETTINGS
+      );
+
+
+  if (!sheet) {
+    return;
+  }
+
+
+  const lastColumn =
+    Math.max(
+      7,
+      sheet.getLastColumn()
+    );
+
+
+  const headers =
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        lastColumn
+      )
+      .getDisplayValues()[0]
+      .map(
+        value =>
+          String(
+            value || ''
+          ).trim()
+      );
+
+
+  const typeIndex =
+    headers.indexOf(
+      'type'
+    );
+
+
+  const valueIndex =
+    headers.indexOf(
+      'value'
+    );
+
+
+  if (
+    typeIndex < 0 ||
+    valueIndex < 0
+  ) {
+    return;
+  }
+
+
+  const rows =
+    sheet.getLastRow() > 1
+      ? sheet
+          .getRange(
+            2,
+            1,
+            sheet.getLastRow() - 1,
+            lastColumn
+          )
+          .getDisplayValues()
+      : [];
+
+
+  /*
+   * เก็บชื่อ POSITION ที่มีอยู่แล้ว
+   * ไม่ว่าจะ active/inactive เพื่อป้องกันชื่อซ้ำ
+   */
+  const existing =
+    new Set(
+      rows
+        .filter(
+          row =>
+            String(
+              row[typeIndex] || ''
+            )
+            .trim()
+            .toUpperCase() ===
+              'POSITION'
+        )
+        .map(
+          row =>
+            String(
+              row[valueIndex] || ''
+            )
+            .trim()
+        )
+        .filter(Boolean)
+    );
+
+
+  /*
+   * รายการเดิมที่มีอยู่ใน Dropdown ระบบ
+   * เช่น AG / AE / การตลาด / SEO / ตัดต่อ / ...
+   */
+  const missing =
+    APP.POSITIONS
+      .map(
+        value =>
+          String(
+            value || ''
+          ).trim()
+      )
+      .filter(Boolean)
+      .filter(
+        value =>
+          !existing.has(
+            value
+          )
+      );
+
+
+  if (
+    missing.length
+  ) {
+
+    const now =
+      nowText_();
+
+
+    const currentPositionCount =
+      rows
+        .filter(
+          row =>
+            String(
+              row[typeIndex] || ''
+            )
+            .trim()
+            .toUpperCase() ===
+              'POSITION'
+        )
+        .length;
+
+
+    const values =
+      missing.map(
+        (
+          name,
+          index
+        ) => ([
+          'POSITION_' +
+            Utilities.getUuid(),
+
+          'POSITION',
+
+          name,
+
+          currentPositionCount +
+            index +
+            1,
+
+          'TRUE',
+
+          now,
+
+          now
+        ])
+      );
+
+
+    sheet
+      .getRange(
+        sheet.getLastRow() + 1,
+        1,
+        values.length,
+        7
+      )
+      .setValues(
+        values
+      );
+  }
+
+
+  /*
+   * บันทึกว่า migration เสร็จแล้ว
+   */
+  props.setProperty(
+    migrationKey,
+    'TRUE'
+  );
+}
+
+
 function seedDefaultSettings_() {
 
   const sheet =
@@ -1666,6 +1884,12 @@ function getAppData() {
 
 
 function getAppDataFast_() {
+
+  /*
+   * ทำ migration ก่อนอ่าน settings
+   * ถ้าทำไปแล้วฟังก์ชันจะ return ทันที
+   */
+  migrateLegacyPositionsToSettings_();
 
   let settings =
     getSettings_();

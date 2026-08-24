@@ -487,6 +487,83 @@ button {
 }
 
 
+
+.topbar-actions {
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:flex-end;
+
+  gap:9px;
+
+  flex-shrink:0;
+}
+
+
+.owner-logout-top {
+
+  min-height:36px;
+
+  display:inline-flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+  gap:6px;
+
+  padding:0 13px;
+
+  border:
+    1px solid #ddd7fa;
+
+  border-radius:12px;
+
+  background:#f3efff;
+
+  color:#6655b8;
+
+  font-family:inherit;
+
+  font-size:11px;
+
+  font-weight:900;
+
+  cursor:pointer;
+
+  box-shadow:
+    0 5px 16px
+    rgba(80,70,130,.08);
+
+  transition:
+    transform .15s ease,
+    box-shadow .15s ease,
+    background .15s ease;
+}
+
+
+.owner-logout-top:hover {
+
+  transform:
+    translateY(-1px);
+
+  background:#ebe4ff;
+
+  box-shadow:
+    0 7px 18px
+    rgba(80,70,130,.12);
+}
+
+
+.owner-logout-top:active {
+
+  transform:
+    translateY(0);
+}
+
+
 .top-title {
 
   font-size:20px;
@@ -2156,6 +2233,21 @@ th:nth-child(2) {
       0 15px;
   }
 
+
+  .topbar-actions {
+
+    gap:6px;
+  }
+
+
+  .owner-logout-top {
+
+    padding:
+      0 10px;
+
+    font-size:10px;
+  }
+
   .grid-4,
   .grid-3,
   .grid-2,
@@ -2569,12 +2661,27 @@ th:nth-child(2) {
   </div>
 
 
-  <span
-    class="badge badge-work"
-    id="todayBadge"
-  >
-    กำลังโหลด...
-  </span>
+  <div class="topbar-actions">
+
+    <span
+      class="badge badge-work"
+      id="todayBadge"
+    >
+      กำลังโหลด...
+    </span>
+
+
+    <button
+      type="button"
+      class="owner-logout-top"
+      id="ownerLogoutButton"
+      onclick="logoutOwner()"
+      title="ออกจากระบบ OWNER"
+    >
+      ↪️ ออกจาก OWNER
+    </button>
+
+  </div>
 
 </header>
 
