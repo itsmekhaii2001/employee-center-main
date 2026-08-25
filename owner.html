@@ -9043,7 +9043,10 @@ function saveEmployeeForm() {
           'empIsNew'
         )
         ?.checked ===
-        true
+        true,
+
+    mode:
+      'create'
   };
 
 
@@ -9063,6 +9066,36 @@ function saveEmployeeForm() {
 
     return toast(
       'กรุณากรอกชื่อเล่น'
+    );
+  }
+
+
+  const duplicateEmployee =
+    STATE.employees
+      .find(
+        employee =>
+          String(
+            employee.employeeId || ''
+          )
+          .trim()
+          .toUpperCase() ===
+          String(
+            data.employeeId || ''
+          )
+          .trim()
+          .toUpperCase()
+      );
+
+
+  if (
+    duplicateEmployee
+  ) {
+
+    return toast(
+      'รหัสพนักงาน ' +
+      data.employeeId +
+      ' มีอยู่ในระบบแล้ว ไม่สามารถบันทึกข้อมูลซ้ำได้',
+      'error'
     );
   }
 
@@ -9406,7 +9439,10 @@ function saveInlineEmployee(
       getField(
         'status'
       ) ||
-      'ทำงาน'
+      'ทำงาน',
+
+    mode:
+      'update'
   };
 
 

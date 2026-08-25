@@ -3438,61 +3438,6 @@ function saveSetting(data) {
     nowText_();
 
 
-  let newUntil =
-    oldNewUntil;
-
-
-  /*
-   * ป้าย NEW:
-   * - ติ๊กตอนเพิ่มพนักงาน -> แสดง 14 วัน
-   * - วันที่สิ้นสุดเป็น exclusive
-   * - ไม่ติ๊กตอนแก้ไขข้อมูลเดิม -> เก็บอายุป้ายเดิมไว้
-   */
-  if (
-    data.isNew === true ||
-    String(
-      data.isNew || ''
-    )
-    .toUpperCase() ===
-    'TRUE'
-  ) {
-
-    const expireDate =
-      parseDate_(
-        todayText_()
-      );
-
-
-    expireDate.setDate(
-      expireDate.getDate() +
-      14
-    );
-
-
-    newUntil =
-      formatDate_(
-        expireDate
-      );
-  }
-
-
-  if (
-    !foundRow &&
-    !(
-      data.isNew === true ||
-      String(
-        data.isNew || ''
-      )
-      .toUpperCase() ===
-      'TRUE'
-    )
-  ) {
-
-    newUntil =
-      '';
-  }
-
-
   const row = [
 
     settingId,
@@ -3779,6 +3724,14 @@ function saveEmployee(data) {
     ).trim();
 
 
+  const mode =
+    String(
+      data.mode || 'create'
+    )
+    .trim()
+    .toLowerCase();
+
+
   if (!employeeId) {
 
     throw new Error(
@@ -3846,8 +3799,98 @@ function saveEmployee(data) {
   }
 
 
+  /*
+   * กันรหัสพนักงานซ้ำแบบ Backend อีกชั้น
+   * ต่อให้ Frontend ถูกข้ามหรือเปิดหลายหน้าพร้อมกัน
+   * ก็ห้ามสร้างรหัสเดิมซ้ำเด็ดขาด
+   */
+  if (
+    foundRow &&
+    mode !== 'update'
+  ) {
+
+    throw new Error(
+      'รหัสพนักงาน ' +
+      employeeId +
+      ' มีอยู่ในระบบแล้ว ไม่สามารถบันทึกข้อมูลซ้ำได้'
+    );
+  }
+
+
+  if (
+    !foundRow &&
+    mode === 'update'
+  ) {
+
+    throw new Error(
+      'ไม่พบรหัสพนักงาน ' +
+      employeeId +
+      ' สำหรับการแก้ไข'
+    );
+  }
+
+
   const now =
     nowText_();
+
+
+  let newUntil =
+    oldNewUntil;
+
+
+  const wantsNewBadge =
+    (
+      data.isNew === true ||
+      String(
+        data.isNew || ''
+      )
+      .toUpperCase() ===
+      'TRUE'
+    );
+
+
+  /*
+   * ติ๊ก "พนักงานใหม่"
+   * -> แสดง NEW 14 วันนับจากวันที่บันทึก
+   */
+  if (
+    wantsNewBadge
+  ) {
+
+    const expireDate =
+      parseDate_(
+        todayText_()
+      );
+
+
+    expireDate.setDate(
+      expireDate.getDate() +
+      14
+    );
+
+
+    newUntil =
+      formatDate_(
+        expireDate
+      );
+  }
+
+
+  /*
+   * เพิ่มพนักงานใหม่แต่ไม่ได้ติ๊ก
+   * -> ไม่มีป้าย NEW
+   *
+   * ถ้าเป็นการแก้ไขพนักงานเดิม
+   * -> เก็บ newUntil เดิมไว้ ไม่รีเซ็ตอายุป้าย
+   */
+  if (
+    !foundRow &&
+    !wantsNewBadge
+  ) {
+
+    newUntil =
+      '';
+  }
 
 
   const row = [
