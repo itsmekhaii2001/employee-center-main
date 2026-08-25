@@ -13,7 +13,9 @@ const APP = {
     SHIFT_HISTORY: 'DB_ShiftHistory',
     SETTINGS: 'DB_Settings',
     TEAM_PLANNER: 'DB_TeamPlanner',
-    SEATING: 'DB_Seating'
+    SEATING: 'DB_Seating',
+    DEDUCTIONS: 'DB_Deductions',
+    DEDUCTION_LIMITS: 'DB_DeductionLimits'
   },
 
   POSITIONS: [
@@ -690,6 +692,30 @@ function callOwnerMethod_(
           args[0]
         ),
 
+    saveDeduction:
+      () =>
+        saveDeduction(
+          args[0]
+        ),
+
+    getDeductionRecords:
+      () =>
+        getDeductionRecords(
+          args[0]
+        ),
+
+    getDeductionDashboard:
+      () =>
+        getDeductionDashboard(
+          args[0]
+        ),
+
+    saveDeductionLimit:
+      () =>
+        saveDeductionLimit(
+          args[0]
+        ),
+
     saveShiftSet:
       () =>
         saveShiftSet(
@@ -1215,7 +1241,7 @@ function ensureSystemReadyCached_() {
       .getScriptCache();
 
   const key =
-    'EMPLOYEE_CENTER_SYSTEM_READY_V5';
+    'EMPLOYEE_CENTER_SYSTEM_READY_V6';
 
 
   if (
@@ -1319,6 +1345,33 @@ function setupSystem_() {
       'newShift',
       'action',
       'changedAt'
+    ]
+  );
+
+
+  ensureSheet_(
+    ss,
+    APP.SHEETS.DEDUCTIONS,
+    [
+      'deductionId',
+      'employeeId',
+      'amount',
+      'limitType',
+      'detail',
+      'transactionDate',
+      'createdAt'
+    ]
+  );
+
+
+  ensureSheet_(
+    ss,
+    APP.SHEETS.DEDUCTION_LIMITS,
+    [
+      'limitCode',
+      'position',
+      'amount',
+      'updatedAt'
     ]
   );
 
@@ -4017,6 +4070,1085 @@ function deleteEmployee(
   };
 }
 
+
+
+/* =========================================================
+   DEDUCTION / ตัดยอด
+========================================================= */
+
+function normalizeDeductionPosition_(
+  position
+) {
+
+  return String(
+    position || ''
+  )
+  .trim()
+  .toLowerCase()
+  .replace(
+    /\s+/g,
+    ''
+  )
+  .replace(
+    /[-–—]/g,
+    ''
+  );
+}
+
+
+function isWdEmployee_(
+  employee
+) {
+
+  const position =
+    normalizeDeductionPosition_(
+      employee?.position
+    );
+
+
+  return (
+    position.includes(
+      'ฝาก'
+    ) &&
+    position.includes(
+      'ถอน'
+    )
+  );
+}
+
+
+function getEmployeeById_(
+  employeeId
+) {
+
+  const key =
+    String(
+      employeeId || ''
+    )
+    .trim()
+    .toUpperCase();
+
+
+  return getEmployees_()
+    .find(
+      employee =>
+        String(
+          employee.employeeId || ''
+        )
+        .trim()
+        .toUpperCase() ===
+        key
+    ) || null;
+}
+
+
+function getDeductionLimits_() {
+
+  return getSheetObjects_(
+    APP.SHEETS.DEDUCTION_LIMITS
+  );
+}
+
+
+function getWdLimitAmount_() {
+
+  const row =
+    getDeductionLimits_()
+      .find(
+        item =>
+          String(
+            item.limitCode || ''
+          )
+          .trim()
+          .toUpperCase() ===
+          'WD'
+      );
+
+
+  if (!row) {
+
+    return 5000;
+  }
+
+
+  const amount =
+    Number(
+      String(
+        row.amount || '0'
+      )
+      .replace(
+        /,/g,
+        ''
+      )
+    );
+
+
+  return Number.isFinite(
+    amount
+  )
+    ? Math.max(
+        0,
+        amount
+      )
+    : 5000;
+}
+
+
+function saveDeductionLimit(
+  data
+) {
+
+  data =
+    data || {};
+
+
+  const limitCode =
+    String(
+      data.limitCode || 'WD'
+    )
+    .trim()
+    .toUpperCase();
+
+
+  const position =
+    String(
+      data.position || 'ฝาก - ถอน'
+    )
+    .trim();
+
+
+  const amount =
+    Number(
+      data.amount
+    );
+
+
+  if (
+    !Number.isFinite(
+      amount
+    ) ||
+    amount < 0
+  ) {
+
+    throw new Error(
+      'วงเงินต้องเป็นตัวเลขตั้งแต่ 0 บาทขึ้นไป'
+    );
+  }
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.DEDUCTION_LIMITS
+      );
+
+
+  const values =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  let foundRow =
+    0;
+
+
+  for (
+    let r = 1;
+    r < values.length;
+    r++
+  ) {
+
+    if (
+      String(
+        values[r][0] || ''
+      )
+      .trim()
+      .toUpperCase() ===
+      limitCode
+    ) {
+
+      foundRow =
+        r + 1;
+
+      break;
+    }
+  }
+
+
+  const row = [
+    limitCode,
+    position,
+    amount,
+    nowText_()
+  ];
+
+
+  if (foundRow) {
+
+    sheet
+      .getRange(
+        foundRow,
+        1,
+        1,
+        row.length
+      )
+      .setValues(
+        [row]
+      );
+
+  } else {
+
+    sheet
+      .appendRow(
+        row
+      );
+  }
+
+
+  return {
+
+    ok:
+      true,
+
+    message:
+      'บันทึกวงเงิน ' +
+      limitCode +
+      ' = ' +
+      amount +
+      ' บาทแล้ว',
+
+    amount:
+      amount
+  };
+}
+
+
+function saveDeduction(
+  data
+) {
+
+  data =
+    data || {};
+
+
+  const employeeId =
+    String(
+      data.employeeId || ''
+    )
+    .trim()
+    .toUpperCase();
+
+
+  const employee =
+    getEmployeeById_(
+      employeeId
+    );
+
+
+  if (!employee) {
+
+    throw new Error(
+      'ไม่พบรหัสพนักงาน ' +
+      employeeId
+    );
+  }
+
+
+  const amount =
+    Number(
+      data.amount
+    );
+
+
+  if (
+    !Number.isFinite(
+      amount
+    ) ||
+    amount <= 0
+  ) {
+
+    throw new Error(
+      'ยอดเงินต้องมากกว่า 0 บาท'
+    );
+  }
+
+
+  let limitType =
+    String(
+      data.limitType || 'GENERAL'
+    )
+    .trim()
+    .toUpperCase();
+
+
+  if (
+    limitType !== 'WD'
+  ) {
+
+    limitType =
+      'GENERAL';
+  }
+
+
+  if (
+    limitType === 'WD' &&
+    !isWdEmployee_(
+      employee
+    )
+  ) {
+
+    throw new Error(
+      'วงเงิน WD ใช้ได้เฉพาะพนักงานตำแหน่งฝาก-ถอน'
+    );
+  }
+
+
+  const transactionDate =
+    String(
+      data.transactionDate || ''
+    )
+    .trim();
+
+
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/
+      .test(
+        transactionDate
+      )
+  ) {
+
+    throw new Error(
+      'วันที่รายการไม่ถูกต้อง'
+    );
+  }
+
+
+  const detail =
+    String(
+      data.detail || ''
+    )
+    .trim()
+    .slice(
+      0,
+      1000
+    );
+
+
+  const deductionId =
+    Utilities
+      .getUuid();
+
+
+  getDatabase_()
+    .getSheetByName(
+      APP.SHEETS.DEDUCTIONS
+    )
+    .appendRow([
+      deductionId,
+      employeeId,
+      amount,
+      limitType,
+      detail,
+      transactionDate,
+      nowText_()
+    ]);
+
+
+  return {
+
+    ok:
+      true,
+
+    message:
+      'บันทึกรายการตัดยอด ' +
+      amount +
+      ' บาทแล้ว',
+
+    deductionId:
+      deductionId
+  };
+}
+
+
+function getRawDeductions_() {
+
+  return getSheetObjects_(
+    APP.SHEETS.DEDUCTIONS
+  )
+  .map(
+    row => ({
+
+      deductionId:
+        String(
+          row.deductionId || ''
+        ),
+
+      employeeId:
+        String(
+          row.employeeId || ''
+        )
+        .trim()
+        .toUpperCase(),
+
+      amount:
+        Number(
+          String(
+            row.amount || '0'
+          )
+          .replace(
+            /,/g,
+            ''
+          )
+        ) || 0,
+
+      limitType:
+        String(
+          row.limitType || 'GENERAL'
+        )
+        .trim()
+        .toUpperCase() ===
+        'WD'
+          ? 'WD'
+          : 'GENERAL',
+
+      detail:
+        String(
+          row.detail || ''
+        ),
+
+      transactionDate:
+        String(
+          row.transactionDate || ''
+        )
+        .trim(),
+
+      createdAt:
+        String(
+          row.createdAt || ''
+        )
+    }))
+  .filter(
+    row =>
+      row.employeeId &&
+      row.transactionDate &&
+      row.amount > 0
+  );
+}
+
+
+function calculateDeductions_() {
+
+  const employees =
+    getEmployees_();
+
+
+  const employeeMap = {};
+
+
+  employees
+    .forEach(
+      employee => {
+
+        employeeMap[
+          String(
+            employee.employeeId || ''
+          )
+          .trim()
+          .toUpperCase()
+        ] = employee;
+      }
+    );
+
+
+  const wdLimit =
+    getWdLimitAmount_();
+
+
+  const rows =
+    getRawDeductions_()
+      .sort(
+        (
+          a,
+          b
+        ) => {
+
+          const dateCompare =
+            String(
+              a.transactionDate
+            )
+            .localeCompare(
+              String(
+                b.transactionDate
+              )
+            );
+
+
+          if (dateCompare) {
+            return dateCompare;
+          }
+
+
+          const createdCompare =
+            String(
+              a.createdAt
+            )
+            .localeCompare(
+              String(
+                b.createdAt
+              )
+            );
+
+
+          if (createdCompare) {
+            return createdCompare;
+          }
+
+
+          return String(
+            a.deductionId
+          )
+          .localeCompare(
+            String(
+              b.deductionId
+            )
+          );
+        }
+      );
+
+
+  const monthlyWdUsed = {};
+
+
+  return rows
+    .map(
+      row => {
+
+        const employee =
+          employeeMap[
+            row.employeeId
+          ] || {};
+
+
+        const month =
+          row.transactionDate
+            .slice(
+              0,
+              7
+            );
+
+
+        const key =
+          row.employeeId +
+          '|' +
+          month;
+
+
+        let coveredByLimit =
+          0;
+
+
+        let actualDeduction =
+          row.amount;
+
+
+        let before =
+          Number(
+            monthlyWdUsed[
+              key
+            ] || 0
+          );
+
+
+        let after =
+          before;
+
+
+        if (
+          row.limitType === 'WD' &&
+          isWdEmployee_(
+            employee
+          )
+        ) {
+
+          const remainingBefore =
+            Math.max(
+              0,
+              wdLimit -
+              before
+            );
+
+
+          coveredByLimit =
+            Math.min(
+              row.amount,
+              remainingBefore
+            );
+
+
+          actualDeduction =
+            Math.max(
+              0,
+              row.amount -
+              coveredByLimit
+            );
+
+
+          after =
+            Math.min(
+              wdLimit,
+              before +
+              row.amount
+            );
+
+
+          monthlyWdUsed[
+            key
+          ] = after;
+        }
+
+
+        return {
+
+          ...row,
+
+          nickname:
+            employee.nickname || '',
+
+          team:
+            employee.team || '',
+
+          position:
+            employee.position || '',
+
+          month:
+            month,
+
+          monthlyLimit:
+            row.limitType === 'WD'
+              ? wdLimit
+              : 0,
+
+          coveredByLimit:
+            coveredByLimit,
+
+          actualDeduction:
+            actualDeduction,
+
+          limitUsedBefore:
+            before,
+
+          limitUsedAfter:
+            after
+        };
+      }
+    );
+}
+
+
+function getDeductionRecords(
+  filters
+) {
+
+  filters =
+    filters || {};
+
+
+  const from =
+    String(
+      filters.from || ''
+    )
+    .trim();
+
+
+  const to =
+    String(
+      filters.to || ''
+    )
+    .trim();
+
+
+  const employeeQuery =
+    String(
+      filters.employee || ''
+    )
+    .trim()
+    .toLowerCase();
+
+
+  let rows =
+    calculateDeductions_();
+
+
+  if (from) {
+
+    rows =
+      rows.filter(
+        row =>
+          row.transactionDate >=
+          from
+      );
+  }
+
+
+  if (to) {
+
+    rows =
+      rows.filter(
+        row =>
+          row.transactionDate <=
+          to
+      );
+  }
+
+
+  if (employeeQuery) {
+
+    rows =
+      rows.filter(
+        row =>
+          [
+            row.employeeId,
+            row.nickname
+          ]
+          .join(
+            ' '
+          )
+          .toLowerCase()
+          .includes(
+            employeeQuery
+          )
+      );
+  }
+
+
+  rows =
+    rows
+      .sort(
+        (
+          a,
+          b
+        ) => {
+
+          const dateCompare =
+            String(
+              b.transactionDate
+            )
+            .localeCompare(
+              String(
+                a.transactionDate
+              )
+            );
+
+
+          if (dateCompare) {
+            return dateCompare;
+          }
+
+
+          return String(
+            b.createdAt
+          )
+          .localeCompare(
+            String(
+              a.createdAt
+            )
+          );
+        }
+      );
+
+
+  return {
+
+    rows:
+      rows,
+
+    totalDamage:
+      rows.reduce(
+        (
+          sum,
+          row
+        ) =>
+          sum +
+          Number(
+            row.amount || 0
+          ),
+        0
+      ),
+
+    totalCovered:
+      rows.reduce(
+        (
+          sum,
+          row
+        ) =>
+          sum +
+          Number(
+            row.coveredByLimit || 0
+          ),
+        0
+      ),
+
+    totalActual:
+      rows.reduce(
+        (
+          sum,
+          row
+        ) =>
+          sum +
+          Number(
+            row.actualDeduction || 0
+          ),
+        0
+      )
+  };
+}
+
+
+function getDeductionDashboard(
+  month
+) {
+
+  month =
+    String(
+      month || ''
+    )
+    .trim();
+
+
+  if (
+    !/^\d{4}-\d{2}$/
+      .test(
+        month
+      )
+  ) {
+
+    month =
+      todayText_()
+        .slice(
+          0,
+          7
+        );
+  }
+
+
+  const employees =
+    getEmployees_();
+
+
+  const wdLimit =
+    getWdLimitAmount_();
+
+
+  const monthRows =
+    calculateDeductions_()
+      .filter(
+        row =>
+          row.month ===
+          month
+      );
+
+
+  const byEmployee = {};
+
+
+  monthRows
+    .forEach(
+      row => {
+
+        if (
+          !byEmployee[
+            row.employeeId
+          ]
+        ) {
+
+          byEmployee[
+            row.employeeId
+          ] = {
+
+            totalDamage:
+              0,
+
+            limitUsed:
+              0,
+
+            actualDeduction:
+              0
+          };
+        }
+
+
+        const bucket =
+          byEmployee[
+            row.employeeId
+          ];
+
+
+        bucket.totalDamage +=
+          Number(
+            row.amount || 0
+          );
+
+
+        bucket.limitUsed +=
+          Number(
+            row.coveredByLimit || 0
+          );
+
+
+        bucket.actualDeduction +=
+          Number(
+            row.actualDeduction || 0
+          );
+      }
+    );
+
+
+  const wdEmployees =
+    employees
+      .filter(
+        isWdEmployee_
+      )
+      .map(
+        employee => {
+
+          const totals =
+            byEmployee[
+              employee.employeeId
+            ] || {
+
+              totalDamage:
+                0,
+
+              limitUsed:
+                0,
+
+              actualDeduction:
+                0
+            };
+
+
+          return {
+
+            employeeId:
+              employee.employeeId,
+
+            nickname:
+              employee.nickname,
+
+            team:
+              employee.team,
+
+            position:
+              employee.position,
+
+            limit:
+              wdLimit,
+
+            totalDamage:
+              totals.totalDamage,
+
+            limitUsed:
+              Math.min(
+                wdLimit,
+                totals.limitUsed
+              ),
+
+            remainingLimit:
+              Math.max(
+                0,
+                wdLimit -
+                totals.limitUsed
+              ),
+
+            actualDeduction:
+              totals.actualDeduction
+          };
+        }
+      )
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          Number(
+            b.limitUsed
+          ) -
+          Number(
+            a.limitUsed
+          )
+      );
+
+
+  const generalEmployees =
+    employees
+      .filter(
+        employee =>
+          !isWdEmployee_(
+            employee
+          )
+      )
+      .map(
+        employee => {
+
+          const totals =
+            byEmployee[
+              employee.employeeId
+            ] || {
+
+              actualDeduction:
+                0
+            };
+
+
+          return {
+
+            employeeId:
+              employee.employeeId,
+
+            nickname:
+              employee.nickname,
+
+            team:
+              employee.team,
+
+            position:
+              employee.position,
+
+            actualDeduction:
+              totals.actualDeduction
+          };
+        }
+      )
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          Number(
+            b.actualDeduction
+          ) -
+          Number(
+            a.actualDeduction
+          )
+      );
+
+
+  return {
+
+    month:
+      month,
+
+    wdLimit:
+      wdLimit,
+
+    wdEmployees:
+      wdEmployees,
+
+    generalEmployees:
+      generalEmployees
+  };
+}
 
 
 /* =========================================================
