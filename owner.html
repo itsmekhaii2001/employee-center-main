@@ -9948,32 +9948,64 @@ function markDeductionDone(
   deductionId
 ) {
 
-  const row =
+  const index =
     (
       STATE.deductionRecords ||
       []
     )
-      .find(
+      .findIndex(
         item =>
           item.deductionId ===
           deductionId
       );
 
 
-  if (!row) {
+  if (index < 0) {
     return;
   }
 
 
+  const current =
+    STATE.deductionRecords[
+      index
+    ];
+
+
   if (
     String(
-      row.status || ''
+      current.status || ''
     )
     .toUpperCase() ===
     'DONE'
   ) {
     return;
   }
+
+
+  /*
+   * อัปเดตสถานะบนจอทันที
+   * ไม่ต้องโหลดตารางใหม่ทั้งก้อน
+   */
+  const previous =
+    {
+      ...current
+    };
+
+
+  STATE.deductionRecords[
+    index
+  ] = {
+
+    ...current,
+
+    status:
+      'DONE'
+  };
+
+
+  renderDeductionRecords(
+    STATE.deductionRecords
+  );
 
 
   google.script.run
@@ -9984,9 +10016,6 @@ function markDeductionDone(
         STATE.deductionDirty =
           true;
 
-        STATE.deductionListLoaded =
-          false;
-
         STATE.deductionLimitLoaded =
           false;
 
@@ -9995,16 +10024,27 @@ function markDeductionDone(
           res?.message ||
           'เปลี่ยนสถานะเป็นหักแล้ว'
         );
-
-
-        loadDeductionRecords(
-          true
-        );
       }
     )
 
     .withFailureHandler(
-      showServerError
+      err => {
+
+        STATE.deductionRecords[
+          index
+        ] =
+          previous;
+
+
+        renderDeductionRecords(
+          STATE.deductionRecords
+        );
+
+
+        showServerError(
+          err
+        );
+      }
     )
 
     .markDeductionDone(
@@ -10017,11 +10057,13 @@ function deleteDeductionRecord(
   deductionId
 ) {
 
+  const rows =
+    STATE.deductionRecords ||
+    [];
+
+
   const row =
-    (
-      STATE.deductionRecords ||
-      []
-    )
+    rows
       .find(
         item =>
           item.deductionId ===
@@ -10047,16 +10089,78 @@ function deleteDeductionRecord(
   }
 
 
+  /*
+   * เก็บ snapshot ไว้ เผื่อ Backend ลบไม่สำเร็จ
+   */
+  const previousRows =
+    [
+      ...rows
+    ];
+
+
+  /*
+   * เอารายการออกจากหน้าจอทันที
+   * ไม่ขึ้น "กำลังโหลดรายการตัดยอด..."
+   */
+  STATE.deductionRecords =
+    rows
+      .filter(
+        item =>
+          item.deductionId !==
+          deductionId
+      );
+
+
+  renderDeductionRecords(
+    STATE.deductionRecords
+  );
+
+
+  const filters = {
+
+    from:
+      value(
+        'deductListFrom'
+      ),
+
+    to:
+      value(
+        'deductListTo'
+      ),
+
+    employee:
+      value(
+        'deductListEmployee'
+      )
+  };
+
+
   google.script.run
 
     .withSuccessHandler(
       res => {
 
+        /*
+         * Backend คำนวณวงเงินใหม่หลังลบให้แล้ว
+         * เอาผลใหม่มาแทนแบบเงียบ ๆ โดยไม่แสดง Loading
+         */
+        if (
+          res?.data?.rows
+        ) {
+
+          STATE.deductionRecords =
+            res.data.rows;
+
+
+          renderDeductionRecords(
+            STATE.deductionRecords,
+            res.data
+          );
+        }
+
+
         STATE.deductionDirty =
           true;
-
-        STATE.deductionListLoaded =
-          false;
 
         STATE.deductionLimitLoaded =
           false;
@@ -10066,22 +10170,36 @@ function deleteDeductionRecord(
           res?.message ||
           'ลบรายการแล้ว'
         );
-
-
-        loadDeductionRecords(
-          true
-        );
       }
     )
 
     .withFailureHandler(
-      showServerError
+      err => {
+
+        /*
+         * ลบไม่สำเร็จ -> คืนรายการเดิม
+         */
+        STATE.deductionRecords =
+          previousRows;
+
+
+        renderDeductionRecords(
+          STATE.deductionRecords
+        );
+
+
+        showServerError(
+          err
+        );
+      }
     )
 
     .deleteDeductionRecord(
-      deductionId
+      deductionId,
+      filters
     );
 }
+
 
 
 function renderDeductionRecords(

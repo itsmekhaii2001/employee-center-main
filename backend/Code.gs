@@ -713,7 +713,8 @@ function callOwnerMethod_(
     deleteDeductionRecord:
       () =>
         deleteDeductionRecord(
-          args[0]
+          args[0],
+          args[1]
         ),
 
     getDeductionRecords:
@@ -5416,7 +5417,8 @@ function markDeductionDone(
 
 
 function deleteDeductionRecord(
-  deductionId
+  deductionId,
+  filters
 ) {
 
   const found =
@@ -5431,13 +5433,27 @@ function deleteDeductionRecord(
     );
 
 
+  /*
+   * คืนข้อมูลที่คำนวณใหม่ใน request เดียว
+   * เพื่อให้ Frontend ไม่ต้องยิง getDeductionRecords()
+   * อีกรอบและไม่ต้องขึ้น Loading ทั้งตาราง
+   */
+  const data =
+    getDeductionRecords(
+      filters || {}
+    );
+
+
   return {
 
     ok:
       true,
 
     message:
-      'ลบรายการตัดยอดแล้ว'
+      'ลบรายการตัดยอดแล้ว',
+
+    data:
+      data
   };
 }
 
