@@ -2841,6 +2841,9 @@ th:nth-child(2) {
 
 function initializeDeductionUI() {
 
+  loadDeductionLimitTypes();
+
+
   const today =
     String(
       STATE.today || ''
@@ -2993,6 +2996,535 @@ function isWdPositionClient(
 }
 
 
+function renderDeductionLimitDropdown() {
+
+  const select =
+    document.getElementById(
+      'deductLimitType'
+    );
+
+
+  if (!select) {
+    return;
+  }
+
+
+  const current =
+    String(
+      select.value || ''
+    );
+
+
+  const rows =
+    STATE.deductionLimitTypes ||
+    [];
+
+
+  if (!rows.length) {
+
+    select.innerHTML = `
+      <option value="">
+        ยังไม่มีรายการวงเงิน
+      </option>
+    `;
+
+    return;
+  }
+
+
+  select.innerHTML =
+    rows
+      .map(
+        row => `
+          <option
+            value="${escapeAttr(row.limitCode)}"
+          >
+            ${escapeHtml(row.name)}
+            · วงเงิน ${moneyTH(row.amount)}
+          </option>
+        `
+      )
+      .join('');
+
+
+  if (
+    rows.some(
+      row =>
+        row.limitCode === current
+    )
+  ) {
+
+    select.value =
+      current;
+  }
+}
+
+
+function loadDeductionLimitTypes(
+  force
+) {
+
+  if (
+    STATE.deductionLimitsLoaded &&
+    !force
+  ) {
+
+    renderDeductionLimitDropdown();
+
+    renderDeductionLimitList();
+
+    return;
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      rows => {
+
+        STATE.deductionLimitTypes =
+          Array.isArray(rows)
+            ? rows
+            : [];
+
+
+        STATE.deductionLimitsLoaded =
+          true;
+
+
+        renderDeductionLimitDropdown();
+
+        renderDeductionLimitList();
+
+        previewDeductionEmployee();
+      }
+    )
+
+    .withFailureHandler(
+      showServerError
+    )
+
+    .getDeductionLimitTypes();
+}
+
+
+function renderDeductionLimitList() {
+
+  const container =
+    document.getElementById(
+      'deductLimitList'
+    );
+
+
+  if (!container) {
+    return;
+  }
+
+
+  const rows =
+    STATE.deductionLimitTypes ||
+    [];
+
+
+  if (!rows.length) {
+
+    container.innerHTML =
+      emptyHtml(
+        'ยังไม่มีหัวข้อวงเงิน · กด “เพิ่มหัวข้อรายการ” เพื่อสร้าง'
+      );
+
+    return;
+  }
+
+
+  container.innerHTML =
+    rows
+      .map(
+        row => `
+
+          <div class="deduct-limit-row">
+
+            <div>
+
+              <div class="deduct-limit-row-name">
+                ${escapeHtml(row.name)}
+              </div>
+
+              <div class="deduct-limit-row-code">
+                รหัส: ${escapeHtml(row.limitCode)}
+              </div>
+
+            </div>
+
+
+            <div class="deduct-limit-row-amount">
+
+              <span>
+                วงเงิน
+              </span>
+
+              <b>
+                ${moneyTH(row.amount)}
+              </b>
+
+              <span>
+                บาท
+              </span>
+
+            </div>
+
+
+            <div class="deduct-limit-row-actions">
+
+              <button
+                type="button"
+                class="deduct-limit-edit-btn"
+                onclick='editDeductionLimitItem(${jsonString(row.limitCode)})'
+              >
+                ✏️ แก้ไข
+              </button>
+
+              <button
+                type="button"
+                class="deduct-limit-delete-btn"
+                onclick='deleteDeductionLimitItem(${jsonString(row.limitCode)})'
+              >
+                ลบ
+              </button>
+
+            </div>
+
+          </div>
+        `
+      )
+      .join('');
+}
+
+
+function openDeductionLimitEditor(
+  row
+) {
+
+  STATE.deductionLimitEditCode =
+    row?.limitCode ||
+    '';
+
+
+  setValue(
+    'deductLimitName',
+    row?.name ||
+    ''
+  );
+
+
+  setValue(
+    'deductLimitEditorAmount',
+    row?.amount ??
+    ''
+  );
+
+
+  const editor =
+    document.getElementById(
+      'deductLimitEditor'
+    );
+
+
+  if (editor) {
+
+    editor.style.display =
+      'grid';
+
+
+    editor
+      .scrollIntoView({
+        behavior:
+          'smooth',
+
+        block:
+          'nearest'
+      });
+  }
+}
+
+
+function closeDeductionLimitEditor() {
+
+  STATE.deductionLimitEditCode =
+    '';
+
+
+  setValue(
+    'deductLimitName',
+    ''
+  );
+
+
+  setValue(
+    'deductLimitEditorAmount',
+    ''
+  );
+
+
+  const editor =
+    document.getElementById(
+      'deductLimitEditor'
+    );
+
+
+  if (editor) {
+
+    editor.style.display =
+      'none';
+  }
+}
+
+
+function editDeductionLimitItem(
+  limitCode
+) {
+
+  const row =
+    (
+      STATE.deductionLimitTypes ||
+      []
+    )
+      .find(
+        item =>
+          item.limitCode ===
+          limitCode
+      );
+
+
+  if (!row) {
+    return;
+  }
+
+
+  openDeductionLimitEditor(
+    row
+  );
+}
+
+
+function saveDeductionLimitItem() {
+
+  const name =
+    String(
+      value(
+        'deductLimitName'
+      ) || ''
+    )
+    .trim();
+
+
+  const amount =
+    Number(
+      value(
+        'deductLimitEditorAmount'
+      )
+    );
+
+
+  if (!name) {
+
+    return toast(
+      'กรุณากรอกหัวข้อรายการ',
+      'warning'
+    );
+  }
+
+
+  if (
+    !Number.isFinite(
+      amount
+    ) ||
+    amount < 0
+  ) {
+
+    return toast(
+      'วงเงินต้องเป็นตัวเลขตั้งแต่ 0 บาทขึ้นไป',
+      'warning'
+    );
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      res => {
+
+        STATE.deductionLimitTypes =
+          res?.rows ||
+          [];
+
+
+        STATE.deductionLimitsLoaded =
+          true;
+
+        STATE.deductionDirty =
+          true;
+
+        STATE.deductionLimitLoaded =
+          false;
+
+
+        closeDeductionLimitEditor();
+
+        renderDeductionLimitDropdown();
+
+        renderDeductionLimitList();
+
+
+        toast(
+          res?.message ||
+          'บันทึกหัวข้อวงเงินแล้ว'
+        );
+      }
+    )
+
+    .withFailureHandler(
+      showServerError
+    )
+
+    .saveDeductionLimit({
+      limitCode:
+        STATE.deductionLimitEditCode,
+
+      name:
+        name,
+
+      amount:
+        amount
+    });
+}
+
+
+function deleteDeductionLimitItem(
+  limitCode
+) {
+
+  const row =
+    (
+      STATE.deductionLimitTypes ||
+      []
+    )
+      .find(
+        item =>
+          item.limitCode ===
+          limitCode
+      );
+
+
+  if (!row) {
+    return;
+  }
+
+
+  if (
+    !confirm(
+      'ลบหัวข้อ “' +
+      row.name +
+      '” ใช่ไหม?'
+    )
+  ) {
+    return;
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      res => {
+
+        STATE.deductionLimitTypes =
+          res?.rows ||
+          [];
+
+
+        STATE.deductionLimitsLoaded =
+          true;
+
+        STATE.deductionDirty =
+          true;
+
+        STATE.deductionLimitLoaded =
+          false;
+
+
+        renderDeductionLimitDropdown();
+
+        renderDeductionLimitList();
+
+        previewDeductionEmployee();
+
+
+        toast(
+          res?.message ||
+          'ลบหัวข้อวงเงินแล้ว'
+        );
+      }
+    )
+
+    .withFailureHandler(
+      showServerError
+    )
+
+    .deleteDeductionLimit(
+      limitCode
+    );
+}
+
+
+function getDefaultDeductionLimitCode(
+  employee
+) {
+
+  const rows =
+    STATE.deductionLimitTypes ||
+    [];
+
+
+  if (
+    isWdPositionClient(
+      employee?.position
+    )
+  ) {
+
+    const wd =
+      rows.find(
+        row =>
+          row.limitCode ===
+          'WD'
+      );
+
+
+    if (wd) {
+      return 'WD';
+    }
+  }
+
+
+  const general =
+    rows.find(
+      row =>
+        row.limitCode ===
+        'GENERAL'
+    );
+
+
+  if (general) {
+    return 'GENERAL';
+  }
+
+
+  return rows[0]
+    ?.limitCode ||
+    '';
+}
+
+
+
 function previewDeductionEmployee() {
 
   const employee =
@@ -3050,11 +3582,9 @@ function previewDeductionEmployee() {
 
   setValue(
     'deductLimitType',
-    isWdPositionClient(
-      employee.position
+    getDefaultDeductionLimitCode(
+      employee
     )
-      ? 'WD'
-      : 'GENERAL'
   );
 }
 
@@ -3073,7 +3603,7 @@ function clearDeductionForm() {
 
   setValue(
     'deductLimitType',
-    'WD'
+    STATE.deductionLimitTypes?.[0]?.limitCode || ''
   );
 
   setValue(
@@ -3412,24 +3942,22 @@ function moneyTH(
 
 
 function deductionTypeHtml(
-  type
+  row
 ) {
 
-  if (
-    type === 'WD'
-  ) {
-
-    return `
-      <span class="deduct-type wd">
-        WD
-      </span>
-    `;
-  }
+  const isWd =
+    row?.limitType ===
+    'WD';
 
 
   return `
-    <span class="deduct-type general">
-      ทั่วไป
+    <span
+      class="
+        deduct-type
+        ${isWd ? 'wd' : 'general'}
+      "
+    >
+      ${escapeHtml(row?.limitLabel || row?.limitType || '-')}
     </span>
   `;
 }
@@ -3454,16 +3982,15 @@ function deductionStatusHtml(
 
 
   if (
-    row.limitType === 'WD' &&
+    Number(
+      row.monthlyLimit || 0
+    ) > 0 &&
     Number(
       row.limitUsedAfter || 0
     ) >=
     Number(
       row.monthlyLimit || 0
-    ) &&
-    Number(
-      row.monthlyLimit || 0
-    ) > 0
+    )
   ) {
 
     return `
@@ -3474,9 +4001,23 @@ function deductionStatusHtml(
   }
 
 
+  if (
+    Number(
+      row.monthlyLimit || 0
+    ) > 0
+  ) {
+
+    return `
+      <span class="deduct-status limit">
+        ใช้วงเงิน
+      </span>
+    `;
+  }
+
+
   return `
-    <span class="deduct-status limit">
-      ใช้วงเงิน
+    <span class="deduct-status actual">
+      หักเงินจริง
     </span>
   `;
 }
@@ -3641,7 +4182,7 @@ function renderDeductionRecords(
             </td>
 
             <td>
-              ${deductionTypeHtml(row.limitType)}
+              ${deductionTypeHtml(row)}
             </td>
 
             <td class="deduct-money">
@@ -3757,14 +4298,6 @@ function renderDeductionDashboard(
 
   data =
     data || {};
-
-
-  setValue(
-    'wdLimitAmount',
-    Number(
-      data.wdLimit || 0
-    )
-  );
 
 
   const wdRows =
@@ -3992,69 +4525,7 @@ function renderDeductionDashboard(
 }
 
 
-function saveWdLimit() {
 
-  const amount =
-    Number(
-      value(
-        'wdLimitAmount'
-      )
-    );
-
-
-  if (
-    !Number.isFinite(
-      amount
-    ) ||
-    amount < 0
-  ) {
-
-    return toast(
-      'วงเงินต้องเป็นตัวเลขตั้งแต่ 0 บาทขึ้นไป',
-      'warning'
-    );
-  }
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      res => {
-
-        STATE.deductionDirty =
-          true;
-
-        STATE.deductionLimitLoaded =
-          false;
-
-
-        toast(
-          res?.message ||
-          'บันทึกวงเงิน WD แล้ว'
-        );
-
-
-        loadDeductionDashboard(
-          true
-        );
-      }
-    )
-
-    .withFailureHandler(
-      showServerError
-    )
-
-    .saveDeductionLimit({
-      limitCode:
-        'WD',
-
-      position:
-        'ฝาก - ถอน',
-
-      amount:
-        amount
-    });
-}
 
 
 
@@ -5006,6 +5477,117 @@ function saveWdLimit() {
   border:1px solid #e2e9f1;
   border-radius:18px;
   background:linear-gradient(135deg,#f8fbff,#fbf8ff)
+}
+
+
+.deduct-limit-head-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  margin-bottom:12px
+}
+
+.deduct-limit-editor{
+  display:grid;
+  grid-template-columns:1.4fr 1fr auto;
+  gap:12px;
+  align-items:end;
+  padding:14px;
+  margin-bottom:12px;
+  border:1px solid #dfe8f2;
+  border-radius:16px;
+  background:linear-gradient(135deg,#f8fbff,#fbf8ff)
+}
+
+.deduct-limit-list{
+  display:flex;
+  flex-direction:column;
+  gap:9px
+}
+
+.deduct-limit-row{
+  display:grid;
+  grid-template-columns:minmax(180px,1fr) minmax(150px,.8fr) auto;
+  gap:12px;
+  align-items:center;
+  min-height:66px;
+  padding:12px 14px;
+  border:1px solid #e1e8f0;
+  border-radius:16px;
+  background:linear-gradient(145deg,#fff,#fafcff)
+}
+
+.deduct-limit-row-name{
+  color:#40536d;
+  font-size:11px;
+  font-weight:1000
+}
+
+.deduct-limit-row-code{
+  margin-top:3px;
+  color:#98a2b1;
+  font-size:8px;
+  font-weight:800
+}
+
+.deduct-limit-row-amount{
+  display:flex;
+  align-items:baseline;
+  gap:5px;
+  color:#596a80
+}
+
+.deduct-limit-row-amount b{
+  color:#3f5572;
+  font-size:15px;
+  font-weight:1000
+}
+
+.deduct-limit-row-amount span{
+  font-size:9px;
+  font-weight:800
+}
+
+.deduct-limit-row-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:7px;
+  flex-wrap:wrap
+}
+
+.deduct-limit-edit-btn,
+.deduct-limit-delete-btn{
+  min-height:34px;
+  padding:0 11px;
+  border-radius:10px;
+  font-family:inherit;
+  font-size:9px;
+  font-weight:950;
+  cursor:pointer
+}
+
+.deduct-limit-edit-btn{
+  border:1px solid #dfe6ee;
+  background:#f2f5f8;
+  color:#627187
+}
+
+.deduct-limit-delete-btn{
+  border:1px solid #ffd7dd;
+  background:#fff3f5;
+  color:#d06678
+}
+
+@media(max-width:760px){
+  .deduct-limit-editor,
+  .deduct-limit-row{
+    grid-template-columns:1fr
+  }
+
+  .deduct-limit-row-actions{
+    justify-content:flex-start
+  }
 }
 
 .deduct-limit-title{
@@ -6157,8 +6739,9 @@ function saveWdLimit() {
         </label>
 
         <select id="deductLimitType">
-          <option value="WD">WD</option>
-          <option value="GENERAL">ทั่วไป</option>
+          <option value="">
+            กำลังโหลดรายการวงเงิน...
+          </option>
         </select>
 
       </div>
@@ -6386,7 +6969,7 @@ function saveWdLimit() {
         </h2>
 
         <p>
-          ตั้งวงเงินของตำแหน่งฝาก-ถอน และดูการใช้วงเงินของพนักงาน
+          ตั้งหัวข้อวงเงิน แก้ไข ลบ หรือเพิ่มรายการใหม่ได้
         </p>
 
       </div>
@@ -6394,45 +6977,95 @@ function saveWdLimit() {
     </div>
 
 
-    <div class="deduct-limit-setting">
+    <div class="deduct-limit-head-actions">
 
-      <div>
+      <button
+        class="btn btn-primary"
+        type="button"
+        onclick="openDeductionLimitEditor()"
+      >
+        ➕ เพิ่มหัวข้อรายการ
+      </button>
 
-        <div class="deduct-limit-title">
-          WD · ฝาก-ถอน
-        </div>
+    </div>
 
-        <div class="deduct-limit-sub">
-          วงเงินต่อพนักงาน / ต่อเดือน
-        </div>
+
+    <div
+      class="deduct-limit-editor"
+      id="deductLimitEditor"
+      style="display:none"
+    >
+
+      <div class="field">
+
+        <label>
+          หัวข้อรายการ *
+        </label>
+
+        <input
+          id="deductLimitName"
+          placeholder="เช่น ฝาก-ถอน, ทั่วไป"
+          maxlength="80"
+        >
 
       </div>
 
 
-      <div class="deduct-limit-input">
+      <div class="field">
+
+        <label>
+          วงเงิน *
+        </label>
 
         <input
-          id="wdLimitAmount"
+          id="deductLimitEditorAmount"
           type="number"
           min="0"
           step="100"
-          placeholder="5000"
+          placeholder="0"
         >
-
-        <span>
-          บาท
-        </span>
-
-        <button
-          class="btn btn-primary"
-          type="button"
-          onclick="saveWdLimit()"
-        >
-          💾 บันทึกวงเงิน
-        </button>
 
       </div>
 
+
+      <div class="field">
+
+        <label>
+          จัดการ
+        </label>
+
+        <div class="actions">
+
+          <button
+            class="btn btn-primary"
+            type="button"
+            onclick="saveDeductionLimitItem()"
+          >
+            💾 บันทึก
+          </button>
+
+          <button
+            class="btn btn-soft"
+            type="button"
+            onclick="closeDeductionLimitEditor()"
+          >
+            ยกเลิก
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div
+      class="deduct-limit-list"
+      id="deductLimitList"
+    >
+      <div class="empty">
+        ⏳ กำลังโหลดรายการวงเงิน...
+      </div>
     </div>
 
   </div>
@@ -7974,6 +8607,15 @@ let STATE = {
   deductionDashboard:
     null,
 
+  deductionLimitTypes:
+    [],
+
+  deductionLimitsLoaded:
+    false,
+
+  deductionLimitEditCode:
+    '',
+
   deductionListLoaded:
     false,
 
@@ -8587,6 +9229,8 @@ if (
   if (
     page === 'deductionLimit'
   ) {
+
+    loadDeductionLimitTypes();
 
     loadDeductionDashboard();
   }

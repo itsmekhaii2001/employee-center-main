@@ -710,9 +710,19 @@ function callOwnerMethod_(
           args[0]
         ),
 
+    getDeductionLimitTypes:
+      () =>
+        getDeductionLimitTypes(),
+
     saveDeductionLimit:
       () =>
         saveDeductionLimit(
+          args[0]
+        ),
+
+    deleteDeductionLimit:
+      () =>
+        deleteDeductionLimit(
           args[0]
         ),
 
@@ -1407,6 +1417,7 @@ function setupSystem_() {
 
   seedDefaultShiftSets_();
   seedDefaultSettings_();
+  seedDefaultDeductionLimits_();
 
   /*
    * ดึงตำแหน่งเดิมที่เคยมีอยู่ใน Dropdown
@@ -4076,6 +4087,151 @@ function deleteEmployee(
    DEDUCTION / ตัดยอด
 ========================================================= */
 
+function seedDefaultDeductionLimits_() {
+
+  const props =
+    PropertiesService
+      .getScriptProperties();
+
+
+  const seedKey =
+    'DEDUCTION_LIMITS_SEEDED_V1';
+
+
+  if (
+    props.getProperty(
+      seedKey
+    ) === 'TRUE'
+  ) {
+    return;
+  }
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.DEDUCTION_LIMITS
+      );
+
+
+  const existing =
+    getDeductionLimits_();
+
+
+  const existingCodes =
+    new Set(
+      existing
+        .map(
+          row =>
+            String(
+              row.limitCode || ''
+            )
+            .trim()
+            .toUpperCase()
+        )
+    );
+
+
+  if (
+    !existingCodes.has(
+      'WD'
+    )
+  ) {
+
+    sheet.appendRow([
+      'WD',
+      'ฝาก-ถอน',
+      5000,
+      nowText_()
+    ]);
+  }
+
+
+  if (
+    !existingCodes.has(
+      'GENERAL'
+    )
+  ) {
+
+    sheet.appendRow([
+      'GENERAL',
+      'ทั่วไป',
+      0,
+      nowText_()
+    ]);
+  }
+
+
+  props.setProperty(
+    seedKey,
+    'TRUE'
+  );
+}
+
+
+function normalizeDeductionLimitCode_(
+  value
+) {
+
+  return String(
+    value || ''
+  )
+  .trim()
+  .toUpperCase()
+  .replace(
+    /[^A-Z0-9_]/g,
+    '_'
+  )
+  .replace(
+    /_+/g,
+    '_'
+  )
+  .replace(
+    /^_+|_+$/g,
+    ''
+  );
+}
+
+
+function makeDeductionLimitCode_(
+  name
+) {
+
+  const english =
+    normalizeDeductionLimitCode_(
+      name
+    );
+
+
+  if (english) {
+
+    return (
+      english +
+      '_' +
+      Utilities
+        .getUuid()
+        .slice(
+          0,
+          6
+        )
+        .toUpperCase()
+    );
+  }
+
+
+  return (
+    'LIMIT_' +
+    Utilities
+      .getUuid()
+      .slice(
+        0,
+        8
+      )
+      .toUpperCase()
+  );
+}
+
+
 function normalizeDeductionPosition_(
   position
 ) {
@@ -4150,25 +4306,25 @@ function getDeductionLimits_() {
 }
 
 
-function getWdLimitAmount_() {
+function normalizeDeductionLimitRow_(
+  row
+) {
 
-  const row =
-    getDeductionLimits_()
-      .find(
-        item =>
-          String(
-            item.limitCode || ''
-          )
-          .trim()
-          .toUpperCase() ===
-          'WD'
-      );
+  const limitCode =
+    String(
+      row.limitCode || ''
+    )
+    .trim()
+    .toUpperCase();
 
 
-  if (!row) {
-
-    return 5000;
-  }
+  const name =
+    String(
+      row.position ||
+      row.name ||
+      limitCode
+    )
+    .trim();
 
 
   const amount =
@@ -4183,14 +4339,76 @@ function getWdLimitAmount_() {
     );
 
 
-  return Number.isFinite(
-    amount
-  )
-    ? Math.max(
-        0,
+  return {
+
+    limitCode:
+      limitCode,
+
+    name:
+      name,
+
+    amount:
+      Number.isFinite(
         amount
       )
-    : 5000;
+        ? Math.max(
+            0,
+            amount
+          )
+        : 0,
+
+    updatedAt:
+      String(
+        row.updatedAt || ''
+      )
+  };
+}
+
+
+function getDeductionLimitTypes() {
+
+  seedDefaultDeductionLimits_();
+
+
+  return getDeductionLimits_()
+    .map(
+      normalizeDeductionLimitRow_
+    )
+    .filter(
+      row =>
+        row.limitCode &&
+        row.name
+    );
+}
+
+
+function getDeductionLimitMap_() {
+
+  const map = {};
+
+
+  getDeductionLimitTypes()
+    .forEach(
+      row => {
+
+        map[
+          row.limitCode
+        ] = row;
+      }
+    );
+
+
+  return map;
+}
+
+
+function getWdLimitAmount_() {
+
+  return Number(
+    getDeductionLimitMap_()
+      .WD
+      ?.amount || 0
+  );
 }
 
 
@@ -4202,19 +4420,25 @@ function saveDeductionLimit(
     data || {};
 
 
-  const limitCode =
+  const name =
     String(
-      data.limitCode || 'WD'
+      data.name ||
+      data.position ||
+      ''
     )
     .trim()
-    .toUpperCase();
+    .slice(
+      0,
+      80
+    );
 
 
-  const position =
-    String(
-      data.position || 'ฝาก - ถอน'
-    )
-    .trim();
+  if (!name) {
+
+    throw new Error(
+      'กรุณากรอกหัวข้อรายการ'
+    );
+  }
 
 
   const amount =
@@ -4236,6 +4460,12 @@ function saveDeductionLimit(
   }
 
 
+  let limitCode =
+    normalizeDeductionLimitCode_(
+      data.limitCode
+    );
+
+
   const sheet =
     getDatabase_()
       .getSheetByName(
@@ -4253,32 +4483,66 @@ function saveDeductionLimit(
     0;
 
 
-  for (
-    let r = 1;
-    r < values.length;
-    r++
-  ) {
+  if (limitCode) {
 
-    if (
-      String(
-        values[r][0] || ''
-      )
-      .trim()
-      .toUpperCase() ===
-      limitCode
+    for (
+      let r = 1;
+      r < values.length;
+      r++
     ) {
 
-      foundRow =
-        r + 1;
+      if (
+        String(
+          values[r][0] || ''
+        )
+        .trim()
+        .toUpperCase() ===
+        limitCode
+      ) {
 
-      break;
+        foundRow =
+          r + 1;
+
+        break;
+      }
     }
+  }
+
+
+  if (!limitCode) {
+
+    limitCode =
+      makeDeductionLimitCode_(
+        name
+      );
+  }
+
+
+  const duplicateName =
+    getDeductionLimitTypes()
+      .find(
+        row =>
+          row.name
+            .toLowerCase() ===
+            name.toLowerCase() &&
+          row.limitCode !==
+            limitCode
+      );
+
+
+  if (duplicateName) {
+
+    throw new Error(
+      'มีหัวข้อ “' +
+      name +
+      '” อยู่แล้ว'
+    );
   }
 
 
   const row = [
     limitCode,
-    position,
+    name,
     amount,
     nowText_()
   ];
@@ -4312,16 +4576,136 @@ function saveDeductionLimit(
       true,
 
     message:
-      'บันทึกวงเงิน ' +
-      limitCode +
-      ' = ' +
-      amount +
-      ' บาทแล้ว',
+      'บันทึกหัวข้อ “' +
+      name +
+      '” แล้ว',
 
-    amount:
-      amount
+    rows:
+      getDeductionLimitTypes()
   };
 }
+
+
+function deleteDeductionLimit(
+  limitCode
+) {
+
+  limitCode =
+    normalizeDeductionLimitCode_(
+      limitCode
+    );
+
+
+  if (!limitCode) {
+
+    throw new Error(
+      'ไม่พบรหัสหัวข้อวงเงิน'
+    );
+  }
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.DEDUCTION_LIMITS
+      );
+
+
+  const values =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  let rowNumber =
+    0;
+
+
+  let name =
+    limitCode;
+
+
+  for (
+    let r = 1;
+    r < values.length;
+    r++
+  ) {
+
+    if (
+      String(
+        values[r][0] || ''
+      )
+      .trim()
+      .toUpperCase() ===
+      limitCode
+    ) {
+
+      rowNumber =
+        r + 1;
+
+      name =
+        String(
+          values[r][1] ||
+          limitCode
+        );
+
+      break;
+    }
+  }
+
+
+  if (!rowNumber) {
+
+    throw new Error(
+      'ไม่พบหัวข้อวงเงินที่ต้องการลบ'
+    );
+  }
+
+
+  /*
+   * ห้ามลบหัวข้อที่ถูกใช้ในรายการตัดยอดแล้ว
+   * เพื่อไม่ให้ประวัติเดิมเสียความหมาย
+   */
+  const used =
+    getRawDeductions_()
+      .some(
+        row =>
+          row.limitType ===
+          limitCode
+      );
+
+
+  if (used) {
+
+    throw new Error(
+      'หัวข้อ “' +
+      name +
+      '” มีรายการตัดยอดใช้งานอยู่แล้ว จึงไม่สามารถลบได้'
+    );
+  }
+
+
+  sheet.deleteRow(
+    rowNumber
+  );
+
+
+  return {
+
+    ok:
+      true,
+
+    message:
+      'ลบหัวข้อ “' +
+      name +
+      '” แล้ว',
+
+    rows:
+      getDeductionLimitTypes()
+  };
+}
+
+
 
 
 function saveDeduction(
@@ -4374,20 +4758,27 @@ function saveDeduction(
   }
 
 
-  let limitType =
-    String(
-      data.limitType || 'GENERAL'
-    )
-    .trim()
-    .toUpperCase();
+  const limitType =
+    normalizeDeductionLimitCode_(
+      data.limitType
+    );
 
 
-  if (
-    limitType !== 'WD'
-  ) {
+  const limitMap =
+    getDeductionLimitMap_();
 
-    limitType =
-      'GENERAL';
+
+  const limitConfig =
+    limitMap[
+      limitType
+    ];
+
+
+  if (!limitConfig) {
+
+    throw new Error(
+      'ไม่พบหัวข้อวงเงินที่เลือก'
+    );
   }
 
 
@@ -4399,7 +4790,7 @@ function saveDeduction(
   ) {
 
     throw new Error(
-      'วงเงิน WD ใช้ได้เฉพาะพนักงานตำแหน่งฝาก-ถอน'
+      'วงเงินฝาก-ถอนใช้ได้เฉพาะพนักงานตำแหน่งฝาก-ถอน'
     );
   }
 
@@ -4503,14 +4894,9 @@ function getRawDeductions_() {
         ) || 0,
 
       limitType:
-        String(
-          row.limitType || 'GENERAL'
-        )
-        .trim()
-        .toUpperCase() ===
-        'WD'
-          ? 'WD'
-          : 'GENERAL',
+        normalizeDeductionLimitCode_(
+          row.limitType
+        ),
 
       detail:
         String(
@@ -4561,8 +4947,8 @@ function calculateDeductions_() {
     );
 
 
-  const wdLimit =
-    getWdLimitAmount_();
+  const limitMap =
+    getDeductionLimitMap_();
 
 
   const rows =
@@ -4617,7 +5003,7 @@ function calculateDeductions_() {
       );
 
 
-  const monthlyWdUsed = {};
+  const monthlyLimitUsed = {};
 
 
   return rows
@@ -4638,10 +5024,35 @@ function calculateDeductions_() {
             );
 
 
+        const limitConfig =
+          limitMap[
+            row.limitType
+          ] || {
+
+            limitCode:
+              row.limitType,
+
+            name:
+              row.limitType ||
+              'ไม่ระบุ',
+
+            amount:
+              0
+          };
+
+
+        const monthlyLimit =
+          Number(
+            limitConfig.amount || 0
+          );
+
+
         const key =
           row.employeeId +
           '|' +
-          month;
+          month +
+          '|' +
+          row.limitType;
 
 
         let coveredByLimit =
@@ -4654,7 +5065,7 @@ function calculateDeductions_() {
 
         let before =
           Number(
-            monthlyWdUsed[
+            monthlyLimitUsed[
               key
             ] || 0
           );
@@ -4665,16 +5076,13 @@ function calculateDeductions_() {
 
 
         if (
-          row.limitType === 'WD' &&
-          isWdEmployee_(
-            employee
-          )
+          monthlyLimit > 0
         ) {
 
           const remainingBefore =
             Math.max(
               0,
-              wdLimit -
+              monthlyLimit -
               before
             );
 
@@ -4696,13 +5104,13 @@ function calculateDeductions_() {
 
           after =
             Math.min(
-              wdLimit,
+              monthlyLimit,
               before +
               row.amount
             );
 
 
-          monthlyWdUsed[
+          monthlyLimitUsed[
             key
           ] = after;
         }
@@ -4724,10 +5132,11 @@ function calculateDeductions_() {
           month:
             month,
 
+          limitLabel:
+            limitConfig.name,
+
           monthlyLimit:
-            row.limitType === 'WD'
-              ? wdLimit
-              : 0,
+            monthlyLimit,
 
           coveredByLimit:
             coveredByLimit,
@@ -5141,6 +5550,9 @@ function getDeductionDashboard(
 
     wdLimit:
       wdLimit,
+
+    limitTypes:
+      getDeductionLimitTypes(),
 
     wdEmployees:
       wdEmployees,
