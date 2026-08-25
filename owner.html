@@ -4270,6 +4270,103 @@ th:nth-child(2) {
   background:linear-gradient(90deg,rgba(238,250,243,.38),transparent)
 }
 
+
+
+/* =========================
+   DEDUCTION DRAFT QUEUE
+========================= */
+
+.deduct-draft-card{
+  overflow:hidden
+}
+
+.deduct-draft-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:14px
+}
+
+.deduct-draft-count{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:32px;
+  padding:0 11px;
+  border-radius:999px;
+  background:#eef5ff;
+  color:#5a78a0;
+  font-size:9px;
+  font-weight:950;
+  white-space:nowrap
+}
+
+.deduct-draft-footer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-top:14px;
+  padding-top:14px;
+  border-top:1px dashed #dfe6ee
+}
+
+.deduct-draft-total{
+  color:#435873;
+  font-size:12px;
+  font-weight:1000
+}
+
+.deduct-draft-remove{
+  width:31px;
+  height:31px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid #ffd3da;
+  border-radius:10px;
+  background:#fff2f4;
+  color:#ce6174;
+  font-family:inherit;
+  font-size:14px;
+  font-weight:1000;
+  cursor:pointer
+}
+
+.deduct-draft-number{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:25px;
+  height:25px;
+  border-radius:8px;
+  background:#f0f4f8;
+  color:#6c7a8e;
+  font-size:8.5px;
+  font-weight:950
+}
+
+.deduct-draft-employee{
+  font-weight:950;
+  color:#40536e
+}
+
+.deduct-draft-sub{
+  margin-top:2px;
+  color:#8995a5;
+  font-size:8.5px;
+  font-weight:750
+}
+
+@media(max-width:760px){
+  .deduct-draft-head,
+  .deduct-draft-footer{
+    align-items:flex-start;
+    flex-direction:column
+  }
+}
+
 </style>
 
 </head>
@@ -5429,12 +5526,21 @@ th:nth-child(2) {
         <div class="actions">
 
           <button
+            class="btn btn-soft"
+            id="deductAddDraftButton"
+            type="button"
+            onclick="addDeductionDraft()"
+          >
+            ➕ เพิ่มรายการ
+          </button>
+
+          <button
             class="btn btn-primary"
             id="deductSaveButton"
             type="button"
-            onclick="saveDeductionForm()"
+            onclick="saveDeductionBatch()"
           >
-            💾 บันทึกรายการ
+            💾 บันทึกทั้งหมด
           </button>
 
           <button
@@ -5442,12 +5548,78 @@ th:nth-child(2) {
             type="button"
             onclick="clearDeductionForm()"
           >
-            ล้างข้อมูล
+            ล้างช่องกรอก
           </button>
 
         </div>
 
       </div>
+
+    </div>
+
+  </div>
+
+
+  <div
+    class="card deduct-draft-card"
+    id="deductDraftCard"
+    style="margin-top:18px"
+  >
+
+    <div class="deduct-draft-head">
+
+      <div>
+
+        <h2 style="margin:0">
+          🧺 รายการที่เตรียมบันทึก
+        </h2>
+
+        <p style="margin:5px 0 0">
+          เพิ่มได้หลายรายการ แล้วกด “บันทึกทั้งหมด” ครั้งเดียว
+        </p>
+
+      </div>
+
+
+      <div
+        class="deduct-draft-count"
+        id="deductDraftCount"
+      >
+        0 รายการ
+      </div>
+
+    </div>
+
+
+    <div
+      class="table-wrap"
+      id="deductDraftTable"
+    >
+      <div class="empty">
+        ยังไม่มีรายการที่เตรียมบันทึก
+      </div>
+    </div>
+
+
+    <div class="deduct-draft-footer">
+
+      <div
+        class="deduct-draft-total"
+        id="deductDraftTotal"
+      >
+        รวม 0 บาท
+      </div>
+
+
+      <button
+        class="btn btn-primary"
+        id="deductSaveAllBottomButton"
+        type="button"
+        onclick="saveDeductionBatch()"
+        disabled
+      >
+        💾 บันทึกทั้งหมด 0 รายการ
+      </button>
 
     </div>
 
@@ -7240,6 +7412,9 @@ let STATE = {
   deductionRecords:
     [],
 
+  deductionDrafts:
+    [],
+
   deductionDashboard:
     null,
 
@@ -7512,6 +7687,8 @@ function initializeUI() {
   refreshAllDropdowns();
 
   initializeDeductionUI();
+
+  renderDeductionDrafts();
 
   renderEmployees();
 
@@ -8848,7 +9025,7 @@ function useDeductionSplitAmount() {
 }
 
 
-function saveDeductionForm() {
+function getDeductionDraftFromForm() {
 
   const employeeId =
     String(
@@ -8877,8 +9054,7 @@ function saveDeductionForm() {
   const limitType =
     value(
       'deductLimitType'
-    ) ||
-    'GENERAL';
+    );
 
 
   const transactionDate =
@@ -8898,10 +9074,12 @@ function saveDeductionForm() {
 
   if (!employee) {
 
-    return toast(
+    toast(
       'ไม่พบรหัสพนักงานในระบบ',
       'error'
     );
+
+    return null;
   }
 
 
@@ -8912,19 +9090,34 @@ function saveDeductionForm() {
     amount <= 0
   ) {
 
-    return toast(
+    toast(
       'กรุณากรอกยอดเงินมากกว่า 0',
       'warning'
     );
+
+    return null;
+  }
+
+
+  if (!limitType) {
+
+    toast(
+      'กรุณาเลือกประเภทวงเงิน',
+      'warning'
+    );
+
+    return null;
   }
 
 
   if (!transactionDate) {
 
-    return toast(
+    toast(
       'กรุณาเลือกวันที่รายการ',
       'warning'
     );
+
+    return null;
   }
 
 
@@ -8935,27 +9128,444 @@ function saveDeductionForm() {
     )
   ) {
 
-    return toast(
-      'วงเงิน WD ใช้ได้เฉพาะพนักงานตำแหน่งฝาก-ถอน',
+    toast(
+      'วงเงินฝาก-ถอนใช้ได้เฉพาะพนักงานตำแหน่งฝาก-ถอน',
       'warning'
     );
+
+    return null;
   }
 
 
-  const button =
+  const limitRow =
+    (
+      STATE.deductionLimitTypes ||
+      []
+    )
+      .find(
+        row =>
+          row.limitCode ===
+          limitType
+      );
+
+
+  return {
+
+    draftId:
+      (
+        Date.now()
+        .toString(36) +
+        Math.random()
+        .toString(36)
+        .slice(2,8)
+      ),
+
+    employeeId:
+      employee.employeeId,
+
+    nickname:
+      employee.nickname || '',
+
+    team:
+      employee.team || '',
+
+    position:
+      employee.position || '',
+
+    amount:
+      Math.round(
+        amount * 100
+      ) / 100,
+
+    limitType:
+      limitType,
+
+    limitLabel:
+      limitRow?.name ||
+      limitType,
+
+    detail:
+      detail,
+
+    transactionDate:
+      transactionDate
+  };
+}
+
+
+function addDeductionDraft() {
+
+  const draft =
+    getDeductionDraftFromForm();
+
+
+  if (!draft) {
+    return;
+  }
+
+
+  STATE.deductionDrafts =
+    [
+      ...(
+        STATE.deductionDrafts ||
+        []
+      ),
+      draft
+    ];
+
+
+  renderDeductionDrafts();
+
+
+  /*
+   * หลังเพิ่มรายการ:
+   * ล้างเฉพาะคน + ยอดเงิน
+   * แต่คง วันที่ / รายละเอียด / เครื่องคำนวณไว้
+   * เพื่อให้กรณีหารหลายคนเพิ่มรายการต่อได้เร็ว
+   */
+  setValue(
+    'deductEmployeeId',
+    ''
+  );
+
+  setValue(
+    'deductAmount',
+    ''
+  );
+
+
+  previewDeductionEmployee();
+
+
+  document
+    .getElementById(
+      'deductEmployeeId'
+    )
+    ?.focus();
+
+
+  toast(
+    'เพิ่มเข้ารายการรอบันทึกแล้ว'
+  );
+}
+
+
+function removeDeductionDraft(
+  draftId
+) {
+
+  STATE.deductionDrafts =
+    (
+      STATE.deductionDrafts ||
+      []
+    )
+      .filter(
+        row =>
+          row.draftId !==
+          draftId
+      );
+
+
+  renderDeductionDrafts();
+}
+
+
+function clearDeductionDrafts() {
+
+  STATE.deductionDrafts =
+    [];
+
+
+  renderDeductionDrafts();
+}
+
+
+function renderDeductionDrafts() {
+
+  const rows =
+    STATE.deductionDrafts ||
+    [];
+
+
+  const count =
+    rows.length;
+
+
+  setText(
+    'deductDraftCount',
+    count +
+    ' รายการ'
+  );
+
+
+  const total =
+    rows.reduce(
+      (
+        sum,
+        row
+      ) =>
+        sum +
+        Number(
+          row.amount || 0
+        ),
+      0
+    );
+
+
+  setText(
+    'deductDraftTotal',
+    'รวม ' +
+    moneyTH(total) +
+    ' บาท'
+  );
+
+
+  const topButton =
     document.getElementById(
       'deductSaveButton'
     );
 
 
-  if (button) {
+  const bottomButton =
+    document.getElementById(
+      'deductSaveAllBottomButton'
+    );
 
-    button.disabled =
-      true;
 
-    button.textContent =
-      '⏳ บันทึก...';
+  if (topButton) {
+
+    topButton.textContent =
+      count
+        ? (
+            '💾 บันทึกทั้งหมด (' +
+            count +
+            ')'
+          )
+        : '💾 บันทึกทั้งหมด';
   }
+
+
+  if (bottomButton) {
+
+    bottomButton.disabled =
+      count === 0;
+
+    bottomButton.textContent =
+      '💾 บันทึกทั้งหมด ' +
+      count +
+      ' รายการ';
+  }
+
+
+  if (!rows.length) {
+
+    setHtml(
+      'deductDraftTable',
+      emptyHtml(
+        'ยังไม่มีรายการที่เตรียมบันทึก'
+      )
+    );
+
+    return;
+  }
+
+
+  let html = `
+
+    <table>
+
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>พนักงาน</th>
+          <th>ยอดเงิน</th>
+          <th>วงเงิน</th>
+          <th>วันที่</th>
+          <th>รายละเอียด</th>
+          <th></th>
+        </tr>
+      </thead>
+
+      <tbody>
+  `;
+
+
+  rows
+    .forEach(
+      (
+        row,
+        index
+      ) => {
+
+        html += `
+
+          <tr>
+
+            <td>
+              <span class="deduct-draft-number">
+                ${index + 1}
+              </span>
+            </td>
+
+            <td>
+
+              <div class="deduct-draft-employee">
+                ${escapeHtml(row.employeeId)}
+                ·
+                ${escapeHtml(row.nickname || '-')}
+              </div>
+
+              <div class="deduct-draft-sub">
+                ${escapeHtml(row.team || '-')}
+                ·
+                ${escapeHtml(row.position || '-')}
+              </div>
+
+            </td>
+
+            <td class="deduct-money">
+              ${moneyTH(row.amount)} ฿
+            </td>
+
+            <td>
+              ${escapeHtml(row.limitLabel || row.limitType || '-')}
+            </td>
+
+            <td>
+              ${escapeHtml(row.transactionDate || '-')}
+            </td>
+
+            <td>
+              ${escapeHtml(row.detail || '-')}
+            </td>
+
+            <td>
+
+              <button
+                type="button"
+                class="deduct-draft-remove"
+                title="เอารายการนี้ออก"
+                onclick='removeDeductionDraft(${jsonString(row.draftId)})'
+              >
+                ×
+              </button>
+
+            </td>
+
+          </tr>
+        `;
+      }
+    );
+
+
+  html += `
+      </tbody>
+    </table>
+  `;
+
+
+  setHtml(
+    'deductDraftTable',
+    html
+  );
+}
+
+
+function saveDeductionBatch() {
+
+  let rows =
+    [
+      ...(
+        STATE.deductionDrafts ||
+        []
+      )
+    ];
+
+
+  /*
+   * ถ้ายังไม่ได้กด "เพิ่มรายการ"
+   * แต่กรอกฟอร์มปัจจุบันครบแล้ว
+   * กดบันทึกทั้งหมดได้เลย ระบบจะเอารายการปัจจุบันเข้าไปด้วย
+   */
+  const currentEmployeeId =
+    String(
+      value(
+        'deductEmployeeId'
+      ) || ''
+    )
+    .trim();
+
+
+  const currentAmount =
+    Number(
+      value(
+        'deductAmount'
+      )
+    );
+
+
+  if (
+    currentEmployeeId ||
+    currentAmount > 0
+  ) {
+
+    const currentDraft =
+      getDeductionDraftFromForm();
+
+
+    if (!currentDraft) {
+      return;
+    }
+
+
+    rows.push(
+      currentDraft
+    );
+  }
+
+
+  if (!rows.length) {
+
+    return toast(
+      'ยังไม่มีรายการที่จะบันทึก',
+      'warning'
+    );
+  }
+
+
+  const topButton =
+    document.getElementById(
+      'deductSaveButton'
+    );
+
+
+  const bottomButton =
+    document.getElementById(
+      'deductSaveAllBottomButton'
+    );
+
+
+  [
+    topButton,
+    bottomButton
+  ]
+    .forEach(
+      button => {
+
+        if (!button) {
+          return;
+        }
+
+
+        button.disabled =
+          true;
+
+        button.textContent =
+          '⏳ กำลังบันทึก ' +
+          rows.length +
+          ' รายการ...';
+      }
+    );
 
 
   google.script.run
@@ -8963,14 +9573,8 @@ function saveDeductionForm() {
     .withSuccessHandler(
       res => {
 
-        if (button) {
-
-          button.disabled =
-            false;
-
-          button.textContent =
-            '💾 บันทึกรายการ';
-        }
+        STATE.deductionDrafts =
+          [];
 
 
         STATE.deductionDirty =
@@ -8985,10 +9589,16 @@ function saveDeductionForm() {
 
         clearDeductionForm();
 
+        renderDeductionDrafts();
+
 
         toast(
           res?.message ||
-          'บันทึกรายการตัดยอดแล้ว'
+          (
+            'บันทึกทั้งหมด ' +
+            rows.length +
+            ' รายการแล้ว'
+          )
         );
       }
     )
@@ -8996,15 +9606,7 @@ function saveDeductionForm() {
     .withFailureHandler(
       err => {
 
-        if (button) {
-
-          button.disabled =
-            false;
-
-          button.textContent =
-            '💾 บันทึกรายการ';
-        }
-
+        renderDeductionDrafts();
 
         showServerError(
           err
@@ -9012,23 +9614,40 @@ function saveDeductionForm() {
       }
     )
 
-    .saveDeduction({
-      employeeId:
-        employeeId,
+    .saveDeductionsBatch(
+      rows.map(
+        row => ({
 
-      amount:
-        amount,
+          employeeId:
+            row.employeeId,
 
-      limitType:
-        limitType,
+          amount:
+            row.amount,
 
-      detail:
-        detail,
+          limitType:
+            row.limitType,
 
-      transactionDate:
-        transactionDate
-    });
+          detail:
+            row.detail,
+
+          transactionDate:
+            row.transactionDate
+        })
+      )
+    );
 }
+
+
+/*
+ * compatibility:
+ * ถ้ามีส่วนเก่าเรียก saveDeductionForm()
+ * ให้เปลี่ยนเป็นบันทึกแบบหลายรายการ
+ */
+function saveDeductionForm() {
+
+  saveDeductionBatch();
+}
+
 
 
 function resetDeductionListFilters() {

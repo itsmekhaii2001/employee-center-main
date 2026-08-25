@@ -698,6 +698,12 @@ function callOwnerMethod_(
           args[0]
         ),
 
+    saveDeductionsBatch:
+      () =>
+        saveDeductionsBatch(
+          args[0]
+        ),
+
     markDeductionDone:
       () =>
         markDeductionDone(
@@ -4901,6 +4907,321 @@ function saveDeduction(
       deductionId
   };
 }
+
+
+function validateDeductionInput_(
+  data,
+  employeeMap,
+  limitMap
+) {
+
+  data =
+    data || {};
+
+
+  const employeeId =
+    String(
+      data.employeeId || ''
+    )
+    .trim()
+    .toUpperCase();
+
+
+  const employee =
+    employeeMap[
+      employeeId
+    ];
+
+
+  if (!employee) {
+
+    throw new Error(
+      'ไม่พบรหัสพนักงาน ' +
+      employeeId
+    );
+  }
+
+
+  const amount =
+    Number(
+      data.amount
+    );
+
+
+  if (
+    !Number.isFinite(
+      amount
+    ) ||
+    amount <= 0
+  ) {
+
+    throw new Error(
+      'ยอดเงินของ ' +
+      employeeId +
+      ' ต้องมากกว่า 0 บาท'
+    );
+  }
+
+
+  const limitType =
+    normalizeDeductionLimitCode_(
+      data.limitType
+    );
+
+
+  const limitConfig =
+    limitMap[
+      limitType
+    ];
+
+
+  if (!limitConfig) {
+
+    throw new Error(
+      'ไม่พบหัวข้อวงเงินของ ' +
+      employeeId
+    );
+  }
+
+
+  if (
+    limitType === 'WD' &&
+    !isWdEmployee_(
+      employee
+    )
+  ) {
+
+    throw new Error(
+      'วงเงินฝาก-ถอนใช้ได้เฉพาะพนักงานตำแหน่งฝาก-ถอน: ' +
+      employeeId
+    );
+  }
+
+
+  const transactionDate =
+    String(
+      data.transactionDate || ''
+    )
+    .trim();
+
+
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/
+      .test(
+        transactionDate
+      )
+  ) {
+
+    throw new Error(
+      'วันที่รายการของ ' +
+      employeeId +
+      ' ไม่ถูกต้อง'
+    );
+  }
+
+
+  const detail =
+    String(
+      data.detail || ''
+    )
+    .trim()
+    .slice(
+      0,
+      1000
+    );
+
+
+  return {
+
+    employeeId:
+      employeeId,
+
+    amount:
+      Math.round(
+        amount * 100
+      ) / 100,
+
+    limitType:
+      limitType,
+
+    detail:
+      detail,
+
+    transactionDate:
+      transactionDate
+  };
+}
+
+
+function saveDeductionsBatch(
+  items
+) {
+
+  ensureDeductionSheets_();
+
+
+  if (
+    !Array.isArray(
+      items
+    ) ||
+    !items.length
+  ) {
+
+    throw new Error(
+      'ยังไม่มีรายการตัดยอดที่จะบันทึก'
+    );
+  }
+
+
+  if (
+    items.length >
+    500
+  ) {
+
+    throw new Error(
+      'บันทึกได้สูงสุด 500 รายการต่อครั้ง'
+    );
+  }
+
+
+  /*
+   * เตรียมข้อมูลอ้างอิงครั้งเดียว
+   * แล้ว validate ทุกแถวก่อนเขียนจริง
+   * ถ้ามีแถวใดผิด -> ไม่บันทึกทั้งชุด
+   */
+  const employeeMap = {};
+
+
+  getEmployees_()
+    .forEach(
+      employee => {
+
+        employeeMap[
+          String(
+            employee.employeeId || ''
+          )
+          .trim()
+          .toUpperCase()
+        ] = employee;
+      }
+    );
+
+
+  const limitMap =
+    getDeductionLimitMap_();
+
+
+  const now =
+    nowText_();
+
+
+  const rows =
+    items
+      .map(
+        item =>
+          validateDeductionInput_(
+            item,
+            employeeMap,
+            limitMap
+          )
+      )
+      .map(
+        item => [
+
+          Utilities
+            .getUuid(),
+
+          item.employeeId,
+
+          item.amount,
+
+          item.limitType,
+
+          item.detail,
+
+          item.transactionDate,
+
+          now,
+
+          'WAITING',
+
+          ''
+        ]
+      );
+
+
+  const lock =
+    LockService
+      .getScriptLock();
+
+
+  lock.waitLock(
+    20000
+  );
+
+
+  try {
+
+    const sheet =
+      getDatabase_()
+        .getSheetByName(
+          APP.SHEETS.DEDUCTIONS
+        );
+
+
+    const startRow =
+      sheet.getLastRow() + 1;
+
+
+    sheet
+      .getRange(
+        startRow,
+        1,
+        rows.length,
+        9
+      )
+      .setValues(
+        rows
+      );
+
+  } finally {
+
+    lock.releaseLock();
+  }
+
+
+  const total =
+    rows.reduce(
+      (
+        sum,
+        row
+      ) =>
+        sum +
+        Number(
+          row[2] || 0
+        ),
+      0
+    );
+
+
+  return {
+
+    ok:
+      true,
+
+    count:
+      rows.length,
+
+    total:
+      total,
+
+    message:
+      'บันทึกทั้งหมด ' +
+      rows.length +
+      ' รายการแล้ว'
+  };
+}
+
 
 
 function findDeductionRow_(
