@@ -1215,7 +1215,7 @@ function ensureSystemReadyCached_() {
       .getScriptCache();
 
   const key =
-    'EMPLOYEE_CENTER_SYSTEM_READY_V3';
+    'EMPLOYEE_CENTER_SYSTEM_READY_V5';
 
 
   if (
@@ -1253,7 +1253,8 @@ function setupSystem_() {
       'gender',
       'status',
       'createdAt',
-      'updatedAt'
+      'updatedAt',
+      'newUntil'
     ]
   );
 
@@ -3437,6 +3438,61 @@ function saveSetting(data) {
     nowText_();
 
 
+  let newUntil =
+    oldNewUntil;
+
+
+  /*
+   * ป้าย NEW:
+   * - ติ๊กตอนเพิ่มพนักงาน -> แสดง 14 วัน
+   * - วันที่สิ้นสุดเป็น exclusive
+   * - ไม่ติ๊กตอนแก้ไขข้อมูลเดิม -> เก็บอายุป้ายเดิมไว้
+   */
+  if (
+    data.isNew === true ||
+    String(
+      data.isNew || ''
+    )
+    .toUpperCase() ===
+    'TRUE'
+  ) {
+
+    const expireDate =
+      parseDate_(
+        todayText_()
+      );
+
+
+    expireDate.setDate(
+      expireDate.getDate() +
+      14
+    );
+
+
+    newUntil =
+      formatDate_(
+        expireDate
+      );
+  }
+
+
+  if (
+    !foundRow &&
+    !(
+      data.isNew === true ||
+      String(
+        data.isNew || ''
+      )
+      .toUpperCase() ===
+      'TRUE'
+    )
+  ) {
+
+    newUntil =
+      '';
+  }
+
+
   const row = [
 
     settingId,
@@ -3636,8 +3692,37 @@ function deleteSetting(
 
 function getEmployees_() {
 
+  const today =
+    todayText_();
+
+
   return getSheetObjects_(
     APP.SHEETS.EMPLOYEES
+  )
+  .map(
+    employee => {
+
+      const newUntil =
+        String(
+          employee.newUntil || ''
+        )
+        .trim();
+
+
+      return {
+
+        ...employee,
+
+        newUntil:
+          newUntil,
+
+        isNew:
+          (
+            newUntil &&
+            today < newUntil
+          )
+      };
+    }
   )
   .sort(
     (a, b) => {
@@ -3726,6 +3811,7 @@ function saveEmployee(data) {
   let foundRow = 0;
   let oldCreatedAt = '';
   let oldFullName = '';
+  let oldNewUntil = '';
 
 
   for (
@@ -3751,6 +3837,9 @@ function saveEmployee(data) {
 
       oldCreatedAt =
         rows[r][8] || '';
+
+      oldNewUntil =
+        rows[r][10] || '';
 
       break;
     }
@@ -3791,7 +3880,9 @@ function saveEmployee(data) {
 
     oldCreatedAt || now,
 
-    now
+    now,
+
+    newUntil
   ];
 
 

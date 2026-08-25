@@ -1245,6 +1245,251 @@ tbody tr:hover td {
 }
 
 
+.employee-name-wrap {
+
+  display:inline-flex;
+
+  align-items:center;
+
+  gap:7px;
+
+  min-width:0;
+}
+
+
+.employee-new-ribbon {
+
+  position:relative;
+
+  display:inline-flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+  min-width:42px;
+
+  height:22px;
+
+  padding:
+    0 9px;
+
+  border:
+    1px solid
+    rgba(255,119,145,.35);
+
+  border-radius:6px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #ff6f91 0%,
+      #ff8a72 100%
+    );
+
+  color:#fff;
+
+  font-size:9px;
+
+  font-weight:1000;
+
+  line-height:1;
+
+  letter-spacing:.8px;
+
+  transform:
+    rotate(-8deg);
+
+  box-shadow:
+    0 5px 12px
+    rgba(229,94,124,.22);
+
+  white-space:nowrap;
+}
+
+
+.employee-new-ribbon::before,
+.employee-new-ribbon::after {
+
+  content:'';
+
+  position:absolute;
+
+  top:50%;
+
+  width:5px;
+  height:5px;
+
+  border-radius:50%;
+
+  background:
+    rgba(255,255,255,.58);
+
+  transform:
+    translateY(-50%);
+}
+
+
+.employee-new-ribbon::before {
+
+  left:4px;
+}
+
+
+.employee-new-ribbon::after {
+
+  right:4px;
+}
+
+
+.new-employee-toggle-card {
+
+  min-height:46px;
+
+  display:flex;
+
+  align-items:center;
+
+  gap:10px;
+
+  padding:
+    8px 11px;
+
+  border:
+    1px solid
+    #dce4ee;
+
+  border-radius:12px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #fff 0%,
+      #fff8fb 100%
+    );
+
+  cursor:pointer;
+
+  user-select:none;
+
+  transition:
+    border-color .16s ease,
+    box-shadow .16s ease,
+    transform .16s ease;
+}
+
+
+.new-employee-toggle-card:hover {
+
+  border-color:#f1b5c5;
+
+  box-shadow:
+    0 6px 16px
+    rgba(205,111,137,.09);
+
+  transform:
+    translateY(-1px);
+}
+
+
+.new-employee-toggle-card input {
+
+  position:absolute;
+
+  opacity:0;
+
+  pointer-events:none;
+}
+
+
+.new-employee-toggle-box {
+
+  flex:
+    0 0 auto;
+
+  width:24px;
+  height:24px;
+
+  display:flex;
+
+  align-items:center;
+  justify-content:center;
+
+  border:
+    1px solid
+    #d9e1eb;
+
+  border-radius:8px;
+
+  background:#fff;
+
+  color:transparent;
+
+  font-size:12px;
+
+  font-weight:1000;
+
+  transition:
+    all .16s ease;
+}
+
+
+.new-employee-toggle-card
+input:checked
++
+.new-employee-toggle-box {
+
+  border-color:#ff91aa;
+
+  background:
+    linear-gradient(
+      135deg,
+      #ff7d9b,
+      #ff9b7c
+    );
+
+  color:#fff;
+
+  box-shadow:
+    0 5px 12px
+    rgba(230,107,137,.20);
+}
+
+
+.new-employee-toggle-text {
+
+  min-width:0;
+
+  display:flex;
+
+  flex-direction:column;
+
+  gap:2px;
+
+  color:#536176;
+
+  line-height:1.3;
+}
+
+
+.new-employee-toggle-text b {
+
+  font-size:10px;
+
+  font-weight:950;
+}
+
+
+.new-employee-toggle-text small {
+
+  color:#909aaa;
+
+  font-size:8.5px;
+
+  font-weight:750;
+}
+
+
 /* =========================
    BADGES
 ========================= */
@@ -2629,30 +2874,31 @@ th:nth-child(2) {
 
 .seating-plan-scroll{
   width:100%;
-  overflow-x:auto;
-  padding-bottom:8px
+  overflow-x:hidden;
+  padding-bottom:6px
 }
 
 .seating-plan{
-  min-width:1080px;
+  width:100%;
+  min-width:0;
   display:flex;
   flex-direction:column;
-  gap:12px
+  gap:10px
 }
 
 .seating-side-head,
 .seating-row{
   display:grid;
   grid-template-columns:
-    repeat(5,minmax(110px,1fr))
-    72px
-    repeat(3,minmax(110px,1fr));
-  gap:10px;
+    repeat(5,minmax(0,1fr))
+    56px
+    repeat(3,minmax(0,1fr));
+  gap:8px;
   align-items:stretch
 }
 
 .seating-side-label{
-  min-height:42px;
+  min-height:38px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -2686,8 +2932,8 @@ th:nth-child(2) {
 }
 
 .seat-box{
-  min-height:122px;
-  padding:12px 10px;
+  min-height:108px;
+  padding:10px 8px;
   display:flex;
   flex-direction:column;
   align-items:stretch;
@@ -2961,7 +3207,7 @@ th:nth-child(2) {
   display:flex;
   align-items:center;
   justify-content:center;
-  min-height:122px;
+  min-height:108px;
   border-radius:14px;
   border:1px dashed #d7dee8;
   background:repeating-linear-gradient(
@@ -3258,11 +3504,143 @@ th:nth-child(2) {
   cursor:pointer
 }
 
+
+/* Mac / laptop fit */
+@media (max-width:1600px){
+
+  #page-seating .card{
+    padding:18px 20px
+  }
+
+  .seating-head{
+    margin-bottom:14px
+  }
+
+  .seating-summary{
+    gap:6px
+  }
+
+  .seating-summary-badge{
+    min-height:30px;
+    padding:0 10px;
+    font-size:9.5px
+  }
+
+  .seating-side-head,
+  .seating-row{
+    grid-template-columns:
+      repeat(5,minmax(0,1fr))
+      48px
+      repeat(3,minmax(0,1fr));
+    gap:7px
+  }
+
+  .seating-side-label{
+    min-height:34px;
+    padding:6px 8px;
+    font-size:9.5px
+  }
+
+  .seat-box{
+    min-height:100px;
+    padding:9px 7px;
+    border-radius:14px;
+    gap:5px
+  }
+
+  .seat-aisle{
+    min-height:100px;
+    border-radius:12px;
+    font-size:8.5px
+  }
+
+  .seat-number{
+    font-size:10.5px
+  }
+
+  .seat-status{
+    min-height:20px;
+    padding:0 6px;
+    font-size:8px
+  }
+
+  .seat-person{
+    padding:6px 7px;
+    border-radius:9px
+  }
+
+  .seat-person-main{
+    font-size:8.8px
+  }
+
+  .seat-mini-tag{
+    min-height:16px;
+    padding:0 5px;
+    font-size:6.8px
+  }
+
+  .seat-mails{
+    font-size:7.8px
+  }
+
+  .seating-row-label{
+    font-size:8.5px
+  }
+}
+
+
+@media (max-width:1366px){
+
+  #page-seating .card{
+    padding:16px 16px
+  }
+
+  .seating-side-head,
+  .seating-row{
+    grid-template-columns:
+      repeat(5,minmax(0,1fr))
+      42px
+      repeat(3,minmax(0,1fr));
+    gap:6px
+  }
+
+  .seat-box{
+    min-height:94px;
+    padding:8px 6px
+  }
+
+  .seat-aisle{
+    min-height:94px
+  }
+
+  .seat-person-main{
+    font-size:8.2px
+  }
+
+  .seat-mini-tag{
+    min-height:15px;
+    padding:0 4px;
+    font-size:6.4px
+  }
+}
+
 @media(max-width:900px){
   .seating-head{flex-direction:column}
   .seat-employee-list{grid-template-columns:1fr}
 }
 
+
+
+
+@media(max-width:1050px){
+  .seating-plan-scroll{
+    overflow-x:auto
+  }
+
+  .seating-plan{
+    min-width:980px
+  }
+}
 
 </style>
 
@@ -3846,6 +4224,43 @@ th:nth-child(2) {
       </label>
 
       <select id="empStatus"></select>
+
+    </div>
+
+
+    <div class="field">
+
+      <label>
+        ป้ายพนักงานใหม่
+      </label>
+
+      <label
+        class="new-employee-toggle-card"
+        for="empIsNew"
+      >
+
+        <input
+          type="checkbox"
+          id="empIsNew"
+        >
+
+        <span class="new-employee-toggle-box">
+          ✓
+        </span>
+
+        <span class="new-employee-toggle-text">
+
+          <b>
+            พนักงานใหม่
+          </b>
+
+          <small>
+            แสดงป้าย NEW 14 วัน
+          </small>
+
+        </span>
+
+      </label>
 
     </div>
 
@@ -8620,7 +9035,15 @@ function saveEmployeeForm() {
 
     status:
       value('empStatus') ||
-      'ทำงาน'
+      'ทำงาน',
+
+    isNew:
+      document
+        .getElementById(
+          'empIsNew'
+        )
+        ?.checked ===
+        true
   };
 
 
@@ -8741,6 +9164,21 @@ function startInlineEmployeeEdit(
     'empStatus',
     'ทำงาน'
   );
+
+
+  const newEmployeeCheckbox =
+    document.getElementById(
+      'empIsNew'
+    );
+
+
+  if (
+    newEmployeeCheckbox
+  ) {
+
+    newEmployeeCheckbox.checked =
+      false;
+  }
 
 
   STATE.inlineEmployeeEditId =
@@ -9109,6 +9547,21 @@ function clearEmployeeForm() {
     'empStatus',
     'ทำงาน'
   );
+
+
+  const newEmployeeCheckbox =
+    document.getElementById(
+      'empIsNew'
+    );
+
+
+  if (
+    newEmployeeCheckbox
+  ) {
+
+    newEmployeeCheckbox.checked =
+      false;
+  }
 }
 
 
@@ -9163,6 +9616,100 @@ function removeEmployee(id) {
     )
 
     .deleteEmployee(id);
+}
+
+
+function employeeHasNewBadge(
+  employee
+) {
+
+  const until =
+    String(
+      employee?.newUntil || ''
+    )
+    .trim();
+
+
+  if (!until) {
+    return false;
+  }
+
+
+  /*
+   * newUntil เป็นวันสิ้นสุดแบบ exclusive
+   * เช่นเริ่ม 25 ส.ค. -> newUntil 8 ก.ย.
+   * จะแสดง NEW ตั้งแต่ 25 ส.ค. ถึง 7 ก.ย. = 14 วัน
+   */
+  const parts =
+    until
+      .split(
+        '-'
+      )
+      .map(Number);
+
+
+  if (
+    parts.length !== 3 ||
+    !parts[0] ||
+    !parts[1] ||
+    !parts[2]
+  ) {
+    return false;
+  }
+
+
+  const expire =
+    new Date(
+      parts[0],
+      parts[1] - 1,
+      parts[2],
+      0,
+      0,
+      0
+    );
+
+
+  const today =
+    new Date();
+
+
+  today.setHours(
+    0,
+    0,
+    0,
+    0
+  );
+
+
+  return (
+    today <
+    expire
+  );
+}
+
+
+function employeeNewRibbonHtml(
+  employee
+) {
+
+  if (
+    !employeeHasNewBadge(
+      employee
+    )
+  ) {
+
+    return '';
+  }
+
+
+  return `
+    <span
+      class="employee-new-ribbon"
+      title="พนักงานใหม่ · ป้ายหายอัตโนมัติหลัง 14 วัน"
+    >
+      NEW
+    </span>
+  `;
 }
 
 
@@ -9320,8 +9867,16 @@ function renderEmployees() {
 
           <td>
 
-            <span class="employee-inline-id">
+            <span
+              class="employee-inline-id"
+              style="
+                display:flex;
+                align-items:center;
+                gap:7px;
+              "
+            >
               ${escapeHtml(e.employeeId)}
+              ${employeeNewRibbonHtml(e)}
             </span>
 
             <input
@@ -9477,14 +10032,24 @@ function renderEmployees() {
 
         <td>
 
-          <span class="emp-code">
-            ${escapeHtml(e.employeeId)}
-          </span>
+          <span class="employee-name-wrap">
 
-          ·
+            <span>
 
-          <span class="emp-nick">
-            ${escapeHtml(e.nickname)}
+              <span class="emp-code">
+                ${escapeHtml(e.employeeId)}
+              </span>
+
+              ·
+
+              <span class="emp-nick">
+                ${escapeHtml(e.nickname)}
+              </span>
+
+            </span>
+
+            ${employeeNewRibbonHtml(e)}
+
           </span>
 
         </td>
