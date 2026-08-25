@@ -1,7685 +1,4309 @@
-<!DOCTYPE html>
-<html lang="th">
-
-<head>
-
-<base target="_top">
-
-<meta charset="UTF-8">
-
-<meta
-  name="viewport"
-  content="width=device-width, initial-scale=1"
->
-
-<!-- GitHub OWNER bridge: ต้องโหลดก่อนโค้ดระบบหลัก -->
-<script src="./assets/js/api.js"></script>
-<script src="./assets/js/owner.js"></script>
-
-<title>
-  ศูนย์บริหารพนักงาน
-</title>
-
-
-<style>
-
-:root {
-
-  --green:#81d7b7;
-  --green-soft:#e9f9f2;
-  --green-deep:#3fa985;
-
-  --blue:#7bc3e7;
-  --blue-soft:#e8f5fc;
-  --blue-deep:#408fb9;
-
-  --purple:#a99be2;
-  --purple-soft:#f0ecfb;
-  --purple-deep:#7462bd;
-
-  --red:#e87984;
-  --red-soft:#ffe8eb;
-  --red-deep:#c84f5a;
-
-  --bg:#f6f9fc;
-  --card:#ffffff;
-
-  --text:#344054;
-  --muted:#7c8798;
-  --border:#e3e8ef;
-
-  --danger:#e8747e;
-  --danger-soft:#fff0f2;
-
-  --warning:#efba65;
-  --warning-soft:#fff7e8;
-
-  --shadow:
-    0 12px 35px
-    rgba(64,84,110,.07);
-
-  --radius:18px;
-}
-
-
-* {
-  box-sizing:border-box;
-}
-
-
-body {
-
-  margin:0;
-
-  background:var(--bg);
-
-  color:var(--text);
-
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    "Noto Sans Thai",
-    Arial,
-    sans-serif;
-}
-
-
-button,
-input,
-select {
-
-  font:inherit;
-}
-
-
-button {
-  cursor:pointer;
-}
-
-
-/* =========================
-   APP
-========================= */
-
-.app {
-
-  display:flex;
-
-  min-height:100vh;
-}
-
-
-.sidebar {
-
-  width:250px;
-
-  position:fixed;
-
-  left:0;
-  top:0;
-  bottom:0;
-
-  padding:20px 15px;
-
-  background:
-    linear-gradient(
-      180deg,
-      #fff,
-      #f3fbff 50%,
-      #f8f4ff
-    );
-
-  border-right:
-    1px solid var(--border);
-
-  z-index:100;
-}
-
-
-.brand {
-
-  display:flex;
-
-  align-items:center;
-
-  gap:11px;
-
-  padding:
-    5px 7px 22px;
-}
-
-
-.brand-logo {
-
-  width:46px;
-  height:46px;
-
-  border-radius:15px;
-
-  display:flex;
-
-  align-items:center;
-  justify-content:center;
-
-  font-size:23px;
-
-  color:white;
-
-  background:
-    linear-gradient(
-      135deg,
-      var(--green),
-      var(--blue),
-      var(--purple)
-    );
-}
-
-
-.brand-name {
-
-  font-weight:850;
-
-  font-size:16px;
-}
-
-
-.brand-sub {
-
-  font-size:11px;
-
-  color:var(--muted);
-
-  margin-top:2px;
-}
-
-
-.menu {
-
-  display:flex;
-
-  flex-direction:column;
-
-  gap:6px;
-}
-
-
-.menu-btn {
-
-  border:0;
-
-  width:100%;
-
-  background:transparent;
-
-  color:#687386;
-
-  padding:11px 12px;
-
-  border-radius:13px;
-
-  display:flex;
-
-  align-items:center;
-
-  gap:11px;
-
-  font-weight:650;
-
-  text-align:left;
-}
-
-
-.menu-btn:hover {
-
-  background:#fff;
-}
-
-
-.menu-btn.active {
-
-  color:#344054;
-
-  background:#fff;
-
-  box-shadow:
-    0 7px 20px
-    rgba(60,80,105,.08);
-}
-
-
-.menu-icon {
-
-  width:31px;
-  height:31px;
-
-  border-radius:10px;
-
-  display:flex;
-
-  align-items:center;
-  justify-content:center;
-
-  background:var(--blue-soft);
-}
-
-
-.menu-btn:nth-child(2n)
-.menu-icon {
-
-  background:var(--green-soft);
-}
-
-
-.menu-btn:nth-child(3n)
-.menu-icon {
-
-  background:var(--purple-soft);
-}
-
-
-/* =========================
-   SIDEBAR GROUP MENU
-========================= */
-
-.menu-group {
-
-  width:100%;
-}
-
-
-.menu-parent {
-
-  position:relative;
-}
-
-
-.menu-parent.active {
-
-  color:#344054;
-
-  background:#fff;
-
-  box-shadow:
-    0 7px 20px
-    rgba(60,80,105,.08);
-}
-
-
-.menu-arrow {
-
-  margin-left:auto;
-
-  font-size:11px;
-
-  color:#98a2b3;
-
-  transition:
-    transform .18s ease;
-}
-
-
-.menu-group.open
-.menu-arrow {
-
-  transform:
-    rotate(90deg);
-}
-
-
-.submenu {
-
-  display:none;
-
-  flex-direction:column;
-
-  gap:4px;
-
-  padding:
-    5px 0 4px 15px;
-}
-
-
-.menu-group.open
-.submenu {
-
-  display:flex;
-}
-
-
-.submenu-btn {
-
-  width:100%;
-
-  border:0;
-
-  background:transparent;
-
-  color:#7b8798;
-
-  padding:
-    9px 10px;
-
-  border-radius:11px;
-
-  display:flex;
-
-  align-items:center;
-
-  gap:9px;
-
-  text-align:left;
-
-  font-size:12px;
-
-  font-weight:700;
-}
-
-
-.submenu-btn:hover {
-
-  color:#526071;
-
-  background:
-    rgba(255,255,255,.78);
-}
-
-
-.submenu-btn.active {
-
-  color:#344054;
-
-  background:#fff;
-
-  box-shadow:
-    0 5px 15px
-    rgba(60,80,105,.07);
-}
-
-
-.submenu-icon {
-
-  width:25px;
-  height:25px;
-
-  flex:0 0 25px;
-
-  border-radius:8px;
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:center;
-
-  font-size:13px;
-
-  background:
-    rgba(232,245,252,.9);
-}
-
-
-.submenu-btn:nth-child(2n)
-.submenu-icon {
-
-  background:
-    rgba(229,248,238,.95);
-}
-
-
-.submenu-btn:nth-child(3n)
-.submenu-icon {
-
-  background:
-    rgba(240,235,255,.95);
-}
-
-
-.submenu-btn:nth-child(4n)
-.submenu-icon {
-
-  background:
-    rgba(255,244,221,.95);
-}
-
-
-.menu-group-spacer {
-
-  height:2px;
-}
-
-
-.main {
-
-  margin-left:250px;
-
-  width:
-    calc(100% - 250px);
-}
-
-
-.topbar {
-
-  height:74px;
-
-  position:sticky;
-
-  top:0;
-
-  z-index:90;
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:space-between;
-
-  padding:0 28px;
-
-  background:
-    rgba(246,249,252,.94);
-
-  backdrop-filter:
-    blur(12px);
-
-  border-bottom:
-    1px solid var(--border);
-}
-
-
-
-.topbar-actions {
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:flex-end;
-
-  gap:9px;
-
-  flex-shrink:0;
-}
-
-
-.owner-logout-top {
-
-  min-height:36px;
-
-  display:inline-flex;
-
-  align-items:center;
-
-  justify-content:center;
-
-  gap:6px;
-
-  padding:0 13px;
-
-  border:
-    1px solid #ddd7fa;
-
-  border-radius:12px;
-
-  background:#f3efff;
-
-  color:#6655b8;
-
-  font-family:inherit;
-
-  font-size:11px;
-
-  font-weight:900;
-
-  cursor:pointer;
-
-  box-shadow:
-    0 5px 16px
-    rgba(80,70,130,.08);
-
-  transition:
-    transform .15s ease,
-    box-shadow .15s ease,
-    background .15s ease;
-}
-
-
-.owner-logout-top:hover {
-
-  transform:
-    translateY(-1px);
-
-  background:#ebe4ff;
-
-  box-shadow:
-    0 7px 18px
-    rgba(80,70,130,.12);
-}
-
-
-.owner-logout-top:active {
-
-  transform:
-    translateY(0);
-}
-
-
-.top-title {
-
-  font-size:20px;
-
-  font-weight:850;
-}
-
-
-.top-sub {
-
-  margin-top:3px;
-
-  color:var(--muted);
-
-  font-size:12px;
-}
-
-
-.content {
-
-  padding:26px;
-}
-
-
-.page {
-
-  display:none;
-}
-
-
-.page.active {
-
-  display:block;
-}
-
-
-/* =========================
-   CARDS
-========================= */
-
-.card {
-
-  padding:20px;
-
-  border:
-    1px solid var(--border);
-
-  border-radius:var(--radius);
-
-  background:var(--card);
-
-  box-shadow:var(--shadow);
-}
-
-
-.grid {
-
-  display:grid;
-
-  gap:16px;
-}
-
-
-.grid-4 {
-
-  grid-template-columns:
-    repeat(
-      4,
-      minmax(0,1fr)
-    );
-}
-
-
-.grid-3 {
-
-  grid-template-columns:
-    repeat(
-      3,
-      minmax(0,1fr)
-    );
-}
-
-
-.grid-2 {
-
-  grid-template-columns:
-    repeat(
-      2,
-      minmax(0,1fr)
-    );
-}
-
-
-.section-title {
-
-  margin-bottom:18px;
-
-  display:flex;
-
-  justify-content:space-between;
-
-  align-items:center;
-
-  gap:15px;
-}
-
-
-.section-title h2 {
-
-  margin:0;
-
-  font-size:18px;
-}
-
-
-.section-title p {
-
-  margin:
-    4px 0 0;
-
-  color:var(--muted);
-
-  font-size:12px;
-}
-
-
-.stat {
-
-  min-height:125px;
-
-  position:relative;
-
-  overflow:hidden;
-}
-
-
-.stat::after {
-
-  content:"";
-
-  position:absolute;
-
-  width:90px;
-  height:90px;
-
-  border-radius:50%;
-
-  right:-28px;
-  top:-28px;
-
-  opacity:.6;
-}
-
-
-.stat.green::after {
-  background:var(--green-soft);
-}
-
-.stat.blue::after {
-  background:var(--blue-soft);
-}
-
-.stat.purple::after {
-  background:var(--purple-soft);
-}
-
-.stat.yellow::after {
-  background:var(--warning-soft);
-}
-
-
-.stat-label {
-
-  color:var(--muted);
-
-  font-size:12px;
-}
-
-
-.stat-value {
-
-  font-size:31px;
-
-  font-weight:900;
-
-  margin-top:10px;
-}
-
-
-.stat-foot {
-
-  font-size:11px;
-
-  color:var(--muted);
-
-  margin-top:3px;
-}
-
-
-/* =========================
-   FORMS
-========================= */
-
-.form-grid {
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(
-      4,
-      minmax(0,1fr)
-    );
-
-  gap:14px;
-}
-
-
-.field {
-
-  display:flex;
-
-  flex-direction:column;
-
-  gap:7px;
-}
-
-
-.span-2 {
-
-  grid-column:
-    span 2;
-}
-
-
-.span-4 {
-
-  grid-column:
-    span 4;
-}
-
-
-label {
-
-  color:#667085;
-
-  font-size:12px;
-
-  font-weight:750;
-}
-
-
-input,
-select {
-
-  width:100%;
-
-  height:43px;
-
-  padding:
-    9px 12px;
-
-  border:
-    1px solid var(--border);
-
-  border-radius:11px;
-
-  background:#fff;
-
-  color:var(--text);
-
-  outline:none;
-}
-
-
-input:focus,
-select:focus {
-
-  border-color:var(--blue);
-
-  box-shadow:
-    0 0 0 3px
-    rgba(123,195,231,.16);
-}
-
-
-.actions {
-
-  display:flex;
-
-  align-items:center;
-
-  flex-wrap:wrap;
-
-  gap:8px;
-}
-
-
-.btn {
-
-  border:0;
-
-  border-radius:11px;
-
-  padding:
-    10px 15px;
-
-  font-weight:750;
-}
-
-
-.btn-primary {
-
-  color:white;
-
-  background:
-    linear-gradient(
-      135deg,
-      var(--blue-deep),
-      var(--purple-deep)
-    );
-}
-
-
-.btn-green {
-
-  color:white;
-
-  background:var(--green-deep);
-}
-
-
-.btn-soft {
-
-  color:#566273;
-
-  background:#f0f3f7;
-}
-
-
-.btn-danger {
-
-  color:var(--danger);
-
-  background:var(--danger-soft);
-}
-
-
-.btn-sm {
-
-  padding:
-    7px 10px;
-
-  font-size:11px;
-
-  border-radius:9px;
-}
-
-
-/* =========================
-   FILTER
-========================= */
-
-.filters {
-
-  display:grid;
-
-  grid-template-columns:
-    1.5fr 1fr 1fr auto;
-
-  gap:10px;
-
-  margin-bottom:14px;
-}
-
-
-/* =========================
-   BULK EMPLOYEE IMPORT
-========================= */
-
-.import-card {
-  border:1px dashed #b9c7d6;
-  background:
-    linear-gradient(
-      135deg,
-      #f8fcff,
-      #ffffff 48%,
-      #faf8ff
-    );
-}
-
-.import-hint {
-  margin-top:12px;
-  padding:12px 14px;
-  border-radius:12px;
-  background:#f6f8fb;
-  color:#687386;
-  font-size:11px;
-  line-height:1.7;
-}
-
-.import-summary {
-  display:grid;
-  grid-template-columns:
-    repeat(5,minmax(0,1fr));
-  gap:10px;
-  margin-top:14px;
-}
-
-.import-stat {
-  padding:12px;
-  border:1px solid var(--border);
-  border-radius:12px;
-  background:#fff;
-}
-
-.import-stat-label {
-  color:var(--muted);
-  font-size:10px;
-  font-weight:750;
-}
-
-.import-stat-value {
-  margin-top:5px;
-  font-size:20px;
-  font-weight:900;
-}
-
-.import-preview-table {
-  margin-top:14px;
-}
-
-.import-preview-table table {
-  min-width:760px;
-}
-
-
-/* =========================================================
-   TEAM SHIFT PLANNER
-========================================================= */
-
-.team-planner-card{margin-top:18px}
-.team-planner-note{margin:12px 0 14px;padding:11px 13px;border:1px solid #dce9f4;border-radius:12px;background:linear-gradient(135deg,#eef8ff 0%,#f3f0ff 100%);color:#5f6f88;font-size:11px;line-height:1.6}
-.team-planner-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
-.team-planner-round{font-size:12px;font-weight:900;color:#526173}
-.team-planner-brushes{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
-.team-planner-scroll{overflow:auto;max-width:100%;border:1px solid var(--border);border-radius:16px;background:#fff;overscroll-behavior:contain}
-.team-planner-grid{--planner-days:31;min-width:max-content;display:grid;grid-template-columns:310px repeat(var(--planner-days),78px);align-items:stretch;user-select:none}
-.team-planner-corner{position:sticky;left:0;top:0;z-index:8;display:flex;align-items:center;padding:11px 12px;background:#f7f9fc;border-right:1px solid var(--border);border-bottom:1px solid var(--border);font-size:11px;font-weight:900;color:#697789}
-.team-planner-date-head{position:sticky;top:0;z-index:6;min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:7px 4px;background:#f7f9fc;border-right:1px solid var(--border);border-bottom:1px solid var(--border);color:#667085;font-size:10px;font-weight:850}
-.team-planner-date-head.today{background:#ecf9f1;color:#368d63;box-shadow:inset 0 -3px 0 #77cfaa}
-.team-planner-date-main{font-size:12px;font-weight:950}
-.team-planner-left{position:sticky;left:0;z-index:5;width:310px;min-height:94px;padding:10px 12px;background:#fff;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
-.team-planner-team-line{display:flex;align-items:center;gap:7px;margin-bottom:8px}
-.team-planner-team-badge{display:inline-flex;align-items:center;justify-content:center;min-width:74px;padding:6px 10px;border-radius:999px;font-size:11px;font-weight:950}
-.team-planner-team-badge.team-a{background:#ffe1e5;color:#c85b68}
-.team-planner-team-badge.team-b{background:#fff4bf;color:#9a7600}
-.team-planner-team-badge.team-c{background:#dcf6e7;color:#3f9970}
-.team-planner-config{display:grid;grid-template-columns:minmax(0,1fr) 108px;gap:6px}
-.team-planner-config select,.team-planner-config input{width:100%;min-height:34px;padding:0 8px;border:1px solid #dfe5ed;border-radius:9px;background:#fff;color:#526173;font-family:inherit;font-size:10px;font-weight:750;outline:none}
-.team-planner-config select:focus,.team-planner-config input:focus{border-color:#9b8de0;box-shadow:0 0 0 3px rgba(124,106,214,.09)}
-.team-planner-start-shift{margin-top:6px;display:flex;align-items:center;gap:6px;color:#8993a2;font-size:9px}
-.team-planner-start-shift select{width:100px;min-height:30px;padding:0 6px;border:1px solid #dfe5ed;border-radius:8px;background:#fff;color:#526173;font-family:inherit;font-size:10px;font-weight:800}
-.team-planner-cell{min-height:94px;padding:7px 4px;display:flex;align-items:center;justify-content:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:#fff;cursor:crosshair;transition:background .08s ease,box-shadow .08s ease}
-.team-planner-cell:hover{background:#f9fbfe}.team-planner-cell.changed{box-shadow:inset 0 0 0 2px #9c8be3}.team-planner-cell.today{background:#f3fbf6}
-.team-planner-shift{width:64px;min-height:46px;padding:6px 4px;border-radius:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;font-size:9px;font-weight:900}
-.team-planner-shift.morning{background:#fff6cc;color:#9a7600;border:1px solid #f2d15c}.team-planner-shift.night{background:#eee8ff;color:#6954ba;border:1px solid #cfc2fa}.team-planner-shift.off{background:#ffe4e8;color:#c65563;border:1px solid #f6bec6}.team-planner-shift.unset{background:#f0f2f5;color:#8993a2;border:1px solid #dfe4ea}
-.team-planner-shift .small{font-size:8px;opacity:.75}.team-planner-empty{padding:28px;text-align:center;color:#8993a2;font-size:12px}.team-planner-actions{margin-top:14px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}.team-planner-count{color:#7b8798;font-size:11px}
-
-@media(max-width:900px) {
-  .import-summary {
-    grid-template-columns:
-      repeat(2,minmax(0,1fr));
-  }
-}
-
-@media(max-width:560px) {
-  .import-summary {
-    grid-template-columns:1fr;
-  }
-}
-
-
-/* =========================
-   TABLE
-========================= */
-
-.table-wrap {
-
-  overflow:auto;
-
-  width:100%;
-
-  max-height:610px;
-
-  border:
-    1px solid var(--border);
-
-  border-radius:14px;
-}
-
-
-table {
-
-  width:100%;
-
-  min-width:850px;
-
-  border-collapse:separate;
-
-  border-spacing:0;
-
-  background:#fff;
-}
-
-
-th {
-
-  position:sticky;
-
-  top:0;
-
-  z-index:10;
-
-  padding:
-    11px 12px;
-
-  background:#f8fafc;
-
-  border-bottom:
-    1px solid var(--border);
-
-  color:#657083;
-
-  white-space:nowrap;
-
-  text-align:left;
-
-  font-size:11px;
-
-  font-weight:850;
-}
-
-
-td {
-
-  padding:
-    11px 12px;
-
-  border-bottom:
-    1px solid #edf1f5;
-
-  font-size:12px;
-
-  vertical-align:middle;
-}
-
-
-tbody tr:hover td {
-
-  background:#fbfdff;
-}
-
-
-
-.employee-inline-row {
-
-  background:
-    linear-gradient(
-      90deg,
-      #f8fbff,
-      #fbf8ff
-    );
-}
-
-
-.employee-inline-row td {
-
-  vertical-align:middle;
-}
-
-
-.employee-inline-input,
-.employee-inline-select {
-
-  width:100%;
-
-  min-width:100px;
-
-  height:38px;
-
-  padding:
-    7px 10px;
-
-  border:
-    1px solid #d8e1ec;
-
-  border-radius:10px;
-
-  background:#fff;
-
-  color:#344054;
-
-  font-family:inherit;
-
-  font-size:11px;
-
-  font-weight:750;
-
-  outline:none;
-
-  box-shadow:none;
-}
-
-
-.employee-inline-input:focus,
-.employee-inline-select:focus {
-
-  border-color:#7fbbe0;
-
-  box-shadow:
-    0 0 0 3px
-    rgba(86,168,214,.12);
-}
-
-
-.employee-inline-id {
-
-  display:block;
-
-  color:#344054;
-
-  font-weight:950;
-
-  white-space:nowrap;
-}
-
-
-.employee-inline-nick {
-
-  min-width:125px;
-}
-
-
-.employee-inline-actions {
-
-  display:flex;
-
-  align-items:center;
-
-  gap:6px;
-
-  flex-wrap:nowrap;
-}
-
-
-.employee-inline-save {
-
-  white-space:nowrap;
-}
-
-
-.employee-inline-cancel {
-
-  white-space:nowrap;
-}
-
-
-.emp-code {
-
-  font-weight:850;
-}
-
-
-.emp-nick {
-
-  font-weight:800;
-
-  color:var(--blue-deep);
-}
-
-
-.employee-name-wrap {
-
-  display:inline-flex;
-
-  align-items:center;
-
-  gap:7px;
-
-  min-width:0;
-}
-
-
-.employee-new-ribbon {
-
-  position:relative;
-
-  display:inline-flex;
-
-  align-items:center;
-
-  justify-content:center;
-
-  min-width:42px;
-
-  height:22px;
-
-  padding:
-    0 9px;
-
-  border:
-    1px solid
-    rgba(255,119,145,.35);
-
-  border-radius:6px;
-
-  background:
-    linear-gradient(
-      135deg,
-      #ff6f91 0%,
-      #ff8a72 100%
-    );
-
-  color:#fff;
-
-  font-size:9px;
-
-  font-weight:1000;
-
-  line-height:1;
-
-  letter-spacing:.8px;
-
-  transform:
-    rotate(-8deg);
-
-  box-shadow:
-    0 5px 12px
-    rgba(229,94,124,.22);
-
-  white-space:nowrap;
-}
-
-
-.employee-new-ribbon::before,
-.employee-new-ribbon::after {
-
-  content:'';
-
-  position:absolute;
-
-  top:50%;
-
-  width:5px;
-  height:5px;
-
-  border-radius:50%;
-
-  background:
-    rgba(255,255,255,.58);
-
-  transform:
-    translateY(-50%);
-}
-
-
-.employee-new-ribbon::before {
-
-  left:4px;
-}
-
-
-.employee-new-ribbon::after {
-
-  right:4px;
-}
-
-
-.new-employee-toggle-card {
-
-  min-height:46px;
-
-  display:flex;
-
-  align-items:center;
-
-  gap:10px;
-
-  padding:
-    8px 11px;
-
-  border:
-    1px solid
-    #dce4ee;
-
-  border-radius:12px;
-
-  background:
-    linear-gradient(
-      135deg,
-      #fff 0%,
-      #fff8fb 100%
-    );
-
-  cursor:pointer;
-
-  user-select:none;
-
-  transition:
-    border-color .16s ease,
-    box-shadow .16s ease,
-    transform .16s ease;
-}
-
-
-.new-employee-toggle-card:hover {
-
-  border-color:#f1b5c5;
-
-  box-shadow:
-    0 6px 16px
-    rgba(205,111,137,.09);
-
-  transform:
-    translateY(-1px);
-}
-
-
-.new-employee-toggle-card input {
-
-  position:absolute;
-
-  opacity:0;
-
-  pointer-events:none;
-}
-
-
-.new-employee-toggle-box {
-
-  flex:
-    0 0 auto;
-
-  width:24px;
-  height:24px;
-
-  display:flex;
-
-  align-items:center;
-  justify-content:center;
-
-  border:
-    1px solid
-    #d9e1eb;
-
-  border-radius:8px;
-
-  background:#fff;
-
-  color:transparent;
-
-  font-size:12px;
-
-  font-weight:1000;
-
-  transition:
-    all .16s ease;
-}
-
-
-.new-employee-toggle-card
-input:checked
-+
-.new-employee-toggle-box {
-
-  border-color:#ff91aa;
-
-  background:
-    linear-gradient(
-      135deg,
-      #ff7d9b,
-      #ff9b7c
-    );
-
-  color:#fff;
-
-  box-shadow:
-    0 5px 12px
-    rgba(230,107,137,.20);
-}
-
-
-.new-employee-toggle-text {
-
-  min-width:0;
-
-  display:flex;
-
-  flex-direction:column;
-
-  gap:2px;
-
-  color:#536176;
-
-  line-height:1.3;
-}
-
-
-.new-employee-toggle-text b {
-
-  font-size:10px;
-
-  font-weight:950;
-}
-
-
-.new-employee-toggle-text small {
-
-  color:#909aaa;
-
-  font-size:8.5px;
-
-  font-weight:750;
-}
-
-
-/* =========================
-   BADGES
-========================= */
-
-.badge {
-
-  display:inline-flex;
-
-  align-items:center;
-
-  padding:
-    5px 9px;
-
-  border-radius:99px;
-
-  font-size:10px;
-
-  font-weight:850;
-}
-
-
-.badge-team {
-
-  font-weight:850;
-}
-
-
-/* TEAM A = ชมพู */
-
-.badge-team-a {
-
-  background:#ffe1e5;
-
-  color:#c85b68;
-}
-
-
-/* TEAM B = เหลือง */
-
-.badge-team-b {
-
-  background:#fff4bf;
-
-  color:#a77d00;
-}
-
-
-/* TEAM C = เขียว */
-
-.badge-team-c {
-
-  background:#dcf6e7;
-
-  color:#3f9970;
-}
-
-
-/* TEAM อื่น ๆ */
-
-.badge-team-other {
-
-  background:#e8f5fc;
-
-  color:#408fb9;
-}
-
-
-.badge-position {
-
-  background:var(--purple-soft);
-
-  color:var(--purple-deep);
-}
-
-
-/* =========================
-   EMPLOYEE STATUS COLORS
-========================= */
-
-/* ทำงาน = #CCFFCC */
-
-.badge-status-work {
-
-  background:#CCFFCC;
-
-  color:#287a45;
-
-  border:1px solid #a9e9b3;
-}
-
-
-/* รอเรียก = #FFFF99 */
-
-.badge-status-wait {
-
-  background:#FFFF99;
-
-  color:#8a7200;
-
-  border:1px solid #e8dc67;
-}
-
-
-/* พักงาน = #FF9966 */
-
-.badge-status-pause {
-
-  background:#FF9966;
-
-  color:#7a351b;
-
-  border:1px solid #ef8653;
-}
-
-
-/* ออก = #FF6666 */
-
-.badge-status-out {
-
-  background:#FF6666;
-
-  color:#7b1f27;
-
-  border:1px solid #eb5656;
-}
-
-
-/*
- * badge เดิมบางส่วนของระบบยังเรียก class เหล่านี้อยู่
- * คงไว้เพื่อไม่ให้ส่วนอื่นเสีย
- */
-
-.badge-work {
-
-  background:#CCFFCC;
-
-  color:#287a45;
-}
-
-
-/* หยุด = สีแดง */
-
-.badge-off {
-
-  background:var(--red-soft);
-
-  color:var(--red-deep);
-}
-
-
-.badge-out {
-
-  background:#FF6666;
-
-  color:#7b1f27;
-}
-
-
-.shift {
-
-  display:inline-flex;
-
-  justify-content:center;
-  align-items:center;
-
-  min-width:50px;
-
-  padding:
-    6px 8px;
-
-  border-radius:9px;
-
-  font-size:10px;
-
-  white-space:nowrap;
-
-  font-weight:850;
-
-  border:1px solid transparent;
-}
-
-
-/* ☀️ เช้า = เหลือง */
-
-.shift-morning {
-
-  color:#9a7200;
-
-  background:#fff6cc;
-
-  border-color:#f3d96b;
-}
-
-
-/* ดึก = ม่วง */
-
-.shift-night {
-
-  color:#6651b3;
-
-  background:var(--purple-soft);
-
-  border-color:#ddd5f5;
-}
-
-
-/* หยุด = แดง */
-
-.shift-off {
-
-  color:var(--red-deep);
-
-  background:var(--red-soft);
-
-  border-color:#f7c5ca;
-}
-
-
-.shift-unset {
-
-  color:#8993a2;
-
-  background:#eff2f5;
-
-  border-color:#e5e9ef;
-}
-
-
-/* =========================
-   SET CARD
-========================= */
-
-.set-list {
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(
-      3,
-      minmax(0,1fr)
-    );
-
-  gap:13px;
-}
-
-
-.set-card {
-
-  padding:16px;
-
-  border:
-    1px solid var(--border);
-
-  border-radius:15px;
-
-  background:
-    linear-gradient(
-      145deg,
-      #fff,
-      #fafbff
-    );
-}
-
-
-.set-name {
-
-  font-size:14px;
-
-  font-weight:850;
-}
-
-
-.flow {
-
-  margin-top:13px;
-
-  display:flex;
-
-  align-items:center;
-
-  flex-wrap:wrap;
-
-  gap:6px;
-}
-
-
-.flow-chip {
-
-  padding:
-    6px 9px;
-
-  border-radius:9px;
-
-  font-size:10px;
-
-  font-weight:800;
-}
-
-
-.flow-blue {
-
-  background:var(--blue-soft);
-
-  color:var(--blue-deep);
-}
-
-
-/* วันหยุดในเซตกะ = แดง */
-
-.flow-green {
-
-  background:var(--red-soft);
-
-  color:var(--red-deep);
-}
-
-
-.flow-purple {
-
-  background:var(--purple-soft);
-
-  color:var(--purple-deep);
-}
-
-
-/* =========================
-   SCHEDULE TABLE
-========================= */
-
-.schedule-table
-th:first-child,
-.schedule-table
-td:first-child {
-
-  position:sticky;
-
-  left:0;
-
-  min-width:155px;
-
-  z-index:15;
-
-  background:#fff;
-}
-
-
-.schedule-table
-th:first-child {
-
-  background:#f8fafc;
-
-  z-index:30;
-}
-
-
-.schedule-table
-th:nth-child(2),
-.schedule-table
-td:nth-child(2) {
-
-  position:sticky;
-
-  left:155px;
-
-  min-width:90px;
-
-  z-index:14;
-
-  background:#fff;
-}
-
-
-.schedule-table
-th:nth-child(2) {
-
-  background:#f8fafc;
-
-  z-index:29;
-}
-
-
-.day-head {
-
-  min-width:72px;
-
-  text-align:center;
-}
-
-
-.day-cell {
-
-  text-align:center;
-}
-
-
-/* =========================
-   CALENDAR
-========================= */
-
-.calendar-toolbar {
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:space-between;
-
-  gap:12px;
-
-  flex-wrap:wrap;
-
-  padding:14px;
-
-  border:
-    1px solid var(--border);
-
-  border-radius:14px;
-
-  background:
-    linear-gradient(
-      135deg,
-      var(--blue-soft),
-      #fff,
-      var(--purple-soft)
-    );
-
-  margin-bottom:15px;
-}
-
-
-.calendar-brushes {
-
-  display:flex;
-
-  gap:8px;
-
-  flex-wrap:wrap;
-}
-
-
-.brush-btn {
-
-  border:
-    2px solid transparent;
-
-  padding:
-    8px 12px;
-
-  border-radius:10px;
-
-  font-weight:800;
-
-  background:#f3f5f8;
-
-  color:#667085;
-}
-
-
-.brush-btn.active {
-
-  border-color:#455468;
-
-  box-shadow:
-    0 4px 13px
-    rgba(45,60,80,.13);
-}
-
-
-.brush-morning {
-
-  background:#fff6cc;
-
-  color:#9a7200;
-
-  border-color:#f3d96b;
-}
-
-
-.brush-night {
-
-  background:var(--purple-soft);
-
-  color:var(--purple-deep);
-}
-
-
-/* ปุ่มเลือกวันหยุด = แดง */
-
-.brush-off {
-
-  background:var(--red-soft);
-
-  color:var(--red-deep);
-}
-
-
-/* ไม่มีกะ = เทา */
-
-.brush-unset {
-
-  background:#eef1f5;
-
-  color:#667085;
-
-  border-color:#d8dee7;
-}
-
-
-/* หมายเหตุ = ฟ้าอมเขียว */
-
-.brush-note {
-
-  background:#e7f7f4;
-
-  color:#287b71;
-
-  border-color:#b9e7df;
-}
-
-
-.calendar-note-preview-wrap {
-
-  margin-top:7px;
-}
-
-
-.calendar-note-preview {
-
-  padding:6px 8px !important;
-
-  border:
-    1px solid #9fded8 !important;
-
-  border-radius:8px !important;
-
-  background:
-    linear-gradient(
-      135deg,
-      #dff8ee 0%,
-      #dff7fb 48%,
-      #e3efff 100%
-    ) !important;
-
-  color:#2f756e !important;
-
-  font-size:9px;
-
-  font-weight:700;
-
-  line-height:1.45;
-
-  overflow:hidden;
-
-  display:-webkit-box;
-
-  -webkit-line-clamp:2;
-  line-clamp:2;
-
-  -webkit-box-orient:vertical;
-
-  box-shadow:
-    0 2px 7px
-    rgba(74,160,154,.11) !important;
-}
-
-
-.calendar-note-preview.empty {
-
-  display:none;
-}
-
-
-.calendar-note-modal-backdrop {
-
-  position:fixed;
-
-  inset:0;
-
-  z-index:9998;
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:center;
-
-  padding:18px;
-
-  background:
-    rgba(31,41,55,.38);
-
-  backdrop-filter:
-    blur(3px);
-}
-
-
-.calendar-note-modal {
-
-  width:min(
-    520px,
-    100%
-  );
-
-  padding:20px;
-
-  border:
-    1px solid var(--border);
-
-  border-radius:18px;
-
-  background:#fff;
-
-  box-shadow:
-    0 22px 60px
-    rgba(25,35,55,.22);
-}
-
-
-.calendar-note-modal-title {
-
-  font-size:18px;
-
-  font-weight:900;
-
-  color:#344054;
-}
-
-
-.calendar-note-modal-date {
-
-  margin-top:4px;
-
-  color:#7b8798;
-
-  font-size:11px;
-}
-
-
-.calendar-note-textarea {
-
-  width:100%;
-
-  min-height:120px;
-
-  margin-top:14px;
-
-  padding:12px 13px;
-
-  resize:vertical;
-
-  border:
-    1px solid #d9e0e8;
-
-  border-radius:12px;
-
-  outline:none;
-
-  font:
-    inherit;
-
-  color:#344054;
-
-  background:#fbfcfe;
-}
-
-
-.calendar-note-textarea:focus {
-
-  border-color:#8dcfc5;
-
-  box-shadow:
-    0 0 0 3px
-    rgba(141,207,197,.18);
-}
-
-
-.calendar-note-help {
-
-  margin-top:6px;
-
-  color:#98a2b3;
-
-  font-size:10px;
-}
-
-
-.calendar-week {
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(7,1fr);
-
-  gap:8px;
-
-  margin-bottom:8px;
-}
-
-
-.week-label {
-
-  padding:8px;
-
-  text-align:center;
-
-  font-size:11px;
-
-  font-weight:800;
-
-  color:#7c8797;
-}
-
-
-.calendar-grid {
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(7,minmax(0,1fr));
-
-  gap:8px;
-
-  user-select:none;
-}
-
-
-.calendar-blank {
-
-  min-height:104px;
-}
-
-
-.calendar-day {
-
-  min-height:104px;
-
-  padding:10px;
-
-  border:
-    2px solid transparent;
-
-  border-radius:14px;
-
-  background:#fff;
-
-  box-shadow:
-    inset 0 0 0 1px
-    var(--border);
-
-  cursor:crosshair;
-
-  transition:.1s ease;
-}
-
-
-.calendar-day:hover {
-
-  transform:
-    translateY(-1px);
-
-  box-shadow:
-    inset 0 0 0 1px
-    #a8b5c5,
-    0 5px 15px
-    rgba(70,90,110,.08);
-}
-
-
-.calendar-day.changed {
-
-  border-color:
-    var(--purple);
-
-  box-shadow:
-    0 0 0 3px
-    rgba(169,155,226,.12);
-}
-
-
-.calendar-date {
-
-  font-size:12px;
-
-  font-weight:850;
-
-  margin-bottom:9px;
-}
-
-
-.calendar-month {
-
-  color:var(--muted);
-
-  font-size:9px;
-
-  margin-left:3px;
-}
-
-
-.calendar-source {
-
-  margin-top:8px;
-
-  font-size:9px;
-
-  color:#9aa3af;
-}
-
-
-.calendar-source.changed-text {
-
-  color:var(--purple-deep);
-
-  font-weight:800;
-}
-
-
-/* =========================
-   GENDER TABLE
-========================= */
-
-.gender-box {
-
-  margin-top:18px;
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(
-      3,
-      minmax(0,1fr)
-    );
-
-  gap:14px;
-}
-
-
-.gender-stat {
-
-  padding:15px;
-
-  border-radius:14px;
-
-  border:
-    1px solid var(--border);
-
-  background:#fff;
-}
-
-
-.gender-value {
-
-  margin-top:6px;
-
-  font-size:25px;
-
-  font-weight:900;
-}
-
-
-/* =========================
-   SETTINGS
-========================= */
-
-.setting-item {
-
-  display:flex;
-
-  justify-content:space-between;
-
-  align-items:center;
-
-  gap:10px;
-
-  padding:
-    11px 0;
-
-  border-bottom:
-    1px solid #edf1f5;
-}
-
-
-.setting-name {
-
-  font-weight:800;
-}
-
-
-/* =========================
-   GENERAL
-========================= */
-
-.empty {
-
-  padding:35px 20px;
-
-  text-align:center;
-
-  color:var(--muted);
-}
-
-
-.empty-icon {
-
-  font-size:31px;
-
-  margin-bottom:8px;
-}
-
-
-.toast {
-
-  position:fixed;
-
-  left:50%;
-  top:50%;
-
-  z-index:10050;
-
-  width:min(460px,calc(100vw - 34px));
-
-  min-height:170px;
-
-  padding:
-    34px 28px 26px;
-
-  border:
-    1px solid
-    rgba(167,198,234,.55);
-
-  border-radius:30px;
-
-  background:
-    linear-gradient(
-      135deg,
-      rgba(255,255,255,.98) 0%,
-      rgba(245,251,255,.98) 45%,
-      rgba(244,240,255,.98) 100%
-    );
-
-  color:#35507a;
-
-  font-size:17px;
-
-  font-weight:900;
-
-  line-height:1.55;
-
-  letter-spacing:.1px;
-
-  text-align:center;
-
-  opacity:0;
-
-  pointer-events:none;
-
-  transform:
-    translate(-50%,-46%)
-    scale(.92);
-
-  box-shadow:
-    0 28px 80px rgba(103,116,155,.24),
-    0 8px 22px rgba(120,133,167,.12);
-
-  backdrop-filter:
-    blur(14px);
-
-  transition:
-    opacity .20s ease,
-    transform .24s cubic-bezier(.22,1,.36,1);
-
-  overflow:hidden;
-}
-
-
-.toast::before {
-
-  content:'✨';
-
-  display:flex;
-
-  align-items:center;
-  justify-content:center;
-
-  width:74px;
-  height:74px;
-
-  margin:0 auto 16px;
-
-  border-radius:999px;
-
-  background:
-    linear-gradient(
-      135deg,
-      #7dc7ef 0%,
-      #8394ef 50%,
-      #af7df0 100%
-    );
-
-  color:#fff;
-
-  font-size:34px;
-
-  line-height:1;
-
-  box-shadow:
-    0 14px 28px rgba(131,148,239,.28);
-}
-
-
-.toast::after {
-
-  content:'';
-
-  position:absolute;
-
-  inset:0;
-
-  background:
-    radial-gradient(
-      circle at top left,
-      rgba(125,199,239,.22),
-      transparent 32%
-    ),
-    radial-gradient(
-      circle at top right,
-      rgba(175,125,240,.18),
-      transparent 30%
-    ),
-    radial-gradient(
-      circle at bottom center,
-      rgba(255,255,255,.55),
-      transparent 38%
-    );
-
-  pointer-events:none;
-}
-
-
-.toast.show {
-
-  opacity:1;
-
-  transform:
-    translate(-50%,-50%)
-    scale(1);
-}
-
-
-.toast.toast-success {
-
-  border-color:rgba(157,214,255,.72);
-
-  background:
-    linear-gradient(
-      135deg,
-      rgba(249,253,255,.99) 0%,
-      rgba(238,247,255,.99) 48%,
-      rgba(242,236,255,.99) 100%
-    );
-
-  color:#3a5f90;
-}
-
-
-.toast.toast-success::before {
-
-  content:'💖';
-}
-
-
-.toast.toast-error {
-
-  border-color:rgba(255,193,205,.85);
-
-  background:
-    linear-gradient(
-      135deg,
-      rgba(255,248,249,.99) 0%,
-      rgba(255,239,243,.99) 52%,
-      rgba(255,243,248,.99) 100%
-    );
-
-  color:#c0526d;
-}
-
-
-.toast.toast-error::before {
-
-  content:'🥺';
-}
-
-
-.toast.toast-warning {
-
-  border-color:rgba(247,216,149,.88);
-
-  background:
-    linear-gradient(
-      135deg,
-      rgba(255,252,244,.99) 0%,
-      rgba(255,246,222,.99) 55%,
-      rgba(255,250,237,.99) 100%
-    );
-
-  color:#a67818;
-}
-
-
-.toast.toast-warning::before {
-
-  content:'🌼';
-}
-
-
-.toast.toast-info {
-
-  border-color:rgba(184,220,255,.82);
-
-  background:
-    linear-gradient(
-      135deg,
-      rgba(247,252,255,.99) 0%,
-      rgba(235,245,255,.99) 52%,
-      rgba(241,247,255,.99) 100%
-    );
-
-  color:#4d78a9;
-}
-
-
-.toast.toast-info::before {
-
-  content:'🫶';
-}
-
-
-.loading {
-
-  position:fixed;
-
-  inset:0;
-
-  z-index:9998;
-
-  display:none;
-
-  align-items:center;
-
-  justify-content:center;
-
-  background:
-    rgba(246,249,252,.72);
-
-  backdrop-filter:
-    blur(4px);
-}
-
-
-.loading.show {
-
-  display:flex;
-}
-
-
-.loading-card {
-
-  padding:
-    20px 27px;
-
-  border-radius:15px;
-
-  background:#fff;
-
-  font-weight:800;
-
-  box-shadow:var(--shadow);
-}
-
-
-/* =========================
-   RESPONSIVE
-========================= */
-
-@media(max-width:1100px) {
-
-  .grid-4,
-  .grid-3 {
-
-    grid-template-columns:
-      repeat(2,1fr);
-  }
-
-  .form-grid {
-
-    grid-template-columns:
-      repeat(2,1fr);
-  }
-
-  .span-4 {
-
-    grid-column:span 2;
-  }
-
-  .set-list {
-
-    grid-template-columns:
-      repeat(2,1fr);
-  }
-}
-
-
-@media(max-width:760px) {
-
-  .sidebar {
-
-    width:76px;
-
-    padding:
-      17px 9px;
-  }
-
-  .brand-name,
-  .brand-sub,
-  .menu-text,
-  .submenu-text,
-  .menu-arrow {
-
-    display:none;
-  }
-
-  .brand {
-
-    justify-content:center;
-  }
-
-  .menu-btn {
-
-    justify-content:center;
-
-    padding:9px;
-  }
-
-
-  .submenu {
-
-    padding:
-      4px 0;
-  }
-
-
-  .submenu-btn {
-
-    justify-content:center;
-
-    padding:7px;
-  }
-
-  .main {
-
-    margin-left:76px;
-
-    width:
-      calc(100% - 76px);
-  }
-
-  .content {
-
-    padding:14px;
-  }
-
-  .topbar {
-
-    padding:
-      0 15px;
-  }
-
-
-  .topbar-actions {
-
-    gap:6px;
-  }
-
-
-  .owner-logout-top {
-
-    padding:
-      0 10px;
-
-    font-size:10px;
-  }
-
-  .grid-4,
-  .grid-3,
-  .grid-2,
-  .set-list,
-  .gender-box {
-
-    grid-template-columns:1fr;
-  }
-
-  .form-grid {
-
-    grid-template-columns:1fr;
-  }
-
-  .span-2,
-  .span-4 {
-
-    grid-column:span 1;
-  }
-
-  .filters {
-
-    grid-template-columns:1fr;
-  }
-
-  .calendar-day {
-
-    min-height:85px;
-
-    padding:6px;
-  }
-
-  .calendar-grid,
-  .calendar-week {
-
-    gap:4px;
-  }
-}
-
-
-
-.employee-inline-row {
-
-  outline:
-    2px solid
-    rgba(95,165,215,.20);
-
-  outline-offset:
-    -2px;
-}
-
-
-
-/* =========================
-   SEATING PLAN
-========================= */
-
-.seating-card{
-  overflow:hidden
-}
-
-.seating-head{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:16px;
-  margin-bottom:18px
-}
-
-.seating-summary{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  flex-wrap:wrap
-}
-
-.seating-summary-badge{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-height:34px;
-  padding:0 12px;
-  border:1px solid #dfe7ef;
-  border-radius:999px;
-  background:#f8fafc;
-  color:#68758a;
-  font-size:11px;
-  font-weight:850
-}
-
-.seating-plan-scroll{
-  width:100%;
-  overflow-x:hidden;
-  padding-bottom:6px
-}
-
-.seating-plan{
-  width:100%;
-  min-width:0;
-  display:flex;
-  flex-direction:column;
-  gap:10px
-}
-
-.seating-side-head,
-.seating-row{
-  display:grid;
-  grid-template-columns:
-    repeat(5,minmax(0,1fr))
-    56px
-    repeat(3,minmax(0,1fr));
-  gap:8px;
-  align-items:stretch
-}
-
-.seating-side-label{
-  min-height:38px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:8px 12px;
-  border-radius:12px;
-  font-size:11px;
-  font-weight:900;
-  color:#637083;
-  background:#f6f8fb;
-  border:1px solid #e6ebf2;
-  text-align:center
-}
-
-.seating-side-label.left{
-  grid-column:1/span 5;
-  background:linear-gradient(135deg,#f8fbff,#f5f7ff);
-  color:#536783
-}
-
-.seating-side-label.aisle{
-  grid-column:6;
-  background:#fff;
-  border-style:dashed;
-  color:#99a3b2
-}
-
-.seating-side-label.right{
-  grid-column:7/span 3;
-  background:linear-gradient(135deg,#fff8fb,#f9f5ff);
-  color:#715d83
-}
-
-.seat-box{
-  min-height:108px;
-  padding:10px 8px;
-  display:flex;
-  flex-direction:column;
-  align-items:stretch;
-  justify-content:flex-start;
-  gap:7px;
-  border:1px solid #dce5ef;
-  border-radius:17px;
-  background:linear-gradient(145deg,#fff 0%,#f8fbff 100%);
-  color:#40516a;
-  text-align:left;
-  box-shadow:0 7px 18px rgba(73,91,119,.06);
-  transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;
-  cursor:pointer
-}
-
-.seat-box:hover{
-  transform:translateY(-2px);
-  border-color:#9fcef0;
-  box-shadow:0 12px 26px rgba(73,91,119,.11)
-}
-
-.seat-box.occupied{
-  border-color:#b8d7ee;
-  background:linear-gradient(145deg,#fff 0%,#f3f9ff 50%,#faf7ff 100%)
-}
-
-.seat-top{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:6px
-}
-
-.seat-number{
-  font-size:12px;
-  font-weight:950;
-  color:#365879;
-  white-space:nowrap
-}
-
-.seat-status{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-height:24px;
-  padding:0 8px;
-  border-radius:999px;
-  background:#edf8f3;
-  color:#4d9a78;
-  font-size:9px;
-  font-weight:900;
-  white-space:nowrap
-}
-
-.seat-box.occupied .seat-status{
-  background:#e9f3ff;
-  color:#4d78a9
-}
-
-.seat-empty{
-  flex:1;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:#a0a9b7;
-  font-size:10px;
-  font-weight:800;
-  text-align:center
-}
-
-.seat-person{
-  padding:7px 8px;
-  border-radius:10px;
-  background:rgba(255,255,255,.88);
-  border:1px solid #e6edf5;
-  min-width:0
-}
-
-.seat-person-main{
-  color:#35526f;
-  font-size:9.5px;
-  font-weight:950;
-  line-height:1.3;
-  overflow:hidden;
-  text-overflow:ellipsis
-}
-
-.seat-person-sub{
-  margin-top:2px;
-  color:#7b8798;
-  font-size:9px;
-  font-weight:750;
-  line-height:1.35
-}
-
-
-.seat-person-tags{
-  display:flex;
-  align-items:center;
-  gap:4px;
-  flex-wrap:nowrap;
-  margin-top:4px;
-  min-width:0;
-  overflow:hidden
-}
-
-.seat-mini-tag{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-height:18px;
-  max-width:100%;
-  padding:0 6px;
-  border-radius:999px;
-  font-size:7.5px;
-  font-weight:950;
-  line-height:1;
-  white-space:nowrap;
-  border:1px solid transparent;
-  overflow:hidden;
-  text-overflow:ellipsis
-}
-
-/* TEAM */
-.seat-team-a{
-  flex:0 0 auto;
-  background:#ffe1e5;
-  color:#c85b68;
-  border-color:#ffd2d8
-}
-
-.seat-team-b{
-  flex:0 0 auto;
-  background:#fff4bf;
-  color:#9a7600;
-  border-color:#f7e8a0
-}
-
-.seat-team-c{
-  flex:0 0 auto;
-  background:#dcf6e7;
-  color:#3f9970;
-  border-color:#c7ead7
-}
-
-.seat-team-other{
-  flex:0 0 auto;
-  background:#e8f5fc;
-  color:#408fb9;
-  border-color:#d4eaf6
-}
-
-/* POSITION */
-.seat-pos-admin{
-  flex:0 1 auto;
-  background:#efe9ff;
-  color:#7159bc;
-  border-color:#e1d8ff
-}
-
-.seat-pos-wd{
-  flex:0 1 auto;
-  background:#e6f2ff;
-  color:#3f7eb6;
-  border-color:#d2e7fb
-}
-
-.seat-pos-follow{
-  flex:0 1 auto;
-  background:#e3f8ee;
-  color:#3f9670;
-  border-color:#d0efdf
-}
-
-.seat-pos-marketing{
-  flex:0 1 auto;
-  background:#ffe6f1;
-  color:#bd5c87;
-  border-color:#ffd5e7
-}
-
-.seat-pos-dev{
-  flex:0 1 auto;
-  background:#e5f8fb;
-  color:#37889a;
-  border-color:#cfedf2
-}
-
-.seat-pos-ae{
-  flex:0 1 auto;
-  background:#fff0da;
-  color:#b7792a;
-  border-color:#f6dfbf
-}
-
-.seat-pos-seo{
-  flex:0 1 auto;
-  background:#e5f7f3;
-  color:#338979;
-  border-color:#cfece6
-}
-
-.seat-pos-edit{
-  flex:0 1 auto;
-  background:#fff0e7;
-  color:#b46c42;
-  border-color:#f5ddcf
-}
-
-.seat-pos-graphic{
-  flex:0 1 auto;
-  background:#fbe7f2;
-  color:#a95e84;
-  border-color:#f1d4e4
-}
-
-.seat-pos-audit{
-  flex:0 1 auto;
-  background:#eaf0f7;
-  color:#5d738d;
-  border-color:#dce5ee
-}
-
-.seat-pos-pr{
-  flex:0 1 auto;
-  background:#f4e9fb;
-  color:#8860a3;
-  border-color:#e8d9f2
-}
-
-.seat-pos-telesell{
-  flex:0 1 auto;
-  background:#fff7d9;
-  color:#9a7c22;
-  border-color:#f3e8ba
-}
-
-.seat-pos-ag{
-  flex:0 1 auto;
-  background:#e8ecff;
-  color:#5e6fb0;
-  border-color:#d8def8
-}
-
-.seat-pos-other{
-  flex:0 1 auto;
-  background:#f0f3f7;
-  color:#6f7c8c;
-  border-color:#e2e7ed
-}
-
-.seat-more{
-  color:#708198;
-  font-size:9px;
-  font-weight:850;
-  text-align:center
-}
-
-.seat-mails{
-  padding-top:3px;
-  border-top:1px dashed #e0e7ef;
-  color:#856f9e;
-  font-size:9px;
-  font-weight:850;
-  line-height:1.45;
-  overflow:hidden;
-  text-overflow:ellipsis
-}
-
-.seat-aisle{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  min-height:108px;
-  border-radius:14px;
-  border:1px dashed #d7dee8;
-  background:repeating-linear-gradient(
-    135deg,#fbfcfe,#fbfcfe 8px,#f5f7fa 8px,#f5f7fa 16px
-  );
-  color:#9aa4b3;
-  font-size:10px;
-  font-weight:900;
-  writing-mode:vertical-rl;
-  letter-spacing:1px
-}
-
-.seating-row-label{
-  margin-top:4px;
-  color:#9aa4b3;
-  font-size:10px;
-  font-weight:800
-}
-
-
-/* SEAT EDITOR MODAL */
-
-.seat-modal{
-  position:fixed;
-  inset:0;
-  z-index:10080;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  padding:22px;
-  background:rgba(53,67,88,.30);
-  backdrop-filter:blur(7px)
-}
-
-.seat-modal.show{
-  display:flex
-}
-
-.seat-modal-card{
-  width:min(760px,calc(100vw - 32px));
-  max-height:min(760px,calc(100vh - 38px));
-  overflow:auto;
-  border:1px solid rgba(205,218,235,.90);
-  border-radius:28px;
-  background:linear-gradient(145deg,#fff 0%,#f8fbff 52%,#fbf7ff 100%);
-  box-shadow:0 30px 90px rgba(55,69,96,.25)
-}
-
-.seat-modal-head{
-  position:sticky;
-  top:0;
-  z-index:2;
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:16px;
-  padding:22px 24px 18px;
-  border-bottom:1px solid #e7edf4;
-  background:rgba(255,255,255,.94);
-  backdrop-filter:blur(12px)
-}
-
-.seat-modal-title{
-  margin:0;
-  color:#35455d;
-  font-size:19px;
-  font-weight:950
-}
-
-.seat-modal-sub{
-  margin-top:5px;
-  color:#7c8899;
-  font-size:11px;
-  font-weight:750;
-  line-height:1.55
-}
-
-.seat-modal-close{
-  width:38px;
-  height:38px;
-  border:0;
-  border-radius:12px;
-  background:#f1f4f8;
-  color:#6f7b8b;
-  font-size:18px;
-  font-weight:900;
-  cursor:pointer
-}
-
-.seat-modal-body{
-  padding:20px 24px 24px
-}
-
-.seat-editor-block{
-  padding:16px;
-  border:1px solid #e3eaf2;
-  border-radius:18px;
-  background:rgba(255,255,255,.78);
-  margin-bottom:14px
-}
-
-.seat-editor-label{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  margin-bottom:10px;
-  color:#526178;
-  font-size:11px;
-  font-weight:950
-}
-
-.seat-editor-hint{
-  color:#97a1af;
-  font-size:9px;
-  font-weight:750
-}
-
-.seat-search{
-  width:100%;
-  height:42px;
-  padding:0 13px;
-  border:1px solid #dbe4ee;
-  border-radius:12px;
-  background:#fff;
-  color:#40516a;
-  font-family:inherit;
-  font-size:11px;
-  font-weight:800;
-  outline:none
-}
-
-.seat-search:focus{
-  border-color:#9bc9e8;
-  box-shadow:0 0 0 3px rgba(92,165,215,.12)
-}
-
-.seat-employee-list{
-  max-height:270px;
-  overflow:auto;
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:8px;
-  margin-top:10px
-}
-
-.seat-employee-option{
-  display:flex;
-  align-items:flex-start;
-  gap:9px;
-  padding:10px;
-  border:1px solid #e5ebf2;
-  border-radius:12px;
-  background:#fff;
-  cursor:pointer
-}
-
-.seat-employee-option:hover{
-  border-color:#bcd9ee;
-  background:#f9fcff
-}
-
-.seat-employee-option.selected{
-  border-color:#9ccbef;
-  background:#eff8ff
-}
-
-.seat-employee-option input{
-  margin-top:3px
-}
-
-.seat-employee-name{
-  color:#3e526c;
-  font-size:10px;
-  font-weight:950;
-  line-height:1.4
-}
-
-.seat-employee-meta{
-  margin-top:2px;
-  color:#8994a4;
-  font-size:9px;
-  font-weight:750;
-  line-height:1.4
-}
-
-.seat-selected-chips,
-.seat-email-chips{
-  display:flex;
-  flex-wrap:wrap;
-  gap:7px;
-  margin-top:10px
-}
-
-.seat-chip{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  min-height:28px;
-  padding:0 9px;
-  border-radius:999px;
-  background:#edf6ff;
-  color:#52789d;
-  font-size:9px;
-  font-weight:900
-}
-
-.seat-chip.email{
-  background:#f5efff;
-  color:#8066a1
-}
-
-.seat-chip button{
-  border:0;
-  padding:0;
-  background:transparent;
-  color:inherit;
-  font-size:12px;
-  font-weight:950;
-  cursor:pointer
-}
-
-.seat-email-entry{
-  display:grid;
-  grid-template-columns:1fr auto;
-  gap:8px
-}
-
-.seat-email-add{
-  min-width:92px;
-  border:0;
-  border-radius:12px;
-  background:linear-gradient(135deg,#70b8e2,#8c79dc);
-  color:#fff;
-  font-family:inherit;
-  font-size:10px;
-  font-weight:900;
-  cursor:pointer
-}
-
-.seat-modal-actions{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  flex-wrap:wrap;
-  padding-top:4px
-}
-
-.seat-modal-actions-right{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  flex-wrap:wrap
-}
-
-.seat-clear-btn{
-  min-height:42px;
-  padding:0 14px;
-  border:1px solid #ffd1d8;
-  border-radius:12px;
-  background:#fff4f6;
-  color:#d26477;
-  font-family:inherit;
-  font-size:10px;
-  font-weight:900;
-  cursor:pointer
-}
-
-.seat-save-btn{
-  min-height:42px;
-  padding:0 18px;
-  border:0;
-  border-radius:12px;
-  background:linear-gradient(135deg,#4ca0d1,#7b67d4);
-  color:#fff;
-  font-family:inherit;
-  font-size:10px;
-  font-weight:950;
-  cursor:pointer;
-  box-shadow:0 8px 18px rgba(98,106,202,.18)
-}
-
-.seat-cancel-btn{
-  min-height:42px;
-  padding:0 14px;
-  border:1px solid #dfe6ee;
-  border-radius:12px;
-  background:#f5f7fa;
-  color:#69778a;
-  font-family:inherit;
-  font-size:10px;
-  font-weight:900;
-  cursor:pointer
-}
-
-
-/* Mac / laptop fit */
-@media (max-width:1600px){
-
-  #page-seating .card{
-    padding:18px 20px
-  }
-
-  .seating-head{
-    margin-bottom:14px
-  }
-
-  .seating-summary{
-    gap:6px
-  }
-
-  .seating-summary-badge{
-    min-height:30px;
-    padding:0 10px;
-    font-size:9.5px
-  }
-
-  .seating-side-head,
-  .seating-row{
-    grid-template-columns:
-      repeat(5,minmax(0,1fr))
-      48px
-      repeat(3,minmax(0,1fr));
-    gap:7px
-  }
-
-  .seating-side-label{
-    min-height:34px;
-    padding:6px 8px;
-    font-size:9.5px
-  }
-
-  .seat-box{
-    min-height:100px;
-    padding:9px 7px;
-    border-radius:14px;
-    gap:5px
-  }
-
-  .seat-aisle{
-    min-height:100px;
-    border-radius:12px;
-    font-size:8.5px
-  }
-
-  .seat-number{
-    font-size:10.5px
-  }
-
-  .seat-status{
-    min-height:20px;
-    padding:0 6px;
-    font-size:8px
-  }
-
-  .seat-person{
-    padding:6px 7px;
-    border-radius:9px
-  }
-
-  .seat-person-main{
-    font-size:8.8px
-  }
-
-  .seat-mini-tag{
-    min-height:16px;
-    padding:0 5px;
-    font-size:6.8px
-  }
-
-  .seat-mails{
-    font-size:7.8px
-  }
-
-  .seating-row-label{
-    font-size:8.5px
-  }
-}
-
-
-@media (max-width:1366px){
-
-  #page-seating .card{
-    padding:16px 16px
-  }
-
-  .seating-side-head,
-  .seating-row{
-    grid-template-columns:
-      repeat(5,minmax(0,1fr))
-      42px
-      repeat(3,minmax(0,1fr));
-    gap:6px
-  }
-
-  .seat-box{
-    min-height:94px;
-    padding:8px 6px
-  }
-
-  .seat-aisle{
-    min-height:94px
-  }
-
-  .seat-person-main{
-    font-size:8.2px
-  }
-
-  .seat-mini-tag{
-    min-height:15px;
-    padding:0 4px;
-    font-size:6.4px
-  }
-}
-
-@media(max-width:900px){
-  .seating-head{flex-direction:column}
-  .seat-employee-list{grid-template-columns:1fr}
-}
-
-
-
-
-@media(max-width:1050px){
-  .seating-plan-scroll{
-    overflow-x:auto
-  }
-
-  .seating-plan{
-    min-width:980px
-  }
-}
-
-
-
-/* =========================
-   DEDUCTION / ตัดยอด
-========================= */
-
-.deduct-rule-note{
-  padding:14px 16px;
-  border:1px solid #dae8f4;
-  border-radius:16px;
-  background:linear-gradient(135deg,#f5fbff,#faf7ff);
-  color:#637187;
-  font-size:10px;
-  font-weight:800;
-  line-height:1.7
-}
-
-.deduct-employee-preview{
-  min-height:52px;
-  display:flex;
-  align-items:center;
-  padding:11px 14px;
-  border:1px dashed #d6e0eb;
-  border-radius:14px;
-  background:#fafbfd;
-  color:#7b8798;
-  font-size:10px;
-  font-weight:800
-}
-
-.deduct-employee-preview.found{
-  border-style:solid;
-  border-color:#bfe0d0;
-  background:#f2fbf6;
-  color:#4d7f68
-}
-
-.deduct-filter-grid{
-  display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:12px;
-  align-items:end
-}
-
-.deduct-stat-grid{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:10px;
-  margin:16px 0
-}
-
-.deduct-stat{
-  padding:14px;
-  border:1px solid #e1e8f0;
-  border-radius:15px;
-  background:linear-gradient(145deg,#fff,#f8fbff)
-}
-
-.deduct-stat-label{
-  color:#8994a4;
-  font-size:9px;
-  font-weight:850
-}
-
-.deduct-stat-value{
-  margin-top:5px;
-  color:#3f536f;
-  font-size:16px;
-  font-weight:1000
-}
-
-.deduct-type{
-  display:inline-flex;
-  align-items:center;
-  min-height:24px;
-  padding:0 8px;
-  border-radius:999px;
-  font-size:8.5px;
-  font-weight:950;
-  white-space:nowrap
-}
-
-.deduct-type.wd{
-  background:#e7f2ff;
-  color:#4b81b5
-}
-
-.deduct-type.general{
-  background:#fff0e4;
-  color:#b77545
-}
-
-.deduct-status{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-height:25px;
-  padding:0 9px;
-  border-radius:999px;
-  font-size:8.5px;
-  font-weight:950;
-  white-space:nowrap
-}
-
-.deduct-status.limit{
-  background:#eaf7f1;
-  color:#478a6b
-}
-
-.deduct-status.actual{
-  background:#ffe7eb;
-  color:#c05d70
-}
-
-.deduct-status.full{
-  background:#fff3cd;
-  color:#9a7819
-}
-
-.deduct-money{
-  font-weight:950;
-  white-space:nowrap
-}
-
-.deduct-money.actual{
-  color:#c25067
-}
-
-.deduct-money.covered{
-  color:#4e8b70
-}
-
-.deduct-limit-setting{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:16px;
-  padding:16px;
-  border:1px solid #e2e9f1;
-  border-radius:18px;
-  background:linear-gradient(135deg,#f8fbff,#fbf8ff)
-}
-
-
-.deduct-limit-head-actions{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  margin-bottom:12px
-}
-
-.deduct-limit-editor{
-  display:grid;
-  grid-template-columns:1.4fr 1fr auto;
-  gap:12px;
-  align-items:end;
-  padding:14px;
-  margin-bottom:12px;
-  border:1px solid #dfe8f2;
-  border-radius:16px;
-  background:linear-gradient(135deg,#f8fbff,#fbf8ff)
-}
-
-.deduct-limit-list{
-  display:flex;
-  flex-direction:column;
-  gap:9px
-}
-
-.deduct-limit-row{
-  display:grid;
-  grid-template-columns:minmax(180px,1fr) minmax(150px,.8fr) auto;
-  gap:12px;
-  align-items:center;
-  min-height:66px;
-  padding:12px 14px;
-  border:1px solid #e1e8f0;
-  border-radius:16px;
-  background:linear-gradient(145deg,#fff,#fafcff)
-}
-
-.deduct-limit-row-name{
-  color:#40536d;
-  font-size:11px;
-  font-weight:1000
-}
-
-.deduct-limit-row-code{
-  margin-top:3px;
-  color:#98a2b1;
-  font-size:8px;
-  font-weight:800
-}
-
-.deduct-limit-row-amount{
-  display:flex;
-  align-items:baseline;
-  gap:5px;
-  color:#596a80
-}
-
-.deduct-limit-row-amount b{
-  color:#3f5572;
-  font-size:15px;
-  font-weight:1000
-}
-
-.deduct-limit-row-amount span{
-  font-size:9px;
-  font-weight:800
-}
-
-.deduct-limit-row-actions{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:7px;
-  flex-wrap:wrap
-}
-
-.deduct-limit-edit-btn,
-.deduct-limit-delete-btn{
-  min-height:34px;
-  padding:0 11px;
-  border-radius:10px;
-  font-family:inherit;
-  font-size:9px;
-  font-weight:950;
-  cursor:pointer
-}
-
-.deduct-limit-edit-btn{
-  border:1px solid #dfe6ee;
-  background:#f2f5f8;
-  color:#627187
-}
-
-.deduct-limit-delete-btn{
-  border:1px solid #ffd7dd;
-  background:#fff3f5;
-  color:#d06678
-}
-
-@media(max-width:760px){
-  .deduct-limit-editor,
-  .deduct-limit-row{
-    grid-template-columns:1fr
-  }
-
-  .deduct-limit-row-actions{
-    justify-content:flex-start
-  }
-}
-
-.deduct-limit-title{
-  color:#40546f;
-  font-size:14px;
-  font-weight:1000
-}
-
-.deduct-limit-sub{
-  margin-top:4px;
-  color:#8995a5;
-  font-size:9px;
-  font-weight:800
-}
-
-.deduct-limit-input{
-  display:flex;
-  align-items:center;
-  gap:8px
-}
-
-.deduct-limit-input input{
-  width:160px;
-  height:42px
-}
-
-.deduct-limit-input span{
-  color:#718094;
-  font-size:10px;
-  font-weight:850
-}
-
-.deduct-limit-toolbar{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:16px;
-  margin-bottom:16px
-}
-
-.deduct-limit-toolbar input{
-  width:180px
-}
-
-.deduct-section-label{
-  margin:4px 0 10px;
-  color:#56667b;
-  font-size:11px;
-  font-weight:950
-}
-
-.deduct-limit-grid{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:10px
-}
-
-.deduct-limit-card{
-  padding:14px;
-  border:1px solid #e0e8f1;
-  border-radius:17px;
-  background:linear-gradient(145deg,#fff,#f8fbff)
-}
-
-.deduct-limit-person{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:8px
-}
-
-.deduct-limit-name{
-  color:#40536d;
-  font-size:10px;
-  font-weight:950
-}
-
-.deduct-limit-meta{
-  margin-top:2px;
-  color:#8a96a6;
-  font-size:8.5px;
-  font-weight:750
-}
-
-.deduct-progress{
-  height:12px;
-  margin-top:12px;
-  overflow:hidden;
-  border-radius:999px;
-  background:#e9eef4
-}
-
-.deduct-progress-bar{
-  height:100%;
-  min-width:0;
-  border-radius:inherit;
-  background:linear-gradient(90deg,#5ab3df,#7d76df);
-  transition:width .25s ease
-}
-
-.deduct-progress-bar.full{
-  background:linear-gradient(90deg,#ff9b76,#ef6f86)
-}
-
-.deduct-progress-row{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:8px;
-  margin-top:7px;
-  color:#778497;
-  font-size:8.5px;
-  font-weight:800
-}
-
-.deduct-real-box{
-  margin-top:10px;
-  padding:8px 10px;
-  border-radius:11px;
-  background:#fff0f3;
-  color:#bd5b70;
-  font-size:9px;
-  font-weight:900
-}
-
-@media(max-width:1200px){
-  .deduct-filter-grid{
-    grid-template-columns:repeat(2,minmax(0,1fr))
-  }
-
-  .deduct-limit-grid{
-    grid-template-columns:repeat(2,minmax(0,1fr))
-  }
-}
-
-@media(max-width:760px){
-  .deduct-filter-grid,
-  .deduct-stat-grid,
-  .deduct-limit-grid{
-    grid-template-columns:1fr
-  }
-
-  .deduct-limit-setting,
-  .deduct-limit-toolbar{
-    align-items:flex-start;
-    flex-direction:column
-  }
-
-  .deduct-limit-input{
-    width:100%;
-    flex-wrap:wrap
-  }
-}
-
-</style>
-
-</head>
-
-
-<body>
-
-
-<div class="app">
-
-
-<!-- SIDEBAR -->
-
-<aside class="sidebar">
-
-  <div class="brand">
-
-    <div class="brand-logo">
-      👥
-    </div>
-
-    <div>
-
-      <div class="brand-name">
-        ศูนย์พนักงาน
-      </div>
-
-      <div class="brand-sub">
-        Employee Center
-      </div>
-
-    </div>
-
-  </div>
-
-
-  <div class="menu">
-
-    <!-- DASHBOARD -->
-
-    <div
-      class="
-        menu-group
-        open
-      "
-      id="dashboardGroup"
-    >
-
-      <button
-        class="
-          menu-btn
-          menu-parent
-          active
-        "
-        type="button"
-        data-group="dashboardGroup"
-        onclick="toggleMenuGroup('dashboardGroup',this)"
-      >
-
-        <span class="menu-icon">
-          🏠
-        </span>
-
-        <span class="menu-text">
-          Dashboard
-        </span>
-
-        <span class="menu-arrow">
-          ›
-        </span>
-
-      </button>
-
-
-      <div class="submenu">
-
-        <button
-          class="
-            submenu-btn
-            active
-          "
-          type="button"
-          data-page="dashboard"
-          onclick="openPage('dashboard',this)"
-        >
-
-          <span class="submenu-icon">
-            🏠
-          </span>
-
-          <span class="submenu-text">
-            ภาพรวม
-          </span>
-
-        </button>
-
-
-        <button
-          class="submenu-btn"
-          type="button"
-          data-page="manpower"
-          onclick="openPage('manpower',this)"
-        >
-
-          <span class="submenu-icon">
-            📊
-          </span>
-
-          <span class="submenu-text">
-            กำลังคน
-          </span>
-
-        </button>
-
-      </div>
-
-    </div>
-
-
-    <!-- EMPLOYEE -->
-
-    <div
-      class="menu-group"
-      id="employeeGroup"
-    >
-
-      <button
-        class="
-          menu-btn
-          menu-parent
-        "
-        type="button"
-        data-group="employeeGroup"
-        onclick="toggleMenuGroup('employeeGroup',this)"
-      >
-
-        <span class="menu-icon">
-          👥
-        </span>
-
-        <span class="menu-text">
-          พนักงาน
-        </span>
-
-        <span class="menu-arrow">
-          ›
-        </span>
-
-      </button>
-
-
-      <div class="submenu">
-
-        <button
-          class="submenu-btn"
-          type="button"
-          data-page="employees"
-          onclick="openPage('employees',this)"
-        >
-
-          <span class="submenu-icon">
-            👥
-          </span>
-
-          <span class="submenu-text">
-            ข้อมูลพนักงาน
-          </span>
-
-        </button>
-
-
-        <button
-          class="submenu-btn"
-          type="button"
-          data-page="seating"
-          onclick="openPage('seating',this)"
-        >
-
-          <span class="submenu-icon">
-            🪑
-          </span>
-
-          <span class="submenu-text">
-            ผังที่นั่ง
-          </span>
-
-        </button>
-
-
-        <button
-          class="submenu-btn"
-          type="button"
-          data-page="employeeView"
-          onclick="openPage('employeeView',this)"
-        >
-
-          <span class="submenu-icon">
-            👁️
-          </span>
-
-          <span class="submenu-text">
-            หน้าพนักงาน
-          </span>
-
-        </button>
-
-      </div>
-
-    </div>
-
-
-    <!-- DEDUCTION -->
-
-    <div
-      class="menu-group"
-      id="deductionGroup"
-    >
-
-      <button
-        class="
-          menu-btn
-          menu-parent
-        "
-        type="button"
-        data-group="deductionGroup"
-        onclick="toggleMenuGroup('deductionGroup',this)"
-      >
-
-        <span class="menu-icon">
-          💸
-        </span>
-
-        <span class="menu-text">
-          ตัดยอด
-        </span>
-
-        <span class="menu-arrow">
-          ›
-        </span>
-
-      </button>
-
-
-      <div class="submenu">
-
-        <button
-          class="submenu-btn"
-          type="button"
-          data-page="deductionEntry"
-          onclick="openPage('deductionEntry',this)"
-        >
-
-          <span class="submenu-icon">
-            🧾
-          </span>
-
-          <span class="submenu-text">
-            บันทึกตัดยอด
-          </span>
-
-        </button>
-
-
-        <button
-          class="submenu-btn"
-          type="button"
-          data-page="deductionList"
-          onclick="openPage('deductionList',this)"
-        >
-
-          <span class="submenu-icon">
-            📋
-          </span>
-
-          <span class="submenu-text">
-            รายการตัดยอด
-          </span>
-
-        </button>
-
-
-        <button
-          class="submenu-btn"
-          type="button"
-          data-page="deductionLimit"
-          onclick="openPage('deductionLimit',this)"
-        >
-
-          <span class="submenu-icon">
-            💳
-          </span>
-
-          <span class="submenu-text">
-            วงเงิน
-          </span>
-
-        </button>
-
-      </div>
-
-    </div>
-
-
-    <!-- SHIFT -->
-
-    <div
-      class="menu-group"
-      id="shiftGroup"
-    >
-
-      <button
-        class="
-          menu-btn
-          menu-parent
-        "
-        type="button"
-        data-group="shiftGroup"
-        onclick="toggleMenuGroup('shiftGroup',this)"
-      >
-
-        <span class="menu-icon">
-          🗓️
-        </span>
-
-        <span class="menu-text">
-          กะพนักงาน
-        </span>
-
-        <span class="menu-arrow">
-          ›
-        </span>
-
-      </button>
-
-
-      <div class="submenu">
-
-        <button
-          class="submenu-btn"
-          type="button"
-          data-page="shiftSets"
-          onclick="openPage('shiftSets',this)"
-        >
-
-          <span class="submenu-icon">
-            🧩
-          </span>
-
-          <span class="submenu-text">
-            เซตกะ
-          </span>
-
-        </button>
-
-
-        <button
-          class="submenu-btn"
-          type="button"
-          data-page="assign"
-          onclick="openPage('assign',this)"
-        >
-
-          <span class="submenu-icon">
-            📅
-          </span>
-
-          <span class="submenu-text">
-            จัดกะ
-          </span>
-
-        </button>
-
-
-        
-
-
-        <button
-          class="submenu-btn"
-          type="button"
-          data-page="schedule"
-          onclick="openPage('schedule',this)"
-        >
-
-          <span class="submenu-icon">
-            📆
-          </span>
-
-          <span class="submenu-text">
-            ตารางกะ
-          </span>
-
-        </button>
-
-
-        <button
-          class="submenu-btn"
-          type="button"
-          data-page="shiftHistory"
-          onclick="openPage('shiftHistory',this)"
-        >
-
-          <span class="submenu-icon">
-            🕘
-          </span>
-
-          <span class="submenu-text">
-            ประวัติแก้กะ
-          </span>
-
-        </button>
-
-      </div>
-
-    </div>
-
-
-    <div class="menu-group-spacer"></div>
-
-
-    <!-- SETTINGS -->
-
-    <button
-      class="menu-btn"
-      type="button"
-      data-page="settings"
-      onclick="openPage('settings',this)"
-    >
-
-      <span class="menu-icon">
-        ⚙️
-      </span>
-
-      <span class="menu-text">
-        ตั้งค่า
-      </span>
-
-    </button>
-
-  </div>
-
-</aside>
-
-
-<!-- MAIN -->
-
-<main class="main">
-
-
-<header class="topbar">
-
-  <div>
-
-    <div
-      class="top-title"
-      id="topTitle"
-    >
-      Dashboard
-    </div>
-
-    <div
-      class="top-sub"
-      id="topSub"
-    >
-      ภาพรวมศูนย์บริหารพนักงาน
-    </div>
-
-  </div>
-
-
-  <div class="topbar-actions">
-
-    <span
-      class="badge badge-work"
-      id="todayBadge"
-    >
-      กำลังโหลด...
-    </span>
-
-
-    <button
-      type="button"
-      class="owner-logout-top"
-      id="ownerLogoutButton"
-      onclick="logoutOwner()"
-      title="ออกจากระบบ OWNER"
-    >
-      ↪️ ออกจาก OWNER
-    </button>
-
-  </div>
-
-</header>
-
-
-<div class="content">
-
-
-<!-- DASHBOARD -->
-
-<section
-  class="page active"
-  id="page-dashboard"
->
-
-  <div
-    class="grid grid-4"
-    id="dashboardStats"
-  ></div>
-
-
-  <div
-    class="grid grid-2"
-    style="margin-top:18px"
-  >
-
-    <div class="card">
-
-      <div class="section-title">
-
-        <div>
-
-          <h2>
-            👥 จำนวนพนักงานแต่ละ TEAM
-          </h2>
-
-          <p>
-            พนักงานที่ยังทำงานอยู่
-          </p>
-
-        </div>
-
-      </div>
-
-      <div id="dashboardTeams"></div>
-
-    </div>
-
-
-    <div class="card">
-
-      <div class="section-title">
-
-        <div>
-
-          <h2>
-            📅 กะวันนี้
-          </h2>
-
-          <p>
-            คำนวณจากเซตกะและการแก้รายบุคคล
-          </p>
-
-        </div>
-
-      </div>
-
-      <div id="dashboardToday"></div>
-
-    </div>
-
-  </div>
-
-</section>
-
-
-<!-- EMPLOYEES -->
-
-<section
-  class="page"
-  id="page-employees"
->
-
-
-<div class="card">
-
-  <div class="section-title">
-
-    <div>
-
-      <h2>
-        👥 ศูนย์ข้อมูลพนักงาน
-      </h2>
-
-      <p>
-        เพิ่ม แก้ไข และค้นหารายชื่อพนักงาน
-      </p>
-
-    </div>
-
-  </div>
-
-
-  <div class="form-grid">
-
-
-    <div class="field">
-
-      <label>
-        รหัสพนักงาน *
-      </label>
-
-      <input
-        id="empId"
-        placeholder="เช่น AD0013"
-      >
-
-    </div>
-
-
-    <div class="field">
-
-      <label>
-        ชื่อเล่น *
-      </label>
-
-      <input
-        id="empNickname"
-        placeholder="เช่น มิกกี้"
-      >
-
-    </div>
-
-
-    <div class="field">
-
-      <label>
-        TEAM
-      </label>
-
-      <select id="empTeam"></select>
-
-    </div>
-
-
-    <div class="field">
-
-      <label>
-        ตำแหน่ง
-      </label>
-
-      <select id="empPosition"></select>
-
-    </div>
-
-
-    <div class="field">
-
-      <label>
-        สาขา
-      </label>
-
-      <select id="empBranch"></select>
-
-    </div>
-
-
-    <div class="field">
-
-      <label>
-        เพศ
-      </label>
-
-      <select id="empGender"></select>
-
-    </div>
-
-
-    <div class="field">
-
-      <label>
-        สถานะ
-      </label>
-
-      <select id="empStatus"></select>
-
-    </div>
-
-
-    <div class="field">
-
-      <label>
-        ป้ายพนักงานใหม่
-      </label>
-
-      <label
-        class="new-employee-toggle-card"
-        for="empIsNew"
-      >
-
-        <input
-          type="checkbox"
-          id="empIsNew"
-        >
-
-        <span class="new-employee-toggle-box">
-          ✓
-        </span>
-
-        <span class="new-employee-toggle-text">
-
-          <b>
-            พนักงานใหม่
-          </b>
-
-          <small>
-            แสดงป้าย NEW 14 วัน
-          </small>
-
-        </span>
-
-      </label>
-
-    </div>
-
-
-    <div class="field span-4">
-
-      <div class="actions">
-
-        <button
-          class="btn btn-primary"
-          onclick="saveEmployeeForm()"
-        >
-          💾 บันทึกพนักงาน
-        </button>
-
-        <button
-          class="btn btn-soft"
-          onclick="clearEmployeeForm()"
-        >
-          ล้างข้อมูล
-        </button>
-
-      </div>
-
-    </div>
-
-  </div>
-
-</div>
-
-
-<div
-  class="card import-card"
-  style="margin-top:18px"
->
-
-  <div class="section-title">
-
-    <div>
-
-      <h2>
-        ⚡ นำเข้าพนักงานหลายคน
-      </h2>
-
-      <p>
-        ดึงข้อมูลจากชีตเดิมเข้าศูนย์ข้อมูลพนักงานทีเดียวทั้งชุด
-      </p>
-
-    </div>
-
-  </div>
-
-
-  <div class="form-grid">
-
-    <div class="field span-2">
-
-      <label>
-        ชีตต้นทาง
-      </label>
-
-      <select id="employeeImportSheet"></select>
-
-    </div>
-
-
-    <div class="field span-2">
-
-      <label>
-        จัดการนำเข้า
-      </label>
-
-      <div class="actions">
-
-        <button
-          class="btn btn-soft"
-          onclick="previewEmployeeImportUI()"
-        >
-          👀 ตรวจข้อมูลก่อน
-        </button>
-
-        <button
-          class="btn btn-green"
-          onclick="importEmployeesNow()"
-        >
-          ⚡ นำเข้าทั้งหมด
-        </button>
-
-        <button
-          class="btn btn-soft"
-          onclick="refreshImportSheets()"
-        >
-          🔄 รีเฟรชรายชื่อชีต
-        </button>
-
-      </div>
-
-    </div>
-
-  </div>
-
-
-  <div class="import-hint">
-    ใช้หัวตารางได้ตามชีตเดิมเลย: <b>รหัสพนักงาน / ชื่อ / ตำแหน่ง / ทีม / สาขา / เพศ / สถานะ</b><br>
-    ระบบจะอ่านคอลัมน์อัตโนมัติ ไม่ต้องเรียงใหม่ และถ้ารหัสพนักงานมีอยู่แล้วจะอัปเดตข้อมูลคนนั้นแทนการเพิ่มซ้ำ
-  </div>
-
-
-  <div id="employeeImportPreview"></div>
-
-</div>
-
-
-<div
-  class="card"
-  style="margin-top:18px"
->
-
-  <div class="section-title">
-
-    <div>
-
-      <h2>
-        รายชื่อพนักงาน
-      </h2>
-
-      <p id="employeeCountText"></p>
-
-    </div>
-
-  </div>
-
-
-  <div class="filters">
-
-    <input
-      id="employeeSearch"
-      placeholder="🔎 รหัส / ชื่อเล่น"
-      oninput="renderEmployees()"
-    >
-
-    <select
-      id="employeeTeamFilter"
-      onchange="renderEmployees()"
-    ></select>
-
-    <select
-      id="employeePositionFilter"
-      onchange="renderEmployees()"
-    ></select>
-
-    <button
-      class="btn btn-soft"
-      onclick="clearEmployeeFilters()"
-    >
-      ล้างตัวกรอง
-    </button>
-
-  </div>
-
-
-  <div
-    class="table-wrap"
-    id="employeeTable"
-  ></div>
-
-</div>
-
-
-</section>
-
-
-
-<!-- SEATING PLAN -->
-
-<section
-  class="page"
-  id="page-seating"
->
-
-  <div class="card seating-card">
-
-    <div class="seating-head">
-
-      <div class="section-title">
-        <div>
-          <h2>🪑 ผังที่นั่ง</h2>
-          <p>
-            คลิกที่โต๊ะเพื่อเลือกพนักงานได้หลายคน และใส่ชื่อเมลสั้น ๆ ได้หลายรายการ
-          </p>
-        </div>
-      </div>
-
-      <div class="seating-summary">
-        <span class="seating-summary-badge">6 แถว</span>
-        <span class="seating-summary-badge">ซ้าย 5 โต๊ะ / แถว</span>
-        <span class="seating-summary-badge">ขวา 3 โต๊ะ / แถว</span>
-        <span class="seating-summary-badge">รวม 48 โต๊ะ</span>
-      </div>
-
-    </div>
-
-    <div class="seating-plan-scroll">
-      <div
-        class="seating-plan"
-        id="seatingPlan"
-      ></div>
-    </div>
-
-  </div>
-
-</section>
-
-
-
-<!-- DEDUCTION ENTRY -->
-
-<section
-  class="page"
-  id="page-deductionEntry"
->
-
-  <div class="card">
-
-    <div class="section-title">
-
-      <div>
-
-        <h2>
-          🧾 บันทึกตัดยอด
-        </h2>
-
-        <p>
-          บันทึกรายการเสียหายหรือยอดที่ใช้คำนวณการหักเงินพนักงาน
-        </p>
-
-      </div>
-
-    </div>
-
-
-    <div class="form-grid">
-
-      <div class="field">
-
-        <label>
-          รหัสพนักงาน *
-        </label>
-
-        <input
-          id="deductEmployeeId"
-          list="deductEmployeeList"
-          placeholder="เช่น WD0001"
-          oninput="previewDeductionEmployee()"
-          autocomplete="off"
-        >
-
-        <datalist id="deductEmployeeList"></datalist>
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          ยอดเงิน *
-        </label>
-
-        <input
-          id="deductAmount"
-          type="number"
-          min="0.01"
-          step="0.01"
-          placeholder="0.00"
-        >
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          วงเงิน (ถ้ามี)
-        </label>
-
-        <select id="deductLimitType">
-          <option value="">
-            กำลังโหลดรายการวงเงิน...
-          </option>
-        </select>
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          วันที่รายการ *
-        </label>
-
-        <input
-          id="deductDate"
-          type="date"
-        >
-
-      </div>
-
-
-      <div class="field span-4">
-
-        <label>
-          รายละเอียด
-        </label>
-
-        <textarea
-          id="deductDetail"
-          rows="3"
-          placeholder="รายละเอียดรายการตัดยอด..."
-        ></textarea>
-
-      </div>
-
-
-      <div class="field span-4">
-
-        <div
-          class="deduct-employee-preview"
-          id="deductEmployeePreview"
-        >
-          กรอกรหัสพนักงานเพื่อดูข้อมูล
-        </div>
-
-      </div>
-
-
-      <div class="field span-4">
-
-        <div class="actions">
-
-          <button
-            class="btn btn-primary"
-            id="deductSaveButton"
-            type="button"
-            onclick="saveDeductionForm()"
-          >
-            💾 บันทึกรายการ
-          </button>
-
-          <button
-            class="btn btn-soft"
-            type="button"
-            onclick="clearDeductionForm()"
-          >
-            ล้างข้อมูล
-          </button>
-
-        </div>
-
-      </div>
-
-    </div>
-
-  </div>
-
-
-  <div
-    class="deduct-rule-note"
-    style="margin-top:18px"
-  >
-    💡 <b>WD</b> ใช้วงเงินเฉพาะพนักงานตำแหน่งฝาก-ถอน
-    ส่วน <b>ทั่วไป</b> จะถือเป็นยอดหักเงินจริงเต็มจำนวน
-    และวงเงิน WD จะคำนวณใหม่แยกตามเดือน
-  </div>
-
-</section>
-
-
-<!-- DEDUCTION LIST -->
-
-<section
-  class="page"
-  id="page-deductionList"
->
-
-  <div class="card">
-
-    <div class="section-title">
-
-      <div>
-
-        <h2>
-          📋 รายการตัดยอด
-        </h2>
-
-        <p>
-          ค้นหารายการย้อนหลังจากวันที่หรือรหัสพนักงาน
-        </p>
-
-      </div>
-
-    </div>
-
-
-    <div class="deduct-filter-grid">
-
-      <div class="field">
-
-        <label>
-          จากวันที่
-        </label>
-
-        <input
-          id="deductListFrom"
-          type="date"
-        >
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          ถึงวันที่
-        </label>
-
-        <input
-          id="deductListTo"
-          type="date"
-        >
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          รหัสพนักงาน
-        </label>
-
-        <input
-          id="deductListEmployee"
-          placeholder="ค้นหารหัส / ชื่อเล่น"
-        >
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          ค้นหา
-        </label>
-
-        <div class="actions">
-
-          <button
-            class="btn btn-primary"
-            type="button"
-            onclick="loadDeductionRecords(true)"
-          >
-            🔎 ค้นหา
-          </button>
-
-          <button
-            class="btn btn-soft"
-            type="button"
-            onclick="resetDeductionListFilters()"
-          >
-            เดือนนี้
-          </button>
-
-        </div>
-
-      </div>
-
-    </div>
-
-
-    <div
-      class="deduct-stat-grid"
-      id="deductListStats"
-    ></div>
-
-
-    <div
-      class="table-wrap"
-      id="deductListTable"
-    >
-      <div class="empty">
-        เลือกช่วงวันที่แล้วกดค้นหา
-      </div>
-    </div>
-
-  </div>
-
-</section>
-
-
-<!-- DEDUCTION LIMIT -->
-
-<section
-  class="page"
-  id="page-deductionLimit"
->
-
-  <div class="card">
-
-    <div class="section-title">
-
-      <div>
-
-        <h2>
-          💳 ตั้งค่าวงเงิน
-        </h2>
-
-        <p>
-          ตั้งหัวข้อวงเงิน แก้ไข ลบ หรือเพิ่มรายการใหม่ได้
-        </p>
-
-      </div>
-
-    </div>
-
-
-    <div class="deduct-limit-head-actions">
-
-      <button
-        class="btn btn-primary"
-        type="button"
-        onclick="openDeductionLimitEditor()"
-      >
-        ➕ เพิ่มหัวข้อรายการ
-      </button>
-
-    </div>
-
-
-    <div
-      class="deduct-limit-editor"
-      id="deductLimitEditor"
-      style="display:none"
-    >
-
-      <div class="field">
-
-        <label>
-          หัวข้อรายการ *
-        </label>
-
-        <input
-          id="deductLimitName"
-          placeholder="เช่น ฝาก-ถอน, ทั่วไป"
-          maxlength="80"
-        >
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          วงเงิน *
-        </label>
-
-        <input
-          id="deductLimitEditorAmount"
-          type="number"
-          min="0"
-          step="100"
-          placeholder="0"
-        >
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          จัดการ
-        </label>
-
-        <div class="actions">
-
-          <button
-            class="btn btn-primary"
-            type="button"
-            onclick="saveDeductionLimitItem()"
-          >
-            💾 บันทึก
-          </button>
-
-          <button
-            class="btn btn-soft"
-            type="button"
-            onclick="closeDeductionLimitEditor()"
-          >
-            ยกเลิก
-          </button>
-
-        </div>
-
-      </div>
-
-    </div>
-
-
-    <div
-      class="deduct-limit-list"
-      id="deductLimitList"
-    >
-      <div class="empty">
-        ⏳ กำลังโหลดรายการวงเงิน...
-      </div>
-    </div>
-
-  </div>
-
-
-  <div
-    class="card"
-    style="margin-top:18px"
-  >
-
-    <div class="deduct-limit-toolbar">
-
-      <div>
-
-        <h2 style="margin:0">
-          📊 วงเงินพนักงาน
-        </h2>
-
-        <p style="margin:4px 0 0">
-          เลือกเดือนเพื่อดูยอดสะสมและยอดหักเงินจริง
-        </p>
-
-      </div>
-
-
-      <input
-        id="deductLimitMonth"
-        type="month"
-        onchange="loadDeductionDashboard(true)"
-      >
-
-    </div>
-
-
-    <div class="deduct-section-label">
-      💙 ฝาก-ถอน · มีวงเงิน
-    </div>
-
-    <div
-      class="deduct-limit-grid"
-      id="wdLimitCards"
-    ></div>
-
-
-    <div
-      class="deduct-section-label"
-      style="margin-top:22px"
-    >
-      🧡 พนักงานทั่วไป · ยอดหักสะสมในเดือน
-    </div>
-
-    <div
-      class="table-wrap"
-      id="generalDeductTable"
-    ></div>
-
-  </div>
-
-</section>
-
-
-<!-- SHIFT SET -->
-
-<section
-  class="page"
-  id="page-shiftSets"
->
-
-
-<div class="card">
-
-  <div class="section-title">
-
-    <div>
-
-      <h2>
-        🧩 ตั้งค่าเซตกะ
-      </h2>
-
-      <p>
-        สร้างเซตกะไว้เลือกใช้ภายหลัง
-      </p>
-
-    </div>
-
-  </div>
-
-
-  <input
-    type="hidden"
-    id="shiftSetId"
-  >
-
-
-  <div class="form-grid">
-
-
-    <div class="field span-2">
-
-      <label>
-        ชื่อเซตกะ
-      </label>
-
-      <input
-        id="shiftSetName"
-        placeholder="เช่น 10/5 สลับเช้า-ดึก"
-      >
-
-    </div>
-
-
-    <div class="field">
-
-      <label>
-        วันทำงาน
-      </label>
-
-      <input
-        id="shiftWorkDays"
-        type="number"
-        value="10"
-        min="1"
-      >
-
-    </div>
-
-
-    <div class="field">
-
-      <label>
-        วันหยุด
-      </label>
-
-      <input
-        id="shiftOffDays"
-        type="number"
-        value="5"
-        min="0"
-      >
-
-    </div>
-
-
-    <div class="field">
-
-      <label>
-        รูปแบบ
-      </label>
-
-      <select
-        id="shiftMode"
-        onchange="updateShiftMode()"
-      >
-
-        <option value="alternate">
-          สลับกะหลังหยุด
-        </option>
-
-        <option value="fixed">
-          กะเดิมตลอด
-        </option>
-
-      </select>
-
-    </div>
-
-
-    <div class="field">
-
-      <label>
-        กะเริ่มต้น
-      </label>
-
-      <select id="shiftStart">
-
-        <option value="MORNING">
-          ☀️ เช้า
-        </option>
-
-        <option value="NIGHT">
-          🌙 ดึก
-        </option>
-
-      </select>
-
-    </div>
-
-
-    <div
-      class="field"
-      id="fixedShiftBox"
-      style="display:none"
-    >
-
-      <label>
-        กะคงที่
-      </label>
-
-      <select id="shiftFixed">
-
-        <option value="MORNING">
-          ☀️ เช้า
-        </option>
-
-        <option value="NIGHT">
-          🌙 ดึก
-        </option>
-
-      </select>
-
-    </div>
-
-
-    <div class="field span-4">
-
-      <div class="actions">
-
-        <button
-          class="btn btn-primary"
-          onclick="saveShiftSetForm()"
-        >
-          💾 บันทึกเซตกะ
-        </button>
-
-        <button
-          class="btn btn-soft"
-          onclick="clearShiftSetForm()"
-        >
-          สร้างใหม่
-        </button>
-
-      </div>
-
-    </div>
-
-  </div>
-
-</div>
-
-
-<div
-  class="card"
-  style="margin-top:18px"
->
-
-  <div class="section-title">
-
-    <div>
-
-      <h2>
-        📦 เซตกะที่สร้างไว้
-      </h2>
-
-      <p>
-        เซตกะเดิมทั้งหมดอยู่ตรงนี้เหมือนเดิม · แก้ไข / ลบ / นำไปใช้ได้ตามปกติ
-      </p>
-
-    </div>
-
-  </div>
-
-  <div
-    class="set-list"
-    id="shiftSetList"
-  ></div>
-
-</div>
-
-
-
-</section>
-
-
-<!-- ASSIGN -->
-
-<section
-  class="page"
-  id="page-assign"
->
-
-
-<div class="card">
-
-  <div class="section-title">
-
-    <div>
-
-      <h2>
-        🗓️ จัดกะ
-      </h2>
-
-      <p>
-        เลือก TEAM และตำแหน่งได้ชัดเจน หรือจัดกะรายบุคคล
-      </p>
-
-      <div
-        style="
-          margin-top:10px;
-          padding:11px 13px;
-          border-radius:12px;
-          background:#fff7e8;
-          color:#8b6427;
-          font-size:11px;
-          line-height:1.7;
-          border:1px solid #f4dfb6;
-        "
-      >
-        💡 <strong>รอบตาราง 26–25</strong> ใช้สำหรับแสดงผล/ตัดรอบเท่านั้น
-        ส่วน <strong>10 ทำงาน / 5 หยุด</strong> จะนับต่อเนื่องไปเรื่อย ๆ และไม่เริ่มใหม่ทุกเดือน
-      </div>
-
-    </div>
-
-  </div>
-
-
-  <div class="form-grid">
-
-
-    <div class="field">
-
-      <label>
-        ใช้กับ
-      </label>
-
-      <select
-        id="assignScopeType"
-        onchange="updateAssignScope()"
-      >
-
-        <option value="TEAM">
-          TEAM
-        </option>
-
-        <option value="POSITION">
-          ตำแหน่ง
-        </option>
-
-        <option value="EMPLOYEE">
-          พนักงาน
-        </option>
-
-      </select>
-
-    </div>
-
-
-    <div
-      class="field"
-      id="assignTeamBox"
-    >
-
-      <label>
-        TEAM
-      </label>
-
-      <select
-        id="assignTeamSelect"
-      ></select>
-
-      <div
-        id="assignTeamHint"
-        style="
-          margin-top:6px;
-          color:#8a94a4;
-          font-size:10px;
-          line-height:1.45;
-        "
-      >
-        เลือก TEAM ที่ต้องการจัดกะ
-      </div>
-
-    </div>
-
-
-    <div
-      class="field"
-      id="assignPositionBox"
-    >
-
-      <label>
-        ตำแหน่ง
-      </label>
-
-      <select
-        id="assignPositionSelect"
-      ></select>
-
-      <div
-        id="assignPositionHint"
-        style="
-          margin-top:6px;
-          color:#8a94a4;
-          font-size:10px;
-          line-height:1.45;
-        "
-      >
-        ใช้เมื่อต้องการจัดกะเฉพาะตำแหน่ง
-      </div>
-
-    </div>
-
-
-    <div
-      class="field"
-      id="assignEmployeeBox"
-      style="display:none"
-    >
-
-      <label>
-        พนักงาน
-      </label>
-
-      <select
-        id="assignEmployeeSelect"
-      ></select>
-
-    </div>
-
-
-    <!-- hidden compatibility field -->
-    <select
-      id="assignScopeValue"
-      style="display:none"
-      aria-hidden="true"
-      tabindex="-1"
-    ></select>
-
-    <select
-      id="assignTeamFilter"
-      style="display:none"
-      aria-hidden="true"
-      tabindex="-1"
-    ></select>
-
-
-    <div class="field">
-
-      <label>
-        เซตกะ
-      </label>
-
-      <select
-        id="assignSet"
-      ></select>
-
-    </div>
-
-
-    <div class="field">
-
-      <label>
-        วันที่เริ่มใช้เซต
-      </label>
-
-      <input
-        id="assignStartDate"
-        type="date"
-      >
-
-      <div
-        style="
-          margin-top:6px;
-          color:#8a94a4;
-          font-size:10px;
-          line-height:1.5;
-        "
-      >
-        วันนี้คือวันแรกของ Cycle 10/5
-      </div>
-
-    </div>
-
-
-    <div
-      class="field"
-      style="grid-column:span 2"
-    >
-
-      <div
-        style="
-          min-height:72px;
-          padding:14px 16px;
-          border:1px solid #cfe7f6;
-          border-radius:12px;
-          background:linear-gradient(135deg,#eef9ff,#f5f1ff);
-          color:#5f6f88;
-          font-size:11px;
-          line-height:1.6;
-          font-weight:750;
-        "
-      >
-        🔁 <b>วันที่เริ่มใช้เซต = วันแรกของ Cycle</b><br>
-        ระบบจะนับ <b>ทำงาน 10 วัน → หยุด 5 วัน</b> ต่อเนื่องจากวันที่นี้ไปเรื่อย ๆ
-        และจะไม่เริ่มใหม่เมื่อเปลี่ยนรอบ 26–25
-      </div>
-
-    </div>
-
-
-    <div class="field span-4">
-
-      <button
-        class="btn btn-primary"
-        onclick="saveAssignmentForm()"
-      >
-        ✨ ใช้เซตกะ
-      </button>
-
-    </div>
-
-  </div>
-
-</div>
-
-
-
-
-
-
-<div
-  style="
-    margin-top:20px;
-    margin-bottom:-2px;
-    padding:12px 15px;
-    border:1px solid #e4e8f2;
-    border-radius:14px;
-    background:linear-gradient(135deg,#f8fbff,#faf7ff);
-    color:#68758a;
-    font-size:11px;
-    font-weight:850;
-    line-height:1.6;
-  "
->
-  💡 <b>จัดกะหลักก่อน</b> แล้วใช้ “แก้กะรายบุคคล” ด้านล่าง
-  เมื่อต้องการปรับเฉพาะบางวันของพนักงาน
-</div>
-
-
-<div class="card" style="margin-top:18px">
-
-
-  <div class="section-title">
-
-    <div>
-
-      <h2>
-        👤 แก้กะรายบุคคล
-      </h2>
-
-      <p>
-        ใช้ปรับเฉพาะบางวันของพนักงาน หลังจากจัดกะหลักแล้ว · เลือกประเภทกะแล้วลากผ่านวันที่ได้เลย
-      </p>
-
-    </div>
-
-  </div>
-
-
-  <div class="form-grid">
-
-
-    <div class="field span-2">
-
-      <label>
-        พนักงาน
-      </label>
-
-      <select
-        id="calendarEmployee"
-      ></select>
-
-    </div>
-
-
-    <div class="field">
-
-      <label>
-        รอบที่มีวันที่
-      </label>
-
-      <input
-        type="date"
-        id="calendarAnchor"
-      >
-
-    </div>
-
-
-    <div class="field">
-
-      <label>&nbsp;</label>
-
-      <button
-        class="btn btn-primary"
-        id="calendarOpenButton"
-        onclick="loadIndividualCalendar()"
-      >
-        เปิดปฏิทิน
-      </button>
-
-    </div>
-
-  </div>
-
-
-  <div
-    id="calendarArea"
-    style="margin-top:20px"
-  ></div>
-
-</div>
-
-</section>
-
-
-
-
-
-
-
-<!-- SCHEDULE -->
-
-<section
-  class="page"
-  id="page-schedule"
->
-
-
-<div class="card">
-
-  <div class="section-title">
-
-    <div>
-
-      <h2>
-        📅 ตารางกะ
-      </h2>
-
-      <p>
-        ดูกะตาม TEAM ตำแหน่ง หรือพนักงาน
-      </p>
-
-    </div>
-
-  </div>
-
-
-  <div class="form-grid">
-
-
-    <div class="field">
-
-      <label>
-        TEAM
-      </label>
-
-      <select
-        id="scheduleTeam"
-      ></select>
-
-    </div>
-
-
-    <div class="field">
-
-      <label>
-        ตำแหน่ง
-      </label>
-
-      <select
-        id="schedulePosition"
-      ></select>
-
-    </div>
-
-
-    <div class="field span-2">
-
-      <label>
-        พนักงาน
-      </label>
-
-      <select
-        id="scheduleEmployee"
-      ></select>
-
-    </div>
-
-
-    <div class="field">
-
-      <label>
-        จากวันที่
-      </label>
-
-      <input
-        id="scheduleFrom"
-        type="date"
-      >
-
-    </div>
-
-
-    <div class="field">
-
-      <label>
-        ถึงวันที่
-      </label>
-
-      <input
-        id="scheduleTo"
-        type="date"
-      >
-
-    </div>
-
-
-    <div class="field span-2">
-
-      <label>
-        ค้นหา
-      </label>
-
-      <input
-        id="scheduleSearch"
-        placeholder="รหัส / ชื่อเล่น"
-      >
-
-    </div>
-
-
-    <div class="field span-4">
-
-      <button
-        class="btn btn-primary"
-        onclick="loadSchedule()"
-      >
-        🔎 แสดงตารางกะ
-      </button>
-
-    </div>
-
-  </div>
-
-
-  <div
-    id="scheduleResult"
-    style="margin-top:18px"
-  ></div>
-
-</div>
-
-
-</section>
-
-
-<!-- SHIFT HISTORY -->
-
-<section
-  class="page"
-  id="page-shiftHistory"
->
-
-
-<div class="card">
-
-  <div class="section-title">
-
-    <div>
-
-      <h2>
-        🕘 ประวัติการแก้กะรายบุคคล
-      </h2>
-
-      <p>
-        ย้อนดูว่าพนักงานคนไหน วันที่ใด ถูกเปลี่ยนจากกะอะไรเป็นกะอะไร
-      </p>
-
-    </div>
-
-  </div>
-
-
-  <div class="form-grid">
-
-
-    <div class="field">
-
-      <label>
-        TEAM
-      </label>
-
-      <select
-        id="historyTeam"
-      ></select>
-
-    </div>
-
-
-    <div class="field span-2">
-
-      <label>
-        พนักงาน
-      </label>
-
-      <select
-        id="historyEmployee"
-      ></select>
-
-    </div>
-
-
-    <div class="field">
-
-      <label>
-        ค้นหา
-      </label>
-
-      <input
-        id="historySearch"
-        placeholder="รหัส / ชื่อ / ตำแหน่ง"
-      >
-
-    </div>
-
-
-    <div class="field">
-
-      <label>
-        จากวันที่
-      </label>
-
-      <input
-        id="historyFrom"
-        type="date"
-      >
-
-    </div>
-
-
-    <div class="field">
-
-      <label>
-        ถึงวันที่
-      </label>
-
-      <input
-        id="historyTo"
-        type="date"
-      >
-
-    </div>
-
-
-    <div class="field span-2">
-
-      <label>&nbsp;</label>
-
-      <div class="actions">
-
-        <button
-          class="btn btn-primary"
-          onclick="loadShiftHistory()"
-        >
-          🔎 ดูประวัติ
-        </button>
-
-        <button
-          class="btn btn-soft"
-          onclick="clearShiftHistoryFilters()"
-        >
-          ล้างตัวกรอง
-        </button>
-
-      </div>
-
-    </div>
-
-  </div>
-
-
-  <div
-    id="shiftHistoryResult"
-    style="margin-top:18px"
-  >
-
-    <div class="empty">
-      <div class="empty-icon">🕘</div>
-      เลือกตัวกรองแล้วกดดูประวัติ
-    </div>
-
-  </div>
-
-</div>
-
-
-<div
-  class="card"
-  style="margin-top:18px"
->
-
-  <div class="section-title">
-
-    <div>
-
-      <h2>
-        📋 ประวัติการจัดกะ
-      </h2>
-
-      <p>
-        ดูรายการที่เคยนำเซตกะไปใช้กับ TEAM ตำแหน่ง หรือพนักงาน รวมทั้งรายการที่ปิดแล้ว
-      </p>
-
-    </div>
-
-  </div>
-
-  <div
-    class="table-wrap"
-    id="assignmentTable"
-  ></div>
-
-</div>
-
-</section>
-
-
-<!-- MANPOWER -->
-
-<section
-  class="page"
-  id="page-manpower"
->
-
-
-<div class="card">
-
-  <div class="section-title">
-
-    <div>
-
-      <h2>
-        📊 คำนวณกำลังคน
-      </h2>
-
-      <p>
-        รวมกำลังคน เพศ TEAM และกะ โดยอ้างอิงวันที่มุมขวาบน
-      </p>
-
-    </div>
-
-  </div>
-
-
-  <div
-    class="actions"
-    style="
-      align-items:center;
-      justify-content:flex-start;
-    "
-  >
-
-    <div
-      style="
-        padding:10px 14px;
-        border:1px solid #dfe7ef;
-        border-radius:12px;
-        background:#f8fbff;
-        color:#667085;
-        font-size:11px;
-        font-weight:800;
-      "
-    >
-      📅 กำลังคำนวณตามวันที่
-      <span
-        id="manpowerReferenceDate"
-        style="
-          color:#3f8f68;
-          font-weight:950;
-        "
-      ></span>
-      ที่แสดงมุมขวาบน
-    </div>
-
-  </div>
-
-
-  <div
-    id="manpowerResult"
-    style="margin-top:18px"
-  ></div>
-
-</div>
-
-
-</section>
-
-
-<!-- SETTINGS -->
-
-<section
-  class="page"
-  id="page-settings"
->
-
-
-<div class="grid grid-3">
-
-
-<div class="card">
-
-  <div class="section-title">
-
-    <div>
-
-      <h2>
-        🟦 ตั้งค่า TEAM
-      </h2>
-
-      <p>
-        TEAM ที่นี่จะไปขึ้น Dropdown ทั้งระบบ
-      </p>
-
-    </div>
-
-  </div>
-
-
-  <input
-    type="hidden"
-    id="teamSettingId"
-  >
-
-
-  <div class="actions">
-
-    <input
-      id="teamSettingValue"
-      placeholder="เช่น TEAM D"
-      style="flex:1"
-    >
-
-    <button
-      class="btn btn-primary"
-      onclick="saveSettingForm('TEAM')"
-    >
-      บันทึก
-    </button>
-
-    <button
-      class="btn btn-soft"
-      onclick="clearSettingForm('TEAM')"
-    >
-      ล้าง
-    </button>
-
-  </div>
-
-
-  <div
-    id="teamSettingList"
-    style="margin-top:18px"
-  ></div>
-
-</div>
-
-
-<div class="card">
-
-  <div class="section-title">
-
-    <div>
-
-      <h2>
-        💚 ตั้งค่าสาขา
-      </h2>
-
-      <p>
-        สาขาจะไปขึ้น Dropdown ในข้อมูลพนักงาน
-      </p>
-
-    </div>
-
-  </div>
-
-
-  <input
-    type="hidden"
-    id="branchSettingId"
-  >
-
-
-  <div class="actions">
-
-    <input
-      id="branchSettingValue"
-      placeholder="เช่น RH289"
-      style="flex:1"
-    >
-
-    <button
-      class="btn btn-green"
-      onclick="saveSettingForm('BRANCH')"
-    >
-      บันทึก
-    </button>
-
-    <button
-      class="btn btn-soft"
-      onclick="clearSettingForm('BRANCH')"
-    >
-      ล้าง
-    </button>
-
-  </div>
-
-
-  <div
-    id="branchSettingList"
-    style="margin-top:18px"
-  ></div>
-
-</div>
-
-
-<div class="card">
-
-  <div class="section-title">
-
-    <div>
-
-      <h2>
-        💜 ตั้งค่าตำแหน่ง
-      </h2>
-
-      <p>
-        ตำแหน่งจะเชื่อมไปหน้าเพิ่มพนักงาน หน้า “จัดกะ” และ Dropdown ทั้งระบบ
-      </p>
-
-    </div>
-
-    <div
-      class="actions"
-      style="
-        gap:6px;
-        flex-wrap:wrap;
-      "
-    >
-
-      <button
-        class="btn btn-soft btn-sm"
-        onclick="goToPositionUsage('employees')"
-      >
-        👤 เพิ่มพนักงาน
-      </button>
-
-      <button
-        class="btn btn-soft btn-sm"
-        onclick="goToPositionUsage('assign')"
-      >
-        📅 จัดกะ
-      </button>
-
-    </div>
-
-  </div>
-
-
-  <input
-    type="hidden"
-    id="positionSettingId"
-  >
-
-
-  <div class="actions">
-
-    <input
-      id="positionSettingValue"
-      placeholder="เช่น การตลาด / แอดมิน / ฝาก - ถอน"
-      style="flex:1"
-    >
-
-    <button
-      class="btn btn-primary"
-      onclick="saveSettingForm('POSITION')"
-    >
-      บันทึกตำแหน่ง
-    </button>
-
-    <button
-      class="btn btn-soft"
-      onclick="clearSettingForm('POSITION')"
-    >
-      ล้าง
-    </button>
-
-  </div>
-
-
-  <div
-    id="positionSettingList"
-    style="margin-top:18px"
-  ></div>
-
-</div>
-
-
-</div>
-
-
-</section>
-
-
-<!-- EMPLOYEE VIEW -->
-
-<section
-  class="page"
-  id="page-employeeView"
->
-
-
-<div class="card">
-
-  <div class="section-title">
-
-    <div>
-
-      <h2>
-        👁️ หน้าพนักงาน
-      </h2>
-
-      <p>
-        มุมมองตารางกะสำหรับพนักงาน
-      </p>
-
-    </div>
-
-  </div>
-
-
-  <div class="actions">
-
-    <select
-      id="employeeViewSelect"
-      style="max-width:400px"
-    ></select>
-
-    <button
-      class="btn btn-primary"
-      onclick="loadEmployeeView()"
-    >
-      ดูตาราง
-    </button>
-
-  </div>
-
-
-  <div
-    id="employeeViewResult"
-    style="margin-top:18px"
-  ></div>
-
-</div>
-
-
-</section>
-
-
-</div>
-
-</main>
-
-</div>
-
-
-
-<div
-  class="seat-modal"
-  id="seatEditorModal"
-  onclick="handleSeatModalBackdrop(event)"
->
-
-  <div class="seat-modal-card">
-
-    <div class="seat-modal-head">
-
-      <div>
-        <h3
-          class="seat-modal-title"
-          id="seatEditorTitle"
-        >
-          🪑 โต๊ะ
-        </h3>
-
-        <div
-          class="seat-modal-sub"
-          id="seatEditorSub"
-        ></div>
-      </div>
-
-      <button
-        type="button"
-        class="seat-modal-close"
-        onclick="closeSeatEditor()"
-      >
-        ×
-      </button>
-
-    </div>
-
-
-    <div class="seat-modal-body">
-
-      <div class="seat-editor-block">
-
-        <div class="seat-editor-label">
-
-          <span>
-            👥 เลือกพนักงาน
-          </span>
-
-          <span
-            class="seat-editor-hint"
-            id="seatEmployeeCountHint"
-          >
-            เลือกได้มากกว่า 1 คน
-          </span>
-
-        </div>
-
-        <input
-          class="seat-search"
-          id="seatEmployeeSearch"
-          placeholder="ค้นหารหัส / ชื่อเล่น / TEAM / ตำแหน่ง"
-          oninput="filterSeatEmployeeList(this.value)"
-        >
-
-        <div
-          class="seat-selected-chips"
-          id="seatSelectedEmployees"
-        ></div>
-
-        <div
-          class="seat-employee-list"
-          id="seatEmployeeList"
-        ></div>
-
-      </div>
-
-
-      <div class="seat-editor-block">
-
-        <div class="seat-editor-label">
-
-          <span>
-            ✉️ ชื่อเมล
-          </span>
-
-          <span class="seat-editor-hint">
-            ใส่แค่ชื่อสั้น ๆ · เพิ่มได้หลายเมล
-          </span>
-
-        </div>
-
-        <div class="seat-email-entry">
-
-          <input
-            class="seat-search"
-            id="seatEmailInput"
-            placeholder="เช่น admin01, wd02"
-            onkeydown="handleSeatEmailKey(event)"
-          >
-
-          <button
-            type="button"
-            class="seat-email-add"
-            onclick="addSeatEmail()"
-          >
-            + เพิ่มเมล
-          </button>
-
-        </div>
-
-        <div
-          class="seat-email-chips"
-          id="seatEmailChips"
-        ></div>
-
-      </div>
-
-
-      <div class="seat-modal-actions">
-
-        <button
-          type="button"
-          class="seat-clear-btn"
-          onclick="clearCurrentSeat()"
-        >
-          🗑️ ล้างโต๊ะนี้
-        </button>
-
-
-        <div class="seat-modal-actions-right">
-
-          <button
-            type="button"
-            class="seat-cancel-btn"
-            onclick="closeSeatEditor()"
-          >
-            ยกเลิก
-          </button>
-
-          <button
-            type="button"
-            class="seat-save-btn"
-            id="seatSaveButton"
-            onclick="saveCurrentSeat()"
-          >
-            💾 บันทึกโต๊ะ
-          </button>
-
-        </div>
-
-      </div>
-
-    </div>
-
-  </div>
-
-</div>
-
-
-
-<div
-  class="toast"
-  id="toast"
-></div>
-
-
-<div
-  class="loading"
-  id="loading"
->
-
-  <div class="loading-card">
-    ⏳ กำลังประมวลผล...
-  </div>
-
-</div>
-
-
-<script>
-
-/* =========================
-   STATE
-========================= */
-
-let STATE = {
-
-  teams: [],
-  branches: [],
-  settings: [],
-
-  positions: [],
-  genders: [],
-  employeeStatus: [],
-
-  employees: [],
-
-  inlineEmployeeEditId:
-    '',
-
-  seatingPlan: [],
-
-  seatingLoaded:
-    false,
-
-  seatingLoading:
-    false,
-
-  seatEditSeatNo:
-    0,
-
-  seatEditEmployeeIds:
-    [],
-
-  seatEditEmails:
-    [],
-
-  seatEmployeeSearch:
-    '',
-
-  shiftSets: [],
-  assignments: [],
-  importSheets: [],
-
-  today: '',
-  round: null,
-  dashboard: null,
-
-  dashboardDirty:
-    false,
-
-  calendar: null,
-
-  calendarBrush:
-    'OFF',
-
-  calendarEdits: {},
-
-  calendarDragging:
-    false,
-
-  calendarNoteTarget:
-    null,
-
-  teamPlanner:
-    null,
-
-  teamPlannerAnchor:
-    '',
-
-  teamPlannerBrush:
-    'OFF',
-
-  teamPlannerDragging:
-    false,
-
-  teamPlannerDragTeam:
-    '',
-
-  teamPlannerDirty:
-    false,
-
-  deductionRecords:
-    [],
-
-  deductionDashboard:
-    null,
-
-  deductionLimitTypes:
-    [],
-
-  deductionLimitsLoaded:
-    false,
-
-  deductionLimitEditCode:
-    '',
-
-  deductionListLoaded:
-    false,
-
-  deductionLimitLoaded:
-    false,
-
-  deductionDirty:
-    true
-};
-
-
-const PAGE_META = {
-
-  dashboard: [
-    'Dashboard',
-    'ภาพรวมศูนย์บริหารพนักงาน'
+/************************************************************
+ * ศูนย์บริหารพนักงาน
+ * Google Apps Script Web App
+ ************************************************************/
+
+const APP = {
+
+  SHEETS: {
+    EMPLOYEES: 'DB_Employees',
+    SHIFT_SETS: 'DB_ShiftSets',
+    ASSIGNMENTS: 'DB_Assignments',
+    OVERRIDES: 'DB_ShiftOverrides',
+    SHIFT_HISTORY: 'DB_ShiftHistory',
+    SETTINGS: 'DB_Settings',
+    TEAM_PLANNER: 'DB_TeamPlanner',
+    SEATING: 'DB_Seating',
+    DEDUCTIONS: 'DB_Deductions',
+    DEDUCTION_LIMITS: 'DB_DeductionLimits'
+  },
+
+  POSITIONS: [
+    'AG',
+    'AE',
+    'การตลาด',
+    'SEO',
+    'ตัดต่อ',
+    'กราฟฟิก',
+    'พัฒนา',
+    'PR',
+    'Audit',
+    'ฝาก - ถอน',
+    'แอดมิน',
+    'Tele sell'
   ],
 
-  employees: [
-    'พนักงาน',
-    'ข้อมูลพนักงานทั้งหมด'
+  GENDERS: [
+    'ชาย',
+    'หญิง'
   ],
 
-  seating: [
-    'ผังที่นั่ง',
-    'จัดพนักงานและชื่อเมลลงโต๊ะ · รองรับหลายคนต่อโต๊ะ'
+  EMPLOYEE_STATUS: [
+    'ทำงาน',
+    'รอเรียก',
+    'พักงาน',
+    'ออก'
   ],
 
-  deductionEntry: [
-    'บันทึกตัดยอด',
-    'บันทึกรายการตัดยอดเงินพนักงาน'
+  DEFAULT_TEAMS: [
+    'TEAM A',
+    'TEAM B',
+    'TEAM C'
   ],
 
-  deductionList: [
-    'รายการตัดยอด',
-    'ค้นหาและตรวจสอบรายการตัดยอดทั้งหมด'
-  ],
-
-  deductionLimit: [
-    'วงเงิน',
-    'ตั้งวงเงิน WD และดูยอดสะสมรายเดือน'
-  ],
-
-  shiftSets: [
-    'เซตกะ',
-    'สร้างรูปแบบกะไว้ใช้งาน'
-  ],
-
-  assign: [
-    'จัดกะ',
-    'จัดกะหลักและแก้กะรายบุคคลในหน้าเดียว'
-  ],
-
-  individual: [
-    'แก้กะรายบุคคล',
-    'ลากเลือกวันทำงานและวันหยุด'
-  ],
-
-  schedule: [
-    'ตารางกะ',
-    'ดูตารางกะทั้งหมด'
-  ],
-
-  manpower: [
-    'กำลังคน',
-    'สรุปกำลังคน TEAM กะ และเพศ'
-  ],
-
-  settings: [
-    'ตั้งค่า',
-    'จัดการ TEAM สาขา และตำแหน่ง'
-  ],
-
-  employeeView: [
-    'หน้าพนักงาน',
-    'มุมมองสำหรับพนักงาน'
-  ],
-
-  shiftHistory: [
-    'ประวัติแก้กะ',
-    'รวมประวัติการจัดกะและการแก้กะรายบุคคล'
+  DEFAULT_BRANCHES: [
+    'RH289',
+    'LD789',
+    'ส่วนกลาง (RH289/LD789)'
   ]
 };
 
 
-/* =========================
-   START
-========================= */
+/* =========================================================
+   WEB APP
+========================================================= */
 
-window.addEventListener(
-  'DOMContentLoaded',
-  loadApp
-);
+function doGet(e) {
+
+  setupSystem_();
 
 
-document.addEventListener(
-  'pointerup',
-  () => {
+  const api =
+    String(
+      e?.parameter?.api || ''
+    )
+    .trim()
+    .toLowerCase();
 
-    STATE.calendarDragging =
-      false;
+
+  if (
+    api === 'public'
+  ) {
+
+    return handlePublicApi_(
+      e
+    );
   }
-);
 
 
-function loadApp() {
+  const view =
+    String(
+      e?.parameter?.view || ''
+    )
+    .trim()
+    .toLowerCase();
 
-  setLoading(true);
 
+  if (
+    view === 'employee'
+  ) {
+
+    const template =
+      HtmlService
+        .createTemplateFromFile(
+          'Employee'
+        );
+
+
+    template.initialEmployeeId =
+      String(
+        e?.parameter?.id || ''
+      )
+      .trim()
+      .toUpperCase();
+
+
+    return template
+      .evaluate()
+      .setTitle(
+        'ตารางกะพนักงาน'
+      )
+      .setXFrameOptionsMode(
+        HtmlService
+          .XFrameOptionsMode
+          .ALLOWALL
+      );
+  }
+
+
+  return HtmlService
+    .createHtmlOutputFromFile(
+      'Index'
+    )
+    .setTitle(
+      'ศูนย์บริหารพนักงาน'
+    )
+    .setXFrameOptionsMode(
+      HtmlService
+        .XFrameOptionsMode
+        .ALLOWALL
+    );
+}
+
+
+/**
+ * API อ่านข้อมูลสำหรับหน้า GitHub Pages
+ * เป็น read-only บ่มีคำสั่งแก้ข้อมูล
+ */
+function handlePublicApi_(e) {
+
+  const p =
+    e?.parameter || {};
+
+
+  const callback =
+    String(
+      p.callback || ''
+    )
+    .trim();
+
+
+  if (
+    !/^[A-Za-z_$][0-9A-Za-z_$]*$/.test(
+      callback
+    )
+  ) {
+
+    return ContentService
+      .createTextOutput(
+        '/* invalid callback */'
+      )
+      .setMimeType(
+        ContentService.MimeType.JAVASCRIPT
+      );
+  }
+
+
+  try {
+
+    const action =
+      String(
+        p.action || ''
+      )
+      .trim();
+
+
+    let data;
+
+
+    if (
+      action === 'employeeSchedule'
+    ) {
+
+      data =
+        getEmployeePublicSchedule(
+          p.query || '',
+          p.anchorDate || ''
+        );
+
+    } else if (
+      action === 'teamSchedule'
+    ) {
+
+      data =
+        getEmployeePublicTeamSchedule(
+          p.anchorDate || ''
+        );
+
+    } else if (
+      action === 'ownerResult'
+    ) {
+
+      data =
+        getOwnerAsyncResult_(
+          p.requestId || ''
+        );
+
+    } else {
+
+      throw new Error(
+        'ไม่พบคำสั่ง API'
+      );
+    }
+
+
+    return jsonpOutput_(
+      callback,
+      {
+        ok: true,
+        data: data
+      }
+    );
+
+  } catch (error) {
+
+    return jsonpOutput_(
+      callback,
+      {
+        ok: false,
+
+        error:
+          String(
+            error?.message ||
+            error ||
+            'เกิดข้อผิดพลาด'
+          )
+          .replace(
+            /^Error:\s*/i,
+            ''
+          )
+      }
+    );
+  }
+}
+
+
+function jsonpOutput_(
+  callback,
+  payload
+) {
+
+  return ContentService
+    .createTextOutput(
+      callback +
+      '(' +
+      JSON.stringify(
+        payload
+      ) +
+      ');'
+    )
+    .setMimeType(
+      ContentService.MimeType.JAVASCRIPT
+    );
+}
+
+
+
+/* =========================================================
+   OWNER AUTH / OWNER API
+   ใช้กับหน้า OWNER บน GitHub Pages
+========================================================= */
+
+const OWNER_SESSION_SECONDS_ = 21600;
+const OWNER_RESULT_SECONDS_ = 120;
+const OWNER_RESULT_CHUNK_ = 25000;
+
+
+function doPost(e) {
+
+  const p =
+    e?.parameter || {};
+
+  const action =
+    String(
+      p.action || ''
+    ).trim();
+
+  try {
+
+    if (
+      action === 'ownerLogin'
+    ) {
+
+      processOwnerLogin_(p);
+
+    } else if (
+      action === 'ownerCall'
+    ) {
+
+      processOwnerCall_(p);
+
+    } else if (
+      action === 'ownerLogout'
+    ) {
+
+      processOwnerLogout_(p);
+
+    } else {
+
+      throw new Error(
+        'ไม่พบคำสั่ง POST'
+      );
+    }
+
+  } catch (error) {
+
+    const requestId =
+      normalizeOwnerRequestId_(
+        p.requestId || ''
+      );
+
+    if (requestId) {
+
+      cacheOwnerAsyncResult_(
+        requestId,
+        {
+          ok: false,
+          error:
+            cleanOwnerError_(
+              error
+            )
+        }
+      );
+    }
+  }
+
+  return ContentService
+    .createTextOutput('OK')
+    .setMimeType(
+      ContentService.MimeType.TEXT
+    );
+}
+
+
+function processOwnerLogin_(p) {
+
+  const requestId =
+    requireOwnerRequestId_(
+      p.requestId
+    );
+
+  const username =
+    String(
+      p.username || ''
+    ).trim();
+
+  const password =
+    String(
+      p.password || ''
+    );
+
+  if (
+    !username ||
+    !password
+  ) {
+
+    cacheOwnerAsyncResult_(
+      requestId,
+      {
+        ok: false,
+        error:
+          'กรุณากรอก Username และ Password'
+      }
+    );
+
+    return;
+  }
+
+  const props =
+    PropertiesService
+      .getScriptProperties();
+
+  const savedUsername =
+    String(
+      props.getProperty(
+        'OWNER_USERNAME'
+      ) || ''
+    ).trim();
+
+  const savedPassword =
+    String(
+      props.getProperty(
+        'OWNER_PASSWORD'
+      ) || ''
+    );
+
+  if (
+    !savedUsername ||
+    !savedPassword
+  ) {
+
+    cacheOwnerAsyncResult_(
+      requestId,
+      {
+        ok: false,
+        error:
+          'ระบบยังไม่ได้ตั้งค่าบัญชี OWNER'
+      }
+    );
+
+    return;
+  }
+
+  const cache =
+    CacheService
+      .getScriptCache();
+
+  const rateKey =
+    'OWNER_LOGIN_FAIL_' +
+    Utilities.base64EncodeWebSafe(
+      username.toLowerCase()
+    )
+    .replace(
+      /=+$/g,
+      ''
+    )
+    .slice(
+      0,
+      80
+    );
+
+  const failCount =
+    Number(
+      cache.get(
+        rateKey
+      ) || 0
+    );
+
+  if (
+    failCount >= 7
+  ) {
+
+    cacheOwnerAsyncResult_(
+      requestId,
+      {
+        ok: false,
+        error:
+          'ลองเข้าสู่ระบบหลายครั้งเกินไป กรุณารอสักครู่แล้วลองใหม่'
+      }
+    );
+
+    return;
+  }
+
+  const valid =
+    safeTextEqual_(
+      username,
+      savedUsername
+    ) &&
+    safeTextEqual_(
+      password,
+      savedPassword
+    );
+
+  if (!valid) {
+
+    cache.put(
+      rateKey,
+      String(
+        failCount + 1
+      ),
+      600
+    );
+
+    cacheOwnerAsyncResult_(
+      requestId,
+      {
+        ok: false,
+        error:
+          'Username หรือ Password ไม่ถูกต้อง'
+      }
+    );
+
+    return;
+  }
+
+  cache.remove(
+    rateKey
+  );
+
+  const token =
+    createOwnerSession_();
+
+  cacheOwnerAsyncResult_(
+    requestId,
+    {
+      ok: true,
+      token:
+        token,
+      expiresIn:
+        OWNER_SESSION_SECONDS_
+    }
+  );
+}
+
+
+function processOwnerCall_(p) {
+
+  const requestId =
+    requireOwnerRequestId_(
+      p.requestId
+    );
+
+  const token =
+    String(
+      p.token || ''
+    ).trim();
+
+  const method =
+    String(
+      p.method || ''
+    ).trim();
+
+  let args = [];
+
+  try {
+
+    args =
+      JSON.parse(
+        String(
+          p.args || '[]'
+        )
+      );
+
+  } catch (_) {
+
+    throw new Error(
+      'รูปแบบข้อมูลคำสั่งไม่ถูกต้อง'
+    );
+  }
+
+  if (
+    !Array.isArray(args)
+  ) {
+
+    throw new Error(
+      'รูปแบบ args ไม่ถูกต้อง'
+    );
+  }
+
+  if (
+    !verifyOwnerSession_(
+      token
+    )
+  ) {
+
+    cacheOwnerAsyncResult_(
+      requestId,
+      {
+        ok: false,
+        authExpired: true,
+        error:
+          'Session OWNER หมดอายุ กรุณาเข้าสู่ระบบใหม่'
+      }
+    );
+
+    return;
+  }
+
+  try {
+
+    const result =
+      callOwnerMethod_(
+        method,
+        args
+      );
+
+    cacheOwnerAsyncResult_(
+      requestId,
+      {
+        ok: true,
+        data:
+          result === undefined
+            ? null
+            : result
+      }
+    );
+
+  } catch (error) {
+
+    cacheOwnerAsyncResult_(
+      requestId,
+      {
+        ok: false,
+        error:
+          cleanOwnerError_(
+            error
+          )
+      }
+    );
+  }
+}
+
+
+function processOwnerLogout_(p) {
+
+  const requestId =
+    requireOwnerRequestId_(
+      p.requestId
+    );
+
+  const token =
+    String(
+      p.token || ''
+    ).trim();
+
+  if (token) {
+
+    CacheService
+      .getScriptCache()
+      .remove(
+        ownerSessionKey_(
+          token
+        )
+      );
+  }
+
+  cacheOwnerAsyncResult_(
+    requestId,
+    {
+      ok: true
+    }
+  );
+}
+
+
+function callOwnerMethod_(
+  method,
+  args
+) {
+
+  const methods = {
+
+    setupSystem:
+      () =>
+        setupSystem(),
+
+    getImportSheets:
+      () =>
+        getImportSheets(),
+
+    previewEmployeeImport:
+      () =>
+        previewEmployeeImport(
+          args[0]
+        ),
+
+    importEmployeesFromSheet:
+      () =>
+        importEmployeesFromSheet(
+          args[0]
+        ),
+
+    saveEmployee:
+      () =>
+        saveEmployee(
+          args[0]
+        ),
+
+    deleteEmployee:
+      () =>
+        deleteEmployee(
+          args[0]
+        ),
+
+    getSeatingPlan:
+      () =>
+        getSeatingPlan(),
+
+    saveSeatAssignment:
+      () =>
+        saveSeatAssignment(
+          args[0]
+        ),
+
+    saveDeduction:
+      () =>
+        saveDeduction(
+          args[0]
+        ),
+
+    markDeductionDone:
+      () =>
+        markDeductionDone(
+          args[0]
+        ),
+
+    deleteDeductionRecord:
+      () =>
+        deleteDeductionRecord(
+          args[0]
+        ),
+
+    getDeductionRecords:
+      () =>
+        getDeductionRecords(
+          args[0]
+        ),
+
+    getDeductionDashboard:
+      () =>
+        getDeductionDashboard(
+          args[0]
+        ),
+
+    getDeductionLimitTypes:
+      () =>
+        getDeductionLimitTypes(),
+
+    saveDeductionLimit:
+      () =>
+        saveDeductionLimit(
+          args[0]
+        ),
+
+    deleteDeductionLimit:
+      () =>
+        deleteDeductionLimit(
+          args[0]
+        ),
+
+    saveShiftSet:
+      () =>
+        saveShiftSet(
+          args[0]
+        ),
+
+    deleteShiftSet:
+      () =>
+        deleteShiftSet(
+          args[0]
+        ),
+
+    saveAssignment:
+      () =>
+        saveAssignment(
+          args[0]
+        ),
+
+    deactivateAssignment:
+      () =>
+        deactivateAssignment(
+          args[0]
+        ),
+
+    getEmployeeCalendar:
+      () =>
+        getEmployeeCalendar(
+          args[0]
+        ),
+
+    saveEmployeeDayNote:
+      () =>
+        saveEmployeeDayNote(
+          args[0]
+        ),
+
+    saveShiftOverridesBatch:
+      () =>
+        saveShiftOverridesBatch(
+          args[0]
+        ),
+
+    getShiftHistory:
+      () =>
+        getShiftHistory(
+          args[0]
+        ),
+
+    getSchedule:
+      () =>
+        getSchedule(
+          args[0]
+        ),
+
+    getManpower:
+      () =>
+        getManpower(
+          args[0]
+        ),
+
+    saveSetting:
+      () =>
+        saveSetting(
+          args[0]
+        ),
+
+    deleteSetting:
+      () =>
+        deleteSetting(
+          args[0]
+        ),
+
+    getEmployeeView:
+      () =>
+        getEmployeeView(
+          args[0]
+        ),
+
+    getTeamPlanner:
+      () =>
+        getTeamPlanner(
+          args[0]
+        ),
+
+    saveTeamPlanner:
+      () =>
+        saveTeamPlanner(
+          args[0]
+        )
+  };
+
+  if (
+    !Object.prototype
+      .hasOwnProperty
+      .call(
+        methods,
+        method
+      )
+  ) {
+
+    throw new Error(
+      'คำสั่ง OWNER นี้ไม่ได้รับอนุญาต'
+    );
+  }
+
+  return methods[
+    method
+  ]();
+}
+
+
+function createOwnerSession_() {
+
+  const token =
+    Utilities
+      .getUuid()
+      .replace(
+        /-/g,
+        ''
+      ) +
+    Utilities
+      .getUuid()
+      .replace(
+        /-/g,
+        ''
+      );
+
+  CacheService
+    .getScriptCache()
+    .put(
+      ownerSessionKey_(
+        token
+      ),
+      JSON.stringify({
+        role:
+          'OWNER',
+        createdAt:
+          new Date()
+            .toISOString()
+      }),
+      OWNER_SESSION_SECONDS_
+    );
+
+  return token;
+}
+
+
+function verifyOwnerSession_(token) {
+
+  token =
+    String(
+      token || ''
+    ).trim();
+
+  if (
+    !/^[A-Za-z0-9_-]{40,160}$/.test(
+      token
+    )
+  ) {
+
+    return false;
+  }
+
+  const cache =
+    CacheService
+      .getScriptCache();
+
+  const key =
+    ownerSessionKey_(
+      token
+    );
+
+  const raw =
+    cache.get(
+      key
+    );
+
+  if (!raw) {
+
+    return false;
+  }
+
+  cache.put(
+    key,
+    raw,
+    OWNER_SESSION_SECONDS_
+  );
+
+  return true;
+}
+
+
+function ownerSessionKey_(token) {
+
+  return (
+    'OWNER_SESSION_' +
+    token
+  );
+}
+
+
+function normalizeOwnerRequestId_(
+  requestId
+) {
+
+  requestId =
+    String(
+      requestId || ''
+    ).trim();
+
+  if (
+    !/^[A-Za-z0-9_-]{16,120}$/.test(
+      requestId
+    )
+  ) {
+
+    return '';
+  }
+
+  return requestId;
+}
+
+
+function requireOwnerRequestId_(
+  requestId
+) {
+
+  const clean =
+    normalizeOwnerRequestId_(
+      requestId
+    );
+
+  if (!clean) {
+
+    throw new Error(
+      'requestId ไม่ถูกต้อง'
+    );
+  }
+
+  return clean;
+}
+
+
+function cacheOwnerAsyncResult_(
+  requestId,
+  payload
+) {
+
+  requestId =
+    requireOwnerRequestId_(
+      requestId
+    );
+
+  const text =
+    JSON.stringify(
+      payload
+    );
+
+  const cache =
+    CacheService
+      .getScriptCache();
+
+  const prefix =
+    ownerResultPrefix_(
+      requestId
+    );
+
+  const chunkCount =
+    Math.max(
+      1,
+      Math.ceil(
+        text.length /
+        OWNER_RESULT_CHUNK_
+      )
+    );
+
+  if (
+    chunkCount > 30
+  ) {
+
+    throw new Error(
+      'ผลลัพธ์มีขนาดใหญ่เกินไป'
+    );
+  }
+
+  for (
+    let i = 0;
+    i < chunkCount;
+    i++
+  ) {
+
+    cache.put(
+      prefix +
+      '_CHUNK_' +
+      i,
+      text.slice(
+        i *
+          OWNER_RESULT_CHUNK_,
+        (i + 1) *
+          OWNER_RESULT_CHUNK_
+      ),
+      OWNER_RESULT_SECONDS_
+    );
+  }
+
+  cache.put(
+    prefix +
+    '_META',
+    String(
+      chunkCount
+    ),
+    OWNER_RESULT_SECONDS_
+  );
+}
+
+
+function getOwnerAsyncResult_(
+  requestId
+) {
+
+  requestId =
+    normalizeOwnerRequestId_(
+      requestId
+    );
+
+  if (!requestId) {
+
+    return {
+      pending: false,
+      ok: false,
+      error:
+        'requestId ไม่ถูกต้อง'
+    };
+  }
+
+  const cache =
+    CacheService
+      .getScriptCache();
+
+  const prefix =
+    ownerResultPrefix_(
+      requestId
+    );
+
+  const metaKey =
+    prefix +
+    '_META';
+
+  const chunkCount =
+    Number(
+      cache.get(
+        metaKey
+      ) || 0
+    );
+
+  if (!chunkCount) {
+
+    return {
+      pending: true
+    };
+  }
+
+  let text = '';
+
+  const keys = [
+    metaKey
+  ];
+
+  for (
+    let i = 0;
+    i < chunkCount;
+    i++
+  ) {
+
+    const key =
+      prefix +
+      '_CHUNK_' +
+      i;
+
+    const chunk =
+      cache.get(
+        key
+      );
+
+    if (
+      chunk === null
+    ) {
+
+      return {
+        pending: true
+      };
+    }
+
+    text +=
+      chunk;
+
+    keys.push(
+      key
+    );
+  }
+
+  keys.forEach(
+    key =>
+      cache.remove(
+        key
+      )
+  );
+
+  try {
+
+    return JSON.parse(
+      text
+    );
+
+  } catch (_) {
+
+    return {
+      pending: false,
+      ok: false,
+      error:
+        'อ่านผลลัพธ์จากระบบไม่สำเร็จ'
+    };
+  }
+}
+
+
+function ownerResultPrefix_(
+  requestId
+) {
+
+  return (
+    'OWNER_RESULT_' +
+    requestId
+  );
+}
+
+
+function safeTextEqual_(
+  a,
+  b
+) {
+
+  return (
+    sha256Hex_(
+      String(
+        a ?? ''
+      )
+    ) ===
+    sha256Hex_(
+      String(
+        b ?? ''
+      )
+    )
+  );
+}
+
+
+function sha256Hex_(text) {
+
+  const bytes =
+    Utilities.computeDigest(
+      Utilities.DigestAlgorithm.SHA_256,
+      text,
+      Utilities.Charset.UTF_8
+    );
+
+  return bytes
+    .map(
+      byte =>
+        (
+          byte +
+          256
+        )
+        .toString(16)
+        .slice(-2)
+    )
+    .join('');
+}
+
+
+function cleanOwnerError_(
+  error
+) {
+
+  return String(
+    error?.message ||
+    error ||
+    'เกิดข้อผิดพลาด'
+  )
+  .replace(
+    /^Error:\s*/i,
+    ''
+  )
+  .trim();
+}
+
+
+/* =========================================================
+   SETUP
+========================================================= */
+
+function setupSystem() {
 
   /*
-   * ถ้า Apps Script ตอบช้าผิดปกติ
-   * อย่าปล่อยหน้าเหมือนค้างโดยไม่มีคำอธิบาย
+   * เดิมฟังก์ชันนี้เรียก setupSystem_()
+   * แล้ว getAppData() ก็เรียก setupSystem_() ซ้ำอีกครั้ง
+   * ทำให้ตอนเข้า OWNER ต้องตรวจ/สร้างชีตซ้ำ 2 รอบ
    */
-  clearTimeout(
-    window.ownerInitialLoadTimer
+  ensureSystemReadyCached_();
+
+  return getAppDataFast_();
+}
+
+
+/**
+ * ลดงานตรวจโครงสร้างชีตซ้ำทุกครั้งที่ Refresh OWNER
+ * Cache ไว้ 5 นาที
+ */
+function ensureSystemReadyCached_() {
+
+  const cache =
+    CacheService
+      .getScriptCache();
+
+  const key =
+    'EMPLOYEE_CENTER_SYSTEM_READY_V7';
+
+
+  if (
+    cache.get(key) === '1'
+  ) {
+    return;
+  }
+
+
+  setupSystem_();
+
+
+  cache.put(
+    key,
+    '1',
+    300
+  );
+}
+
+
+function setupSystem_() {
+
+  const ss = getDatabase_();
+
+  ensureSheet_(
+    ss,
+    APP.SHEETS.EMPLOYEES,
+    [
+      'employeeId',
+      'nickname',
+      'fullName',
+      'team',
+      'position',
+      'branch',
+      'gender',
+      'status',
+      'createdAt',
+      'updatedAt',
+      'newUntil'
+    ]
+  );
+
+  ensureSheet_(
+    ss,
+    APP.SHEETS.SHIFT_SETS,
+    [
+      'setId',
+      'setName',
+      'workDays',
+      'offDays',
+      'alternate',
+      'startShift',
+      'fixedShift',
+      'createdAt',
+      'updatedAt'
+    ]
+  );
+
+  ensureSheet_(
+    ss,
+    APP.SHEETS.ASSIGNMENTS,
+    [
+      'assignmentId',
+      'scopeType',
+      'scopeValue',
+      'teamFilter',
+      'setId',
+      'startDate',
+      'startShift',
+      'active',
+      'createdAt',
+      'cycleStartDate',
+      'cycleReset',
+      'updatedAt'
+    ]
+  );
+
+  ensureSheet_(
+    ss,
+    APP.SHEETS.OVERRIDES,
+    [
+      'employeeId',
+      'date',
+      'shift',
+      'note',
+      'updatedAt'
+    ]
+  );
+
+  ensureSheet_(
+    ss,
+    APP.SHEETS.SHIFT_HISTORY,
+    [
+      'historyId',
+      'employeeId',
+      'nickname',
+      'team',
+      'position',
+      'date',
+      'oldShift',
+      'newShift',
+      'action',
+      'changedAt'
+    ]
   );
 
 
-  window.ownerInitialLoadTimer =
-    setTimeout(
-      () => {
+  ensureSheet_(
+    ss,
+    APP.SHEETS.SETTINGS,
+    [
+      'settingId',
+      'type',
+      'value',
+      'sortOrder',
+      'active',
+      'createdAt',
+      'updatedAt'
+    ]
+  );
 
-        const badge =
-          document.getElementById(
-            'todayBadge'
+
+  ensureSheet_(
+    ss,
+    APP.SHEETS.TEAM_PLANNER,
+    [
+      'team',
+      'setId',
+      'cycleStartDate',
+      'startShift',
+      'overridesJson',
+      'updatedAt'
+    ]
+  );
+
+
+  seedDefaultShiftSets_();
+  seedDefaultSettings_();
+
+  /*
+   * ดึงตำแหน่งเดิมที่เคยมีอยู่ใน Dropdown
+   * ให้แสดงในหน้า Settings ด้วย
+   */
+  migrateLegacyPositionsToSettings_();
+
+  /*
+   * รอบตาราง 26-25 เป็นเพียงรอบแสดงผล/รายงาน
+   * ส่วน Cycle ทำงาน-หยุด (เช่น 10/5) ต้องเดินต่อเนื่องตลอด
+   * จึงเก็บ cycleStartDate แยกจาก startDate ของการนำเซตไปใช้
+   */
+  migrateAssignmentCycles_();
+}
+
+
+function getDatabase_() {
+
+  const props =
+    PropertiesService
+      .getScriptProperties();
+
+  const savedId =
+    props.getProperty(
+      'EMPLOYEE_DB_ID'
+    );
+
+  if (savedId) {
+
+    return SpreadsheetApp
+      .openById(savedId);
+  }
+
+  const ss =
+    SpreadsheetApp
+      .getActiveSpreadsheet();
+
+  if (!ss) {
+
+    throw new Error(
+      'ไม่พบ Google Sheet ที่เชื่อมกับระบบ'
+    );
+  }
+
+  props.setProperty(
+    'EMPLOYEE_DB_ID',
+    ss.getId()
+  );
+
+  return ss;
+}
+
+
+function ensureSheet_(
+  ss,
+  name,
+  headers
+) {
+
+  let sheet =
+    ss.getSheetByName(name);
+
+  if (!sheet) {
+
+    sheet =
+      ss.insertSheet(name);
+  }
+
+  if (
+    sheet.getLastRow() === 0
+  ) {
+
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        headers.length
+      )
+      .setValues([headers]);
+
+    sheet.setFrozenRows(1);
+
+    return;
+  }
+
+
+  /*
+   * รองรับการอัปเดตระบบเดิมโดยไม่ต้องลบชีตฐานข้อมูล
+   * ถ้าเวอร์ชันใหม่เพิ่มคอลัมน์ จะเติมหัวคอลัมน์ท้ายชีตให้อัตโนมัติ
+   */
+  const lastColumn =
+    Math.max(
+      1,
+      sheet.getLastColumn()
+    );
+
+  const currentHeaders =
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        lastColumn
+      )
+      .getDisplayValues()[0]
+      .map(
+        value =>
+          String(value || '').trim()
+      );
+
+  const missing =
+    headers.filter(
+      header =>
+        !currentHeaders.includes(header)
+    );
+
+  if (missing.length) {
+
+    sheet
+      .getRange(
+        1,
+        lastColumn + 1,
+        1,
+        missing.length
+      )
+      .setValues([missing]);
+  }
+
+  sheet.setFrozenRows(1);
+}
+
+
+/* =========================================================
+   DEFAULT DATA
+========================================================= */
+
+function seedDefaultShiftSets_() {
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.SHIFT_SETS
+      );
+
+  if (
+    sheet.getLastRow() > 1
+  ) {
+    return;
+  }
+
+  const now =
+    nowText_();
+
+  sheet
+    .getRange(
+      2,
+      1,
+      3,
+      9
+    )
+    .setValues([
+
+      [
+        'SET_10_5_ALT',
+        '10 ทำงาน / 5 หยุด / สลับกะ',
+        10,
+        5,
+        'TRUE',
+        'MORNING',
+        '',
+        now,
+        now
+      ],
+
+      [
+        'SET_10_5_MORNING',
+        '10 ทำงาน / 5 หยุด / เช้าคงที่',
+        10,
+        5,
+        'FALSE',
+        'MORNING',
+        'MORNING',
+        now,
+        now
+      ],
+
+      [
+        'SET_10_5_NIGHT',
+        '10 ทำงาน / 5 หยุด / ดึกคงที่',
+        10,
+        5,
+        'FALSE',
+        'NIGHT',
+        'NIGHT',
+        now,
+        now
+      ]
+
+    ]);
+}
+
+
+function migrateLegacyPositionsToSettings_() {
+
+  const props =
+    PropertiesService
+      .getScriptProperties();
+
+
+  const migrationKey =
+    'POSITION_SETTINGS_MIGRATED_V1';
+
+
+  /*
+   * ทำครั้งเดียวเท่านั้น
+   * หลังจากนั้นถ้าผู้ใช้ลบตำแหน่งเอง ระบบจะไม่สร้างกลับมาใหม่
+   */
+  if (
+    props.getProperty(
+      migrationKey
+    ) === 'TRUE'
+  ) {
+    return;
+  }
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.SETTINGS
+      );
+
+
+  if (!sheet) {
+    return;
+  }
+
+
+  const lastColumn =
+    Math.max(
+      7,
+      sheet.getLastColumn()
+    );
+
+
+  const headers =
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        lastColumn
+      )
+      .getDisplayValues()[0]
+      .map(
+        value =>
+          String(
+            value || ''
+          ).trim()
+      );
+
+
+  const typeIndex =
+    headers.indexOf(
+      'type'
+    );
+
+
+  const valueIndex =
+    headers.indexOf(
+      'value'
+    );
+
+
+  if (
+    typeIndex < 0 ||
+    valueIndex < 0
+  ) {
+    return;
+  }
+
+
+  const rows =
+    sheet.getLastRow() > 1
+      ? sheet
+          .getRange(
+            2,
+            1,
+            sheet.getLastRow() - 1,
+            lastColumn
+          )
+          .getDisplayValues()
+      : [];
+
+
+  /*
+   * เก็บชื่อ POSITION ที่มีอยู่แล้ว
+   * ไม่ว่าจะ active/inactive เพื่อป้องกันชื่อซ้ำ
+   */
+  const existing =
+    new Set(
+      rows
+        .filter(
+          row =>
+            String(
+              row[typeIndex] || ''
+            )
+            .trim()
+            .toUpperCase() ===
+              'POSITION'
+        )
+        .map(
+          row =>
+            String(
+              row[valueIndex] || ''
+            )
+            .trim()
+        )
+        .filter(Boolean)
+    );
+
+
+  /*
+   * รายการเดิมที่มีอยู่ใน Dropdown ระบบ
+   * เช่น AG / AE / การตลาด / SEO / ตัดต่อ / ...
+   */
+  const missing =
+    APP.POSITIONS
+      .map(
+        value =>
+          String(
+            value || ''
+          ).trim()
+      )
+      .filter(Boolean)
+      .filter(
+        value =>
+          !existing.has(
+            value
+          )
+      );
+
+
+  if (
+    missing.length
+  ) {
+
+    const now =
+      nowText_();
+
+
+    const currentPositionCount =
+      rows
+        .filter(
+          row =>
+            String(
+              row[typeIndex] || ''
+            )
+            .trim()
+            .toUpperCase() ===
+              'POSITION'
+        )
+        .length;
+
+
+    const values =
+      missing.map(
+        (
+          name,
+          index
+        ) => ([
+          'POSITION_' +
+            Utilities.getUuid(),
+
+          'POSITION',
+
+          name,
+
+          currentPositionCount +
+            index +
+            1,
+
+          'TRUE',
+
+          now,
+
+          now
+        ])
+      );
+
+
+    sheet
+      .getRange(
+        sheet.getLastRow() + 1,
+        1,
+        values.length,
+        7
+      )
+      .setValues(
+        values
+      );
+  }
+
+
+  /*
+   * บันทึกว่า migration เสร็จแล้ว
+   */
+  props.setProperty(
+    migrationKey,
+    'TRUE'
+  );
+}
+
+
+function seedDefaultSettings_() {
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.SETTINGS
+      );
+
+  const rows =
+    getSheetObjects_(
+      APP.SHEETS.SETTINGS
+    );
+
+  const now =
+    nowText_();
+
+  const teams =
+    rows.filter(
+      x =>
+        x.type === 'TEAM' &&
+        String(
+          x.active || 'TRUE'
+        ).toUpperCase() !== 'FALSE'
+    );
+
+  const branches =
+    rows.filter(
+      x =>
+        x.type === 'BRANCH' &&
+        String(
+          x.active || 'TRUE'
+        ).toUpperCase() !== 'FALSE'
+    );
+
+
+  const positions =
+    rows.filter(
+      x =>
+        x.type === 'POSITION' &&
+        String(
+          x.active || 'TRUE'
+        ).toUpperCase() !== 'FALSE'
+    );
+
+
+  if (!teams.length) {
+
+    APP.DEFAULT_TEAMS
+      .forEach(
+        (name, index) => {
+
+          sheet.appendRow([
+            'TEAM_' +
+              new Date().getTime() +
+              '_' +
+              index,
+            'TEAM',
+            name,
+            index + 1,
+            'TRUE',
+            now,
+            now
+          ]);
+        }
+      );
+  }
+
+
+  if (!branches.length) {
+
+    APP.DEFAULT_BRANCHES
+      .forEach(
+        (name, index) => {
+
+          sheet.appendRow([
+            'BRANCH_' +
+              new Date().getTime() +
+              '_' +
+              index,
+            'BRANCH',
+            name,
+            index + 1,
+            'TRUE',
+            now,
+            now
+          ]);
+        }
+      );
+  }
+
+
+  if (!positions.length) {
+
+    APP.POSITIONS
+      .forEach(
+        (name, index) => {
+
+          sheet.appendRow([
+            'POSITION_' +
+              new Date().getTime() +
+              '_' +
+              index,
+            'POSITION',
+            name,
+            index + 1,
+            'TRUE',
+            now,
+            now
+          ]);
+        }
+      );
+  }
+}
+
+
+/* =========================================================
+   APP DATA
+========================================================= */
+
+function getAppData() {
+
+  ensureSystemReadyCached_();
+
+  return getAppDataFast_();
+}
+
+
+function getAppDataFast_() {
+
+  /*
+   * ทำ migration ก่อนอ่าน settings
+   * ถ้าทำไปแล้วฟังก์ชันจะ return ทันที
+   */
+  migrateLegacyPositionsToSettings_();
+
+  let settings =
+    getSettings_();
+
+
+  /*
+   * ระบบเก่าที่เพิ่งอัปเดตอาจยังไม่มี POSITION ใน DB_Settings
+   * เติมรายการตำแหน่งเดิมให้ครั้งแรกอัตโนมัติ แล้วโหลด settings ใหม่
+   */
+  if (
+    !settings.some(
+      x => x.type === 'POSITION'
+    )
+  ) {
+
+    seedDefaultSettings_();
+
+    settings =
+      getSettings_();
+  }
+
+  const employees =
+    getEmployees_();
+
+  const shiftSets =
+    getShiftSets_();
+
+  const assignments =
+    getAssignments_();
+
+  const today =
+    todayText_();
+
+
+  return {
+
+    teams:
+      settings
+        .filter(
+          x => x.type === 'TEAM'
+        )
+        .map(
+          x => x.value
+        ),
+
+    branches:
+      settings
+        .filter(
+          x => x.type === 'BRANCH'
+        )
+        .map(
+          x => x.value
+        ),
+
+    settings:
+      settings,
+
+    positions:
+      settings
+        .filter(
+          x => x.type === 'POSITION'
+        )
+        .map(
+          x => x.value
+        ),
+
+    genders:
+      APP.GENDERS,
+
+    employeeStatus:
+      APP.EMPLOYEE_STATUS,
+
+    employees:
+      employees,
+
+    shiftSets:
+      shiftSets,
+
+    assignments:
+      assignments,
+
+    importSheets:
+      getImportSheets_(),
+
+    today:
+      today,
+
+    /*
+     * ใช้ข้อมูลที่โหลดมาแล้ว
+     * ไม่อ่าน Employees / ShiftSets / Assignments ซ้ำอีกรอบ
+     */
+    dashboard:
+      getManpowerInternal_(
+        today,
+        {
+          employees:
+            employees,
+
+          shiftSets:
+            shiftSets,
+
+          assignments:
+            assignments
+        }
+      ),
+
+    round:
+      getRoundRange_(
+        today
+      )
+  };
+}
+
+
+/* =========================================================
+   IMPORT EMPLOYEES FROM EXISTING SHEET
+========================================================= */
+
+/**
+ * รายชื่อชีตที่สามารถเลือกเป็นต้นทางได้
+ * ตัดชีตฐานข้อมูลของระบบออกทั้งหมด
+ */
+function getImportSheets_() {
+
+  const ss =
+    getDatabase_();
+
+  const blocked =
+    Object.values(
+      APP.SHEETS
+    );
+
+  return ss
+    .getSheets()
+    .map(
+      sheet => sheet.getName()
+    )
+    .filter(
+      name =>
+        !blocked.includes(name)
+    );
+}
+
+
+/**
+ * ใช้จากหน้าเว็บเพื่อรีเฟรชรายชื่อชีตต้นทาง
+ */
+function getImportSheets() {
+
+  setupSystem_();
+
+  return getImportSheets_();
+}
+
+
+/**
+ * ตรวจตัวอย่างก่อนนำเข้า
+ */
+function previewEmployeeImport(
+  sheetName
+) {
+
+  const parsed =
+    parseEmployeeSourceSheet_(
+      sheetName
+    );
+
+  const existing =
+    getEmployees_();
+
+  const existingIds =
+    {};
+
+  existing.forEach(
+    employee => {
+
+      existingIds[
+        String(
+          employee.employeeId
+        ).trim().toUpperCase()
+      ] = true;
+    }
+  );
+
+
+  let newCount = 0;
+  let updateCount = 0;
+
+
+  parsed.validRows
+    .forEach(row => {
+
+      const id =
+        String(
+          row.employeeId
+        ).trim().toUpperCase();
+
+      if (existingIds[id]) {
+        updateCount++;
+      } else {
+        newCount++;
+      }
+    });
+
+
+  return {
+
+    sheetName:
+      sheetName,
+
+    headerRow:
+      parsed.headerRow,
+
+    totalSourceRows:
+      parsed.totalSourceRows,
+
+    validCount:
+      parsed.validRows.length,
+
+    invalidCount:
+      parsed.invalidRows.length,
+
+    duplicateCount:
+      parsed.duplicateCount,
+
+    newCount:
+      newCount,
+
+    updateCount:
+      updateCount,
+
+    rows:
+      parsed.validRows
+        .slice(0, 20),
+
+    invalidRows:
+      parsed.invalidRows
+        .slice(0, 10),
+
+    detectedHeaders:
+      parsed.detectedHeaders
+  };
+}
+
+
+/**
+ * นำเข้าจริง
+ */
+function importEmployeesFromSheet(
+  sheetName
+) {
+
+  const parsed =
+    parseEmployeeSourceSheet_(
+      sheetName
+    );
+
+
+  if (!parsed.validRows.length) {
+
+    throw new Error(
+      'ไม่พบข้อมูลพนักงานที่สามารถนำเข้าได้'
+    );
+  }
+
+
+  const employeeSheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.EMPLOYEES
+      );
+
+
+  const existing =
+    getSheetObjects_(
+      APP.SHEETS.EMPLOYEES
+    );
+
+
+  const employeeMap =
+    new Map();
+
+
+  existing.forEach(
+    employee => {
+
+      const id =
+        String(
+          employee.employeeId || ''
+        )
+        .trim()
+        .toUpperCase();
+
+
+      if (!id) {
+        return;
+      }
+
+
+      employeeMap.set(
+        id,
+        employee
+      );
+    }
+  );
+
+
+  let newCount = 0;
+  let updateCount = 0;
+
+  const now =
+    nowText_();
+
+
+  parsed.validRows
+    .forEach(
+      imported => {
+
+        const key =
+          String(
+            imported.employeeId
+          )
+          .trim()
+          .toUpperCase();
+
+
+        const old =
+          employeeMap.get(key);
+
+
+        if (old) {
+
+          updateCount++;
+
+        } else {
+
+          newCount++;
+        }
+
+
+        employeeMap.set(
+          key,
+          {
+
+            employeeId:
+              imported.employeeId,
+
+            nickname:
+              imported.nickname,
+
+            fullName:
+              old
+                ? old.fullName || ''
+                : '',
+
+            team:
+              imported.team,
+
+            position:
+              imported.position,
+
+            branch:
+              imported.branch,
+
+            gender:
+              imported.gender,
+
+            status:
+              imported.status,
+
+            createdAt:
+              old
+                ? old.createdAt || now
+                : now,
+
+            updatedAt:
+              now
+          }
+        );
+      }
+    );
+
+
+  const headers = [
+    'employeeId',
+    'nickname',
+    'fullName',
+    'team',
+    'position',
+    'branch',
+    'gender',
+    'status',
+    'createdAt',
+    'updatedAt'
+  ];
+
+
+  const finalRows =
+    Array
+      .from(
+        employeeMap.values()
+      )
+      .map(
+        employee =>
+          headers.map(
+            header =>
+              employee[header] || ''
+          )
+      );
+
+
+  if (
+    employeeSheet.getLastRow() > 1
+  ) {
+
+    employeeSheet
+      .getRange(
+        2,
+        1,
+        employeeSheet.getLastRow() - 1,
+        headers.length
+      )
+      .clearContent();
+  }
+
+
+  if (finalRows.length) {
+
+    employeeSheet
+      .getRange(
+        2,
+        1,
+        finalRows.length,
+        headers.length
+      )
+      .setValues(
+        finalRows
+      );
+  }
+
+
+  /**
+   * เพิ่ม TEAM / สาขาที่พบในข้อมูล
+   * เข้า DB_Settings ให้อัตโนมัติ
+   */
+  const teams =
+    [...new Set(
+      parsed.validRows
+        .map(
+          x => x.team
+        )
+        .filter(Boolean)
+    )];
+
+
+  const branches =
+    [...new Set(
+      parsed.validRows
+        .map(
+          x => x.branch
+        )
+        .filter(Boolean)
+    )];
+
+
+  syncSettingValues_(
+    'TEAM',
+    teams
+  );
+
+  syncSettingValues_(
+    'BRANCH',
+    branches
+  );
+
+
+  const settings =
+    getSettings_();
+
+
+  return {
+
+    ok: true,
+
+    message:
+      'นำเข้าพนักงานสำเร็จ ' +
+      parsed.validRows.length +
+      ' คน',
+
+    importedCount:
+      parsed.validRows.length,
+
+    newCount:
+      newCount,
+
+    updateCount:
+      updateCount,
+
+    invalidCount:
+      parsed.invalidRows.length,
+
+    duplicateCount:
+      parsed.duplicateCount,
+
+    employees:
+      getEmployees_(),
+
+    settings:
+      settings,
+
+    teams:
+      settings
+        .filter(
+          x => x.type === 'TEAM'
+        )
+        .map(
+          x => x.value
+        ),
+
+    branches:
+      settings
+        .filter(
+          x => x.type === 'BRANCH'
+        )
+        .map(
+          x => x.value
+        )
+  };
+}
+
+
+/**
+ * อ่านชีตต้นทางและแปลงหัวตารางอัตโนมัติ
+ */
+function parseEmployeeSourceSheet_(
+  sheetName
+) {
+
+  sheetName =
+    String(
+      sheetName || ''
+    ).trim();
+
+
+  if (!sheetName) {
+
+    throw new Error(
+      'กรุณาเลือกชีตต้นทาง'
+    );
+  }
+
+
+  if (
+    Object
+      .values(APP.SHEETS)
+      .includes(sheetName)
+  ) {
+
+    throw new Error(
+      'ไม่สามารถใช้ชีตฐานข้อมูลของระบบเป็นชีตต้นทางได้'
+    );
+  }
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        sheetName
+      );
+
+
+  if (!sheet) {
+
+    throw new Error(
+      'ไม่พบชีต "' +
+      sheetName +
+      '"'
+    );
+  }
+
+
+  const lastRow =
+    sheet.getLastRow();
+
+  const lastColumn =
+    sheet.getLastColumn();
+
+
+  if (
+    lastRow < 2 ||
+    lastColumn < 1
+  ) {
+
+    throw new Error(
+      'ชีตที่เลือกยังไม่มีข้อมูล'
+    );
+  }
+
+
+  const values =
+    sheet
+      .getRange(
+        1,
+        1,
+        lastRow,
+        lastColumn
+      )
+      .getDisplayValues();
+
+
+  const aliases = {
+
+    employeeId: [
+      'รหัสพนักงาน',
+      'รหัส',
+      'employeeid',
+      'employee id',
+      'empid',
+      'emp id'
+    ],
+
+    nickname: [
+      'ชื่อ',
+      'ชื่อเล่น',
+      'nickname',
+      'nick name'
+    ],
+
+    position: [
+      'ตำแหน่ง',
+      'position',
+      'department',
+      'แผนก'
+    ],
+
+    team: [
+      'ทีม',
+      'team'
+    ],
+
+    branch: [
+      'สาขา',
+      'branch'
+    ],
+
+    gender: [
+      'เพศ',
+      'gender',
+      'sex'
+    ],
+
+    status: [
+      'สถานะ',
+      'status',
+      'สถานะงาน'
+    ]
+  };
+
+
+  let headerRowIndex = -1;
+  let columnMap = {};
+
+
+  const maxHeaderSearch =
+    Math.min(
+      values.length,
+      10
+    );
+
+
+  for (
+    let rowIndex = 0;
+    rowIndex < maxHeaderSearch;
+    rowIndex++
+  ) {
+
+    const map =
+      detectEmployeeHeaders_(
+        values[rowIndex],
+        aliases
+      );
+
+
+    if (
+      map.employeeId !== undefined &&
+      map.nickname !== undefined
+    ) {
+
+      headerRowIndex =
+        rowIndex;
+
+      columnMap =
+        map;
+
+      break;
+    }
+  }
+
+
+  if (
+    headerRowIndex === -1
+  ) {
+
+    throw new Error(
+      'หารายการหัวตารางไม่เจอ กรุณาตรวจว่ามีหัว "รหัสพนักงาน" และ "ชื่อ"'
+    );
+  }
+
+
+  const headerRow =
+    values[
+      headerRowIndex
+    ];
+
+
+  const detectedHeaders = {
+
+    employeeId:
+      getDetectedHeaderName_(
+        headerRow,
+        columnMap.employeeId
+      ),
+
+    nickname:
+      getDetectedHeaderName_(
+        headerRow,
+        columnMap.nickname
+      ),
+
+    position:
+      getDetectedHeaderName_(
+        headerRow,
+        columnMap.position
+      ),
+
+    team:
+      getDetectedHeaderName_(
+        headerRow,
+        columnMap.team
+      ),
+
+    branch:
+      getDetectedHeaderName_(
+        headerRow,
+        columnMap.branch
+      ),
+
+    gender:
+      getDetectedHeaderName_(
+        headerRow,
+        columnMap.gender
+      ),
+
+    status:
+      getDetectedHeaderName_(
+        headerRow,
+        columnMap.status
+      )
+  };
+
+
+  const validMap =
+    new Map();
+
+  const invalidRows = [];
+
+  let duplicateCount = 0;
+  let totalSourceRows = 0;
+
+
+  for (
+    let i =
+      headerRowIndex + 1;
+    i < values.length;
+    i++
+  ) {
+
+    const sourceRow =
+      values[i];
+
+
+    const hasAnyData =
+      sourceRow.some(
+        cell =>
+          String(cell)
+            .trim() !== ''
+      );
+
+
+    if (!hasAnyData) {
+      continue;
+    }
+
+
+    totalSourceRows++;
+
+
+    const employee = {
+
+      employeeId:
+        cleanEmployeeValue_(
+          getMappedCell_(
+            sourceRow,
+            columnMap.employeeId
+          )
+        ),
+
+      nickname:
+        cleanEmployeeValue_(
+          getMappedCell_(
+            sourceRow,
+            columnMap.nickname
+          )
+        ),
+
+      position:
+        cleanEmployeeValue_(
+          getMappedCell_(
+            sourceRow,
+            columnMap.position
+          )
+        ),
+
+      team:
+        normalizeTeam_(
+          getMappedCell_(
+            sourceRow,
+            columnMap.team
+          )
+        ),
+
+      branch:
+        normalizeBranch_(
+          getMappedCell_(
+            sourceRow,
+            columnMap.branch
+          )
+        ),
+
+      gender:
+        normalizeGender_(
+          getMappedCell_(
+            sourceRow,
+            columnMap.gender
+          )
+        ),
+
+      status:
+        normalizeEmployeeStatus_(
+          getMappedCell_(
+            sourceRow,
+            columnMap.status
+          )
+        ),
+
+      sourceRow:
+        i + 1
+    };
+
+
+    if (!employee.employeeId) {
+
+      invalidRows.push({
+
+        row:
+          i + 1,
+
+        reason:
+          'ไม่มีรหัสพนักงาน'
+      });
+
+      continue;
+    }
+
+
+    if (!employee.nickname) {
+
+      invalidRows.push({
+
+        row:
+          i + 1,
+
+        employeeId:
+          employee.employeeId,
+
+        reason:
+          'ไม่มีชื่อ'
+      });
+
+      continue;
+    }
+
+
+    const key =
+      employee.employeeId
+        .toUpperCase();
+
+
+    if (
+      validMap.has(key)
+    ) {
+
+      duplicateCount++;
+    }
+
+
+    /**
+     * ถ้ามีรหัสซ้ำในชีตต้นทาง
+     * ใช้ข้อมูลแถวล่าสุด
+     */
+    validMap.set(
+      key,
+      employee
+    );
+  }
+
+
+  return {
+
+    headerRow:
+      headerRowIndex + 1,
+
+    totalSourceRows:
+      totalSourceRows,
+
+    validRows:
+      Array.from(
+        validMap.values()
+      ),
+
+    invalidRows:
+      invalidRows,
+
+    duplicateCount:
+      duplicateCount,
+
+    detectedHeaders:
+      detectedHeaders
+  };
+}
+
+
+function detectEmployeeHeaders_(
+  row,
+  aliases
+) {
+
+  const result = {};
+
+
+  Object
+    .keys(aliases)
+    .forEach(key => {
+
+      const aliasList =
+        aliases[key]
+          .map(
+            normalizeHeader_
+          );
+
+
+      for (
+        let i = 0;
+        i < row.length;
+        i++
+      ) {
+
+        const normalized =
+          normalizeHeader_(
+            row[i]
           );
 
 
         if (
-          badge &&
-          badge.textContent
-            .includes(
-              'กำลังโหลด'
-            )
+          aliasList.includes(
+            normalized
+          )
         ) {
 
-          badge.textContent =
-            '⏳ โหลดช้ากว่าปกติ...';
+          result[key] =
+            i;
+
+          break;
         }
-      },
-      8000
-    );
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      data => {
-
-        STATE =
-          Object.assign(
-            STATE,
-            data
-          );
-
-
-        clearTimeout(
-          window.ownerInitialLoadTimer
-        );
-
-
-        initializeUI();
-
-        setLoading(false);
       }
-    )
-
-    .withFailureHandler(
-      err => {
-
-        clearTimeout(
-          window.ownerInitialLoadTimer
-        );
+    });
 
 
-        const badge =
-          document.getElementById(
-            'todayBadge'
-          );
-
-
-        if (badge) {
-
-          badge.textContent =
-            '⚠️ โหลดข้อมูลไม่สำเร็จ';
-        }
-
-
-        showServerError(
-          err
-        );
-      }
-    )
-
-    .setupSystem();
+  return result;
 }
 
 
-/* =========================
-   INITIALIZE
-========================= */
+function normalizeHeader_(value) {
 
-function initializeUI() {
-
-  const todayBadge =
-    document.getElementById(
-      'todayBadge'
-    );
-
-
-  todayBadge.textContent =
-    '📅 ' +
-    formatThaiDate(
-      STATE.today
-    );
-
-
-  todayBadge.title =
-    'วันที่อ้างอิงของระบบ';
-
-
-  setValue(
-    'assignStartDate',
-    STATE.today
+  return String(
+    value || ''
+  )
+  .trim()
+  .toLowerCase()
+  .replace(
+    /[\s_\-\/\\().]+/g,
+    ''
   );
+}
 
-  setValue(
-    'calendarAnchor',
-    STATE.today
+
+function getDetectedHeaderName_(
+  headerRow,
+  index
+) {
+
+  if (
+    index === undefined
+  ) {
+    return '';
+  }
+
+  return String(
+    headerRow[index] || ''
   );
+}
 
-  if (STATE.round) {
 
-    setValue(
-      'scheduleFrom',
-      STATE.round.from
+function getMappedCell_(
+  row,
+  index
+) {
+
+  if (
+    index === undefined ||
+    index === null
+  ) {
+    return '';
+  }
+
+  return row[index] || '';
+}
+
+
+function cleanEmployeeValue_(
+  value
+) {
+
+  return String(
+    value || ''
+  ).trim();
+}
+
+
+function normalizeTeam_(
+  value
+) {
+
+  const text =
+    String(
+      value || ''
+    )
+    .trim()
+    .replace(
+      /\s+/g,
+      ' '
     );
 
-    setValue(
-      'scheduleTo',
-      STATE.round.to
-    );
 
-
-    setValue(
-      'historyFrom',
-      STATE.round.from
-    );
-
-    setValue(
-      'historyTo',
-      STATE.today
-    );
+  if (!text) {
+    return '';
   }
 
 
-  refreshAllDropdowns();
+  const upper =
+    text.toUpperCase();
 
-  initializeDeductionUI();
 
-  renderEmployees();
+  if (
+    /^TEAMA$/i.test(
+      upper.replace(/\s/g, '')
+    )
+  ) {
+    return 'TEAM A';
+  }
 
-  renderShiftSets();
 
-  renderAssignments();
+  if (
+    /^TEAMB$/i.test(
+      upper.replace(/\s/g, '')
+    )
+  ) {
+    return 'TEAM B';
+  }
 
-  renderSettings();
 
-  renderDashboard();
+  if (
+    /^TEAMC$/i.test(
+      upper.replace(/\s/g, '')
+    )
+  ) {
+    return 'TEAM C';
+  }
 
-  renderManpower(
-    STATE.dashboard
+
+  return text;
+}
+
+
+function normalizeBranch_(
+  value
+) {
+
+  return String(
+    value || ''
+  )
+  .trim()
+  .replace(
+    /\s+/g,
+    ' '
   );
 }
 
 
-/* =========================
-   PAGE
-========================= */
-
-function toggleMenuGroup(
-  groupId,
-  button
+function normalizeGender_(
+  value
 ) {
 
-  const group =
-    document.getElementById(
-      groupId
+  const text =
+    String(
+      value || ''
+    )
+    .trim()
+    .toLowerCase();
+
+
+  if (!text) {
+    return '';
+  }
+
+
+  if (
+    text === 'ชาย' ||
+    text === 'male' ||
+    text === 'm'
+  ) {
+    return 'ชาย';
+  }
+
+
+  if (
+    text === 'หญิง' ||
+    text === 'female' ||
+    text === 'f'
+  ) {
+    return 'หญิง';
+  }
+
+
+  return String(
+    value || ''
+  ).trim();
+}
+
+
+function normalizeEmployeeStatus_(
+  value
+) {
+
+  const text =
+    String(
+      value || ''
+    )
+    .trim()
+    .toLowerCase()
+    .replace(
+      /\s+/g,
+      ''
     );
 
 
-  if (!group) {
+  if (!text) {
+    return 'ทำงาน';
+  }
+
+
+  if (
+    text.includes(
+      'รอเรียก'
+    ) ||
+    text.includes(
+      'รอเรียกงาน'
+    ) ||
+    text.includes(
+      'waiting'
+    )
+  ) {
+
+    return 'รอเรียก';
+  }
+
+
+  if (
+    text.includes(
+      'พักงาน'
+    )
+  ) {
+
+    return 'พักงาน';
+  }
+
+
+  if (
+    text.includes(
+      'ลาออก'
+    ) ||
+    text.includes(
+      'พ้นสภาพ'
+    ) ||
+    text.includes(
+      'ออกแล้ว'
+    ) ||
+    text === 'ออก'
+  ) {
+
+    return 'ออก';
+  }
+
+
+  if (
+    text.includes(
+      'ทำงาน'
+    )
+  ) {
+
+    return 'ทำงาน';
+  }
+
+
+  return 'ทำงาน';
+}
+
+
+/**
+ * ถ้าข้อมูลนำเข้ามี TEAM / สาขาใหม่
+ * เพิ่มเข้าเมนูตั้งค่าให้อัตโนมัติ
+ */
+function syncSettingValues_(
+  type,
+  values
+) {
+
+  if (
+    !values ||
+    !values.length
+  ) {
     return;
   }
 
 
-  const shouldOpen =
-    !group.classList
-      .contains('open');
-
-
-  /*
-   * เปิดได้ทีละกลุ่ม
-   * ทำให้ sidebar ไม่ยาวและไม่รก
-   */
-  document
-    .querySelectorAll(
-      '.menu-group'
-    )
-    .forEach(
-      item =>
-        item.classList
-          .remove('open')
-    );
-
-
-  if (
-    shouldOpen
-  ) {
-
-    group.classList
-      .add('open');
-  }
-
-
-  /*
-   * ถ้ากดหัวข้อที่มีหน้าปัจจุบันอยู่
-   * parent จะยังคง active
-   */
-  updateSidebarParentState();
-}
-
-
-function updateSidebarParentState() {
-
-  document
-    .querySelectorAll(
-      '.menu-parent'
-    )
-    .forEach(
-      parent =>
-        parent.classList
-          .remove('active')
-    );
-
-
-  const activeSubmenu =
-    document.querySelector(
-      '.submenu-btn.active'
-    );
-
-
-  if (
-    activeSubmenu
-  ) {
-
-    const group =
-      activeSubmenu.closest(
-        '.menu-group'
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.SETTINGS
       );
 
 
-    if (
-      group
-    ) {
-
-      group.classList
-        .add('open');
-
-
-      const parent =
-        group.querySelector(
-          '.menu-parent'
-        );
+  const settings =
+    getSettings_()
+      .filter(
+        x => x.type === type
+      );
 
 
-      parent?.classList
-        .add('active');
+  const existing =
+    new Set(
+      settings.map(
+        x =>
+          String(
+            x.value
+          )
+          .trim()
+          .toLowerCase()
+      )
+    );
+
+
+  let sortOrder =
+    settings.length;
+
+
+  const now =
+    nowText_();
+
+
+  values.forEach(
+    value => {
+
+      value =
+        String(
+          value || ''
+        ).trim();
+
+
+      if (!value) {
+        return;
+      }
+
+
+      const key =
+        value.toLowerCase();
+
+
+      if (
+        existing.has(key)
+      ) {
+        return;
+      }
+
+
+      sortOrder++;
+
+
+      sheet.appendRow([
+
+        type +
+          '_' +
+          new Date().getTime() +
+          '_' +
+          sortOrder,
+
+        type,
+
+        value,
+
+        sortOrder,
+
+        'TRUE',
+
+        now,
+
+        now
+      ]);
+
+
+      existing.add(key);
     }
-  }
+  );
 }
 
 
-function openPage(
-  page,
-  button
-) {
+/* =========================================================
+   SETTINGS
+========================================================= */
 
-  document
-    .querySelectorAll(
-      '.page'
-    )
-    .forEach(
-      el =>
-        el.classList
-          .remove('active')
-    );
+function getSettings_() {
 
+  return getSheetObjects_(
+    APP.SHEETS.SETTINGS
+  )
+  .filter(
+    x =>
+      String(
+        x.active || 'TRUE'
+      ).toUpperCase() !== 'FALSE'
+  )
+  .sort(
+    (a, b) => {
 
-  const pageElement =
-    document.getElementById(
-      'page-' + page
-    );
+      if (
+        a.type !== b.type
+      ) {
 
+        return String(
+          a.type
+        ).localeCompare(
+          String(
+            b.type
+          )
+        );
+      }
 
-  if (
-    !pageElement
-  ) {
-    return;
-  }
-
-
-  pageElement.classList
-    .add('active');
-
-
-  /*
-   * ล้าง active ของเมนูทุกชนิด
-   */
-  document
-    .querySelectorAll(
-      '.submenu-btn'
-    )
-    .forEach(
-      el =>
-        el.classList
-          .remove('active')
-    );
-
-
-  document
-    .querySelectorAll(
-      '.menu > .menu-btn'
-    )
-    .forEach(
-      el =>
-        el.classList
-          .remove('active')
-    );
-
-
-  if (
-    button?.classList
-      .contains(
-        'submenu-btn'
-      )
-  ) {
-
-    button.classList
-      .add('active');
-
-
-    document
-      .querySelectorAll(
-        '.menu-group'
-      )
-      .forEach(
-        group =>
-          group.classList
-            .remove('open')
-      );
-
-
-    const group =
-      button.closest(
-        '.menu-group'
-      );
-
-
-    if (
-      group
-    ) {
-
-      group.classList
-        .add('open');
-
-
-      group
-        .querySelector(
-          '.menu-parent'
+      return (
+        Number(
+          a.sortOrder || 0
+        ) -
+        Number(
+          b.sortOrder || 0
         )
-        ?.classList
-        .add('active');
+      );
     }
+  );
+}
+
+
+function saveSetting(data) {
+
+  const type =
+    String(
+      data?.type || ''
+    )
+    .trim()
+    .toUpperCase();
+
+
+  const settingValue =
+    String(
+      data?.value || ''
+    ).trim();
+
+
+  let settingId =
+    String(
+      data?.settingId || ''
+    ).trim();
+
+
+  if (
+    ![
+      'TEAM',
+      'BRANCH',
+      'POSITION'
+    ].includes(type)
+  ) {
+
+    throw new Error(
+      'ประเภทการตั้งค่าไม่ถูกต้อง'
+    );
+  }
+
+
+  if (!settingValue) {
+
+    throw new Error(
+      'กรุณากรอกชื่อ'
+    );
+  }
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.SETTINGS
+      );
+
+
+  const rows =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  let foundRow = 0;
+  let oldCreatedAt = '';
+  let sortOrder = 0;
+
+
+  for (
+    let r = 1;
+    r < rows.length;
+    r++
+  ) {
+
+    const rowId =
+      String(
+        rows[r][0]
+      );
+
+    const rowType =
+      String(
+        rows[r][1]
+      ).toUpperCase();
+
+    const rowValue =
+      String(
+        rows[r][2]
+      ).trim();
+
+    const active =
+      String(
+        rows[r][4] || 'TRUE'
+      ).toUpperCase() !== 'FALSE';
+
+
+    if (
+      active &&
+      rowType === type &&
+      rowValue.toLowerCase() ===
+        settingValue.toLowerCase() &&
+      rowId !== settingId
+    ) {
+
+      throw new Error(
+        'มีรายการนี้อยู่แล้ว'
+      );
+    }
+
+
+    if (
+      rowId === settingId
+    ) {
+
+      foundRow =
+        r + 1;
+
+      sortOrder =
+        Number(
+          rows[r][3] || 0
+        );
+
+      oldCreatedAt =
+        rows[r][5] || '';
+    }
+  }
+
+
+  if (!settingId) {
+
+    settingId =
+      type +
+      '_' +
+      new Date().getTime();
+  }
+
+
+  if (!sortOrder) {
+
+    sortOrder =
+      getSettings_()
+        .filter(
+          x => x.type === type
+        )
+        .length + 1;
+  }
+
+
+  const now =
+    nowText_();
+
+
+  const row = [
+
+    settingId,
+    type,
+    settingValue,
+    sortOrder,
+    'TRUE',
+    oldCreatedAt || now,
+    now
+  ];
+
+
+  if (foundRow) {
+
+    sheet
+      .getRange(
+        foundRow,
+        1,
+        1,
+        row.length
+      )
+      .setValues([row]);
 
   } else {
 
-    /*
-     * เมนูหลักเดี่ยว เช่น ตั้งค่า
-     */
-    document
-      .querySelectorAll(
-        '.menu-parent'
-      )
-      .forEach(
-        el =>
-          el.classList
-            .remove('active')
-      );
-
-
-    button
-      ?.classList
-      .add('active');
-
-
-    document
-      .querySelectorAll(
-        '.menu-group'
-      )
-      .forEach(
-        group =>
-          group.classList
-            .remove('open')
-      );
+    sheet.appendRow(row);
   }
 
 
-  updateSidebarParentState();
+  return {
+
+    ok: true,
+
+    message:
+      'บันทึกการตั้งค่าแล้ว',
+
+    settings:
+      getSettings_()
+  };
+}
+
+
+function deleteSetting(
+  settingId
+) {
+
+  const setting =
+    getSettings_()
+      .find(
+        x =>
+          x.settingId ===
+          settingId
+      );
+
+
+  if (!setting) {
+
+    throw new Error(
+      'ไม่พบรายการ'
+    );
+  }
+
+
+  const employees =
+    getEmployees_();
+
+
+  if (
+    setting.type === 'TEAM' &&
+    employees.some(
+      e =>
+        e.team ===
+        setting.value
+    )
+  ) {
+
+    throw new Error(
+      'TEAM นี้มีพนักงานใช้งานอยู่ จึงยังลบไม่ได้'
+    );
+  }
+
+
+  if (
+    setting.type === 'BRANCH' &&
+    employees.some(
+      e =>
+        e.branch ===
+        setting.value
+    )
+  ) {
+
+    throw new Error(
+      'สาขานี้มีพนักงานใช้งานอยู่ จึงยังลบไม่ได้'
+    );
+  }
+
+
+  if (
+    setting.type === 'POSITION' &&
+    employees.some(
+      e =>
+        e.position ===
+        setting.value
+    )
+  ) {
+
+    throw new Error(
+      'ตำแหน่งนี้มีพนักงานใช้งานอยู่ จึงยังลบไม่ได้'
+    );
+  }
+
+
+  if (
+    setting.type === 'POSITION'
+  ) {
+
+    const assignments =
+      getAssignments_();
+
+
+    const usedByAssignment =
+      assignments.some(
+        item =>
+          String(
+            item.active || 'TRUE'
+          ).toUpperCase() !== 'FALSE' &&
+          String(
+            item.scopeType || ''
+          ).toUpperCase() === 'POSITION' &&
+          String(
+            item.scopeValue || ''
+          ).trim() ===
+            setting.value
+      );
+
+
+    if (usedByAssignment) {
+
+      throw new Error(
+        'ตำแหน่งนี้ยังถูกใช้ในรายการจัดกะ จึงยังลบไม่ได้'
+      );
+    }
+  }
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.SETTINGS
+      );
+
+
+  const rows =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  for (
+    let r = 1;
+    r < rows.length;
+    r++
+  ) {
+
+    if (
+      String(
+        rows[r][0]
+      ) ===
+      String(settingId)
+    ) {
+
+      sheet.deleteRow(
+        r + 1
+      );
+
+      break;
+    }
+  }
+
+
+  return {
+
+    ok: true,
+
+    message:
+      'ลบแล้ว',
+
+    settings:
+      getSettings_()
+  };
+}
+
+
+/* =========================================================
+   EMPLOYEES
+========================================================= */
+
+function getEmployees_() {
+
+  const today =
+    todayText_();
+
+
+  return getSheetObjects_(
+    APP.SHEETS.EMPLOYEES
+  )
+  .map(
+    employee => {
+
+      const newUntil =
+        String(
+          employee.newUntil || ''
+        )
+        .trim();
+
+
+      return {
+
+        ...employee,
+
+        newUntil:
+          newUntil,
+
+        isNew:
+          (
+            newUntil &&
+            today < newUntil
+          )
+      };
+    }
+  )
+  .sort(
+    (a, b) => {
+
+      const teamCompare =
+        String(
+          a.team || ''
+        ).localeCompare(
+          String(
+            b.team || ''
+          )
+        );
+
+
+      if (
+        teamCompare !== 0
+      ) {
+
+        return teamCompare;
+      }
+
+
+      return String(
+        a.employeeId || ''
+      ).localeCompare(
+        String(
+          b.employeeId || ''
+        )
+      );
+    }
+  );
+}
+
+
+function saveEmployee(data) {
+
+  if (!data) {
+
+    throw new Error(
+      'ไม่พบข้อมูลพนักงาน'
+    );
+  }
+
+
+  const employeeId =
+    String(
+      data.employeeId || ''
+    ).trim();
+
+
+  const nickname =
+    String(
+      data.nickname || ''
+    ).trim();
+
+
+  const mode =
+    String(
+      data.mode || 'create'
+    )
+    .trim()
+    .toLowerCase();
+
+
+  if (!employeeId) {
+
+    throw new Error(
+      'กรุณากรอกรหัสพนักงาน'
+    );
+  }
+
+
+  if (!nickname) {
+
+    throw new Error(
+      'กรุณากรอกชื่อเล่น'
+    );
+  }
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.EMPLOYEES
+      );
+
+
+  const rows =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  let foundRow = 0;
+  let oldCreatedAt = '';
+  let oldFullName = '';
+  let oldNewUntil = '';
+
+
+  for (
+    let r = 1;
+    r < rows.length;
+    r++
+  ) {
+
+    if (
+      String(
+        rows[r][0]
+      )
+      .trim()
+      .toUpperCase() ===
+      employeeId.toUpperCase()
+    ) {
+
+      foundRow =
+        r + 1;
+
+      oldFullName =
+        rows[r][2] || '';
+
+      oldCreatedAt =
+        rows[r][8] || '';
+
+      oldNewUntil =
+        rows[r][10] || '';
+
+      break;
+    }
+  }
 
 
   /*
-   * ถ้าเป็นเมนูหลักเดี่ยว
-   * updateSidebarParentState ไม่ควรล้าง active
+   * กันรหัสพนักงานซ้ำแบบ Backend อีกชั้น
+   * ต่อให้ Frontend ถูกข้ามหรือเปิดหลายหน้าพร้อมกัน
+   * ก็ห้ามสร้างรหัสเดิมซ้ำเด็ดขาด
    */
   if (
-    button &&
-    !button.classList
-      .contains(
-        'submenu-btn'
-      ) &&
-    !button.classList
-      .contains(
-        'menu-parent'
-      )
+    foundRow &&
+    mode !== 'update'
   ) {
 
-    button.classList
-      .add('active');
-  }
-
-
-  const meta =
-    PAGE_META[page];
-
-
-  if (
-    meta
-  ) {
-
-    setText(
-      'topTitle',
-      meta[0]
-    );
-
-    setText(
-      'topSub',
-      meta[1]
+    throw new Error(
+      'รหัสพนักงาน ' +
+      employeeId +
+      ' มีอยู่ในระบบแล้ว ไม่สามารถบันทึกข้อมูลซ้ำได้'
     );
   }
 
 
   if (
-    page === 'dashboard' &&
-    STATE.dashboardDirty
+    !foundRow &&
+    mode === 'update'
   ) {
 
-    refreshDashboard();
+    throw new Error(
+      'ไม่พบรหัสพนักงาน ' +
+      employeeId +
+      ' สำหรับการแก้ไข'
+    );
   }
-if (
-    page === 'schedule' &&
-    !document
-      .getElementById(
-        'scheduleResult'
+
+
+  const now =
+    nowText_();
+
+
+  let newUntil =
+    oldNewUntil;
+
+
+  const wantsNewBadge =
+    (
+      data.isNew === true ||
+      String(
+        data.isNew || ''
       )
-      .innerHTML
+      .toUpperCase() ===
+      'TRUE'
+    );
+
+
+  /*
+   * ติ๊ก "พนักงานใหม่"
+   * -> แสดง NEW 14 วันนับจากวันที่บันทึก
+   */
+  if (
+    wantsNewBadge
+  ) {
+
+    const expireDate =
+      parseDate_(
+        todayText_()
+      );
+
+
+    expireDate.setDate(
+      expireDate.getDate() +
+      14
+    );
+
+
+    newUntil =
+      formatDate_(
+        expireDate
+      );
+  }
+
+
+  /*
+   * เพิ่มพนักงานใหม่แต่ไม่ได้ติ๊ก
+   * -> ไม่มีป้าย NEW
+   *
+   * ถ้าเป็นการแก้ไขพนักงานเดิม
+   * -> เก็บ newUntil เดิมไว้ ไม่รีเซ็ตอายุป้าย
+   */
+  if (
+    !foundRow &&
+    !wantsNewBadge
+  ) {
+
+    newUntil =
+      '';
+  }
+
+
+  const row = [
+
+    employeeId,
+
+    nickname,
+
+    oldFullName,
+
+    String(
+      data.team || ''
+    ).trim(),
+
+    String(
+      data.position || ''
+    ).trim(),
+
+    String(
+      data.branch || ''
+    ).trim(),
+
+    String(
+      data.gender || ''
+    ).trim(),
+
+    normalizeEmployeeStatus_(
+      data.status || 'ทำงาน'
+    ),
+
+    oldCreatedAt || now,
+
+    now,
+
+    newUntil
+  ];
+
+
+  if (foundRow) {
+
+    sheet
+      .getRange(
+        foundRow,
+        1,
+        1,
+        row.length
+      )
+      .setValues([row]);
+
+  } else {
+
+    sheet.appendRow(row);
+  }
+
+
+  return {
+
+    ok: true,
+
+    message:
+      'บันทึกข้อมูลพนักงานแล้ว',
+
+    employees:
+      getEmployees_()
+  };
+}
+
+
+function deleteEmployee(
+  employeeId
+) {
+
+  employeeId =
+    String(
+      employeeId || ''
+    ).trim();
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.EMPLOYEES
+      );
+
+
+  const rows =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  for (
+    let r =
+      rows.length - 1;
+    r >= 1;
+    r--
+  ) {
+
+    if (
+      String(
+        rows[r][0]
+      )
       .trim()
-  ) {
+      .toUpperCase() ===
+      employeeId.toUpperCase()
+    ) {
 
-    loadSchedule();
+      sheet.deleteRow(
+        r + 1
+      );
+    }
   }
 
 
-  if (
-    page === 'seating'
-  ) {
+  return {
 
-    loadSeatingPlan();
-  }
+    ok: true,
 
+    message:
+      'ลบพนักงานแล้ว',
 
-  if (
-    page === 'deductionEntry'
-  ) {
-
-    initializeDeductionUI();
-
-    loadDeductionLimitTypes();
-
-    previewDeductionEmployee();
-  }
-
-
-  if (
-    page === 'deductionList'
-  ) {
-
-    loadDeductionRecords();
-  }
-
-
-  if (
-    page === 'deductionLimit'
-  ) {
-
-    loadDeductionLimitTypes();
-
-    loadDeductionDashboard();
-  }
-
-
-  if (
-    page === 'manpower'
-  ) {
-
-    loadManpower();
-  }
-
-
-  if (
-    page === 'shiftHistory'
-  ) {
-
-    /*
-     * หน้านี้รวมทั้ง:
-     * - ประวัติการจัดกะ
-     * - ประวัติการแก้กะรายบุคคล
-     */
-    renderAssignments();
-
-    loadShiftHistory();
-  }
+    employees:
+      getEmployees_()
+  };
 }
 
 
 
-/* =========================
+/* =========================================================
    DEDUCTION / ตัดยอด
-========================= */
+========================================================= */
 
-function initializeDeductionUI() {
+function ensureDeductionSheets_() {
 
-  const today =
-    String(
-      STATE.today || ''
-    );
+  const ss =
+    getDatabase_();
 
 
-  if (!today) {
+  ensureSheet_(
+    ss,
+    APP.SHEETS.DEDUCTIONS,
+    [
+      'deductionId',
+      'employeeId',
+      'amount',
+      'limitType',
+      'detail',
+      'transactionDate',
+      'createdAt',
+      'status',
+      'completedAt'
+    ]
+  );
+
+
+  ensureSheet_(
+    ss,
+    APP.SHEETS.DEDUCTION_LIMITS,
+    [
+      'limitCode',
+      'position',
+      'amount',
+      'updatedAt'
+    ]
+  );
+
+
+  seedDefaultDeductionLimits_();
+}
+
+
+function seedDefaultDeductionLimits_() {
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.DEDUCTION_LIMITS
+      );
+
+
+  if (!sheet) {
     return;
   }
 
 
-  const month =
-    today.slice(
-      0,
-      7
+  /*
+   * เช็กข้อมูลจริงในชีตทุกครั้ง ไม่พึ่ง Script Property
+   * เพื่อกันกรณีเคย seed แล้วแต่ชีตถูกสร้างใหม่/ถูกลบ
+   */
+  const existing =
+    getSheetObjects_(
+      APP.SHEETS.DEDUCTION_LIMITS
     );
 
 
-  const firstDay =
-    month +
-    '-01';
-
-
-  if (
-    !value(
-      'deductDate'
-    )
-  ) {
-
-    setValue(
-      'deductDate',
-      today
-    );
-  }
-
-
-  if (
-    !value(
-      'deductListFrom'
-    )
-  ) {
-
-    setValue(
-      'deductListFrom',
-      firstDay
-    );
-  }
-
-
-  if (
-    !value(
-      'deductListTo'
-    )
-  ) {
-
-    setValue(
-      'deductListTo',
-      today
-    );
-  }
-
-
-  if (
-    !value(
-      'deductLimitMonth'
-    )
-  ) {
-
-    setValue(
-      'deductLimitMonth',
-      month
-    );
-  }
-
-
-  const datalist =
-    document.getElementById(
-      'deductEmployeeList'
-    );
-
-
-  if (datalist) {
-
-    datalist.innerHTML =
-      (
-        STATE.employees ||
-        []
-      )
+  const existingCodes =
+    new Set(
+      existing
         .map(
-          employee => `
-            <option
-              value="${escapeAttr(employee.employeeId)}"
-            >
-              ${escapeHtml(employee.nickname || '')}
-              ·
-              ${escapeHtml(employee.position || '')}
-            </option>
-          `
+          row =>
+            String(
+              row.limitCode || ''
+            )
+            .trim()
+            .toUpperCase()
         )
-        .join('');
+    );
+
+
+  const rowsToAdd = [];
+
+
+  if (
+    !existingCodes.has(
+      'WD'
+    )
+  ) {
+
+    rowsToAdd.push([
+      'WD',
+      'ฝาก-ถอน',
+      5000,
+      nowText_()
+    ]);
+  }
+
+
+  if (
+    !existingCodes.has(
+      'GENERAL'
+    )
+  ) {
+
+    rowsToAdd.push([
+      'GENERAL',
+      'ทั่วไป',
+      0,
+      nowText_()
+    ]);
+  }
+
+
+  if (
+    rowsToAdd.length
+  ) {
+
+    sheet
+      .getRange(
+        sheet.getLastRow() + 1,
+        1,
+        rowsToAdd.length,
+        4
+      )
+      .setValues(
+        rowsToAdd
+      );
   }
 }
 
 
-function getDeductionEmployee(
+function normalizeDeductionLimitCode_(
+  value
+) {
+
+  return String(
+    value || ''
+  )
+  .trim()
+  .toUpperCase()
+  .replace(
+    /[^A-Z0-9_]/g,
+    '_'
+  )
+  .replace(
+    /_+/g,
+    '_'
+  )
+  .replace(
+    /^_+|_+$/g,
+    ''
+  );
+}
+
+
+function makeDeductionLimitCode_(
+  name
+) {
+
+  const english =
+    normalizeDeductionLimitCode_(
+      name
+    );
+
+
+  if (english) {
+
+    return (
+      english +
+      '_' +
+      Utilities
+        .getUuid()
+        .slice(
+          0,
+          6
+        )
+        .toUpperCase()
+    );
+  }
+
+
+  return (
+    'LIMIT_' +
+    Utilities
+      .getUuid()
+      .slice(
+        0,
+        8
+      )
+      .toUpperCase()
+  );
+}
+
+
+function normalizeDeductionPosition_(
+  position
+) {
+
+  return String(
+    position || ''
+  )
+  .trim()
+  .toLowerCase()
+  .replace(
+    /\s+/g,
+    ''
+  )
+  .replace(
+    /[-–—]/g,
+    ''
+  );
+}
+
+
+function isWdEmployee_(
+  employee
+) {
+
+  const position =
+    normalizeDeductionPosition_(
+      employee?.position
+    );
+
+
+  return (
+    position.includes(
+      'ฝาก'
+    ) &&
+    position.includes(
+      'ถอน'
+    )
+  );
+}
+
+
+function getEmployeeById_(
   employeeId
 ) {
 
@@ -7691,10 +4315,7 @@ function getDeductionEmployee(
     .toUpperCase();
 
 
-  return (
-    STATE.employees ||
-    []
-  )
+  return getEmployees_()
     .find(
       employee =>
         String(
@@ -7703,367 +4324,160 @@ function getDeductionEmployee(
         .trim()
         .toUpperCase() ===
         key
-    );
+    ) || null;
 }
 
 
-function isWdPositionClient(
-  position
-) {
+function getDeductionLimits_() {
 
-  const text =
-    String(
-      position || ''
-    )
-    .toLowerCase()
-    .replace(/\s+/g,'')
-    .replace(/[-–—]/g,'');
+  ensureDeductionSheets_();
 
 
-  return (
-    text.includes('ฝาก') &&
-    text.includes('ถอน')
+  return getSheetObjects_(
+    APP.SHEETS.DEDUCTION_LIMITS
   );
 }
 
 
-function renderDeductionLimitDropdown() {
-
-  const select =
-    document.getElementById(
-      'deductLimitType'
-    );
-
-
-  if (!select) {
-    return;
-  }
-
-
-  const current =
-    String(
-      select.value || ''
-    );
-
-
-  const rows =
-    STATE.deductionLimitTypes ||
-    [];
-
-
-  if (!rows.length) {
-
-    select.innerHTML = `
-      <option value="">
-        ยังไม่มีรายการวงเงิน
-      </option>
-    `;
-
-    return;
-  }
-
-
-  select.innerHTML =
-    rows
-      .map(
-        row => `
-          <option
-            value="${escapeAttr(row.limitCode)}"
-          >
-            ${escapeHtml(row.name)}
-            · วงเงิน ${moneyTH(row.amount)}
-          </option>
-        `
-      )
-      .join('');
-
-
-  if (
-    rows.some(
-      row =>
-        row.limitCode === current
-    )
-  ) {
-
-    select.value =
-      current;
-  }
-}
-
-
-function loadDeductionLimitTypes(
-  force
-) {
-
-  if (
-    STATE.deductionLimitsLoaded &&
-    !force
-  ) {
-
-    renderDeductionLimitDropdown();
-
-    renderDeductionLimitList();
-
-    return;
-  }
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      rows => {
-
-        STATE.deductionLimitTypes =
-          Array.isArray(rows)
-            ? rows
-            : [];
-
-
-        STATE.deductionLimitsLoaded =
-          true;
-
-
-        renderDeductionLimitDropdown();
-
-        renderDeductionLimitList();
-
-        previewDeductionEmployee();
-      }
-    )
-
-    .withFailureHandler(
-      showServerError
-    )
-
-    .getDeductionLimitTypes();
-}
-
-
-function renderDeductionLimitList() {
-
-  const container =
-    document.getElementById(
-      'deductLimitList'
-    );
-
-
-  if (!container) {
-    return;
-  }
-
-
-  const rows =
-    STATE.deductionLimitTypes ||
-    [];
-
-
-  if (!rows.length) {
-
-    container.innerHTML =
-      emptyHtml(
-        'ยังไม่มีหัวข้อวงเงิน · กด “เพิ่มหัวข้อรายการ” เพื่อสร้าง'
-      );
-
-    return;
-  }
-
-
-  container.innerHTML =
-    rows
-      .map(
-        row => `
-
-          <div class="deduct-limit-row">
-
-            <div>
-
-              <div class="deduct-limit-row-name">
-                ${escapeHtml(row.name)}
-              </div>
-
-              <div class="deduct-limit-row-code">
-                รหัส: ${escapeHtml(row.limitCode)}
-              </div>
-
-            </div>
-
-
-            <div class="deduct-limit-row-amount">
-
-              <span>
-                วงเงิน
-              </span>
-
-              <b>
-                ${moneyTH(row.amount)}
-              </b>
-
-              <span>
-                บาท
-              </span>
-
-            </div>
-
-
-            <div class="deduct-limit-row-actions">
-
-              <button
-                type="button"
-                class="deduct-limit-edit-btn"
-                onclick='editDeductionLimitItem(${jsonString(row.limitCode)})'
-              >
-                ✏️ แก้ไข
-              </button>
-
-              <button
-                type="button"
-                class="deduct-limit-delete-btn"
-                onclick='deleteDeductionLimitItem(${jsonString(row.limitCode)})'
-              >
-                ลบ
-              </button>
-
-            </div>
-
-          </div>
-        `
-      )
-      .join('');
-}
-
-
-function openDeductionLimitEditor(
+function normalizeDeductionLimitRow_(
   row
 ) {
 
-  STATE.deductionLimitEditCode =
-    row?.limitCode ||
-    '';
-
-
-  setValue(
-    'deductLimitName',
-    row?.name ||
-    ''
-  );
-
-
-  setValue(
-    'deductLimitEditorAmount',
-    row?.amount ??
-    ''
-  );
-
-
-  const editor =
-    document.getElementById(
-      'deductLimitEditor'
-    );
-
-
-  if (editor) {
-
-    editor.style.display =
-      'grid';
-
-
-    editor
-      .scrollIntoView({
-        behavior:
-          'smooth',
-
-        block:
-          'nearest'
-      });
-  }
-}
-
-
-function closeDeductionLimitEditor() {
-
-  STATE.deductionLimitEditCode =
-    '';
-
-
-  setValue(
-    'deductLimitName',
-    ''
-  );
-
-
-  setValue(
-    'deductLimitEditorAmount',
-    ''
-  );
-
-
-  const editor =
-    document.getElementById(
-      'deductLimitEditor'
-    );
-
-
-  if (editor) {
-
-    editor.style.display =
-      'none';
-  }
-}
-
-
-function editDeductionLimitItem(
-  limitCode
-) {
-
-  const row =
-    (
-      STATE.deductionLimitTypes ||
-      []
+  const limitCode =
+    String(
+      row.limitCode || ''
     )
-      .find(
-        item =>
-          item.limitCode ===
-          limitCode
-      );
+    .trim()
+    .toUpperCase();
 
-
-  if (!row) {
-    return;
-  }
-
-
-  openDeductionLimitEditor(
-    row
-  );
-}
-
-
-function saveDeductionLimitItem() {
 
   const name =
     String(
-      value(
-        'deductLimitName'
-      ) || ''
+      row.position ||
+      row.name ||
+      limitCode
     )
     .trim();
 
 
   const amount =
     Number(
-      value(
-        'deductLimitEditorAmount'
+      String(
+        row.amount || '0'
       )
+      .replace(
+        /,/g,
+        ''
+      )
+    );
+
+
+  return {
+
+    limitCode:
+      limitCode,
+
+    name:
+      name,
+
+    amount:
+      Number.isFinite(
+        amount
+      )
+        ? Math.max(
+            0,
+            amount
+          )
+        : 0,
+
+    updatedAt:
+      String(
+        row.updatedAt || ''
+      )
+  };
+}
+
+
+function getDeductionLimitTypes() {
+
+  return getDeductionLimits_()
+    .map(
+      normalizeDeductionLimitRow_
+    )
+    .filter(
+      row =>
+        row.limitCode &&
+        row.name
+    );
+}
+
+
+function getDeductionLimitMap_() {
+
+  const map = {};
+
+
+  getDeductionLimitTypes()
+    .forEach(
+      row => {
+
+        map[
+          row.limitCode
+        ] = row;
+      }
+    );
+
+
+  return map;
+}
+
+
+function getWdLimitAmount_() {
+
+  return Number(
+    getDeductionLimitMap_()
+      .WD
+      ?.amount || 0
+  );
+}
+
+
+function saveDeductionLimit(
+  data
+) {
+
+  ensureDeductionSheets_();
+
+
+  data =
+    data || {};
+
+
+  const name =
+    String(
+      data.name ||
+      data.position ||
+      ''
+    )
+    .trim()
+    .slice(
+      0,
+      80
     );
 
 
   if (!name) {
 
-    return toast(
-      'กรุณากรอกหัวข้อรายการ',
-      'warning'
+    throw new Error(
+      'กรุณากรอกหัวข้อรายการ'
     );
   }
+
+
+  const amount =
+    Number(
+      data.amount
+    );
 
 
   if (
@@ -8073,340 +4487,301 @@ function saveDeductionLimitItem() {
     amount < 0
   ) {
 
-    return toast(
-      'วงเงินต้องเป็นตัวเลขตั้งแต่ 0 บาทขึ้นไป',
-      'warning'
+    throw new Error(
+      'วงเงินต้องเป็นตัวเลขตั้งแต่ 0 บาทขึ้นไป'
     );
   }
 
 
-  google.script.run
-
-    .withSuccessHandler(
-      res => {
-
-        STATE.deductionLimitTypes =
-          res?.rows ||
-          [];
-
-
-        STATE.deductionLimitsLoaded =
-          true;
-
-        STATE.deductionDirty =
-          true;
-
-        STATE.deductionLimitLoaded =
-          false;
-
-
-        closeDeductionLimitEditor();
-
-        renderDeductionLimitDropdown();
-
-        renderDeductionLimitList();
-
-
-        toast(
-          res?.message ||
-          'บันทึกหัวข้อวงเงินแล้ว'
-        );
-      }
-    )
-
-    .withFailureHandler(
-      showServerError
-    )
-
-    .saveDeductionLimit({
-      limitCode:
-        STATE.deductionLimitEditCode,
-
-      name:
-        name,
-
-      amount:
-        amount
-    });
-}
-
-
-function deleteDeductionLimitItem(
-  limitCode
-) {
-
-  const row =
-    (
-      STATE.deductionLimitTypes ||
-      []
-    )
-      .find(
-        item =>
-          item.limitCode ===
-          limitCode
-      );
-
-
-  if (!row) {
-    return;
-  }
-
-
-  if (
-    !confirm(
-      'ลบหัวข้อ “' +
-      row.name +
-      '” ใช่ไหม?'
-    )
-  ) {
-    return;
-  }
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      res => {
-
-        STATE.deductionLimitTypes =
-          res?.rows ||
-          [];
-
-
-        STATE.deductionLimitsLoaded =
-          true;
-
-        STATE.deductionDirty =
-          true;
-
-        STATE.deductionLimitLoaded =
-          false;
-
-
-        renderDeductionLimitDropdown();
-
-        renderDeductionLimitList();
-
-        previewDeductionEmployee();
-
-
-        toast(
-          res?.message ||
-          'ลบหัวข้อวงเงินแล้ว'
-        );
-      }
-    )
-
-    .withFailureHandler(
-      showServerError
-    )
-
-    .deleteDeductionLimit(
-      limitCode
+  let limitCode =
+    normalizeDeductionLimitCode_(
+      data.limitCode
     );
-}
 
 
-function getDefaultDeductionLimitCode(
-  employee
-) {
-
-  const rows =
-    STATE.deductionLimitTypes ||
-    [];
-
-
-  if (
-    isWdPositionClient(
-      employee?.position
-    )
-  ) {
-
-    const wd =
-      rows.find(
-        row =>
-          row.limitCode ===
-          'WD'
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.DEDUCTION_LIMITS
       );
 
 
-    if (wd) {
-      return 'WD';
+  const values =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  let foundRow =
+    0;
+
+
+  if (limitCode) {
+
+    for (
+      let r = 1;
+      r < values.length;
+      r++
+    ) {
+
+      if (
+        String(
+          values[r][0] || ''
+        )
+        .trim()
+        .toUpperCase() ===
+        limitCode
+      ) {
+
+        foundRow =
+          r + 1;
+
+        break;
+      }
     }
   }
 
 
-  const general =
-    rows.find(
-      row =>
-        row.limitCode ===
-        'GENERAL'
-    );
+  if (!limitCode) {
 
-
-  if (general) {
-    return 'GENERAL';
+    limitCode =
+      makeDeductionLimitCode_(
+        name
+      );
   }
 
 
-  return rows[0]
-    ?.limitCode ||
-    '';
-}
-
-
-
-function previewDeductionEmployee() {
-
-  const employee =
-    getDeductionEmployee(
-      value(
-        'deductEmployeeId'
-      )
-    );
-
-
-  const box =
-    document.getElementById(
-      'deductEmployeePreview'
-    );
-
-
-  if (!box) {
-    return;
-  }
-
-
-  if (!employee) {
-
-    box.classList
-      .remove(
-        'found'
+  const duplicateName =
+    getDeductionLimitTypes()
+      .find(
+        row =>
+          row.name
+            .toLowerCase() ===
+            name.toLowerCase() &&
+          row.limitCode !==
+            limitCode
       );
 
 
-    box.textContent =
-      'กรอกรหัสพนักงานเพื่อดูข้อมูล';
+  if (duplicateName) {
 
-    return;
+    throw new Error(
+      'มีหัวข้อ “' +
+      name +
+      '” อยู่แล้ว'
+    );
   }
 
 
-  box.classList
-    .add(
-      'found'
+  const row = [
+    limitCode,
+    name,
+    amount,
+    nowText_()
+  ];
+
+
+  if (foundRow) {
+
+    sheet
+      .getRange(
+        foundRow,
+        1,
+        1,
+        row.length
+      )
+      .setValues(
+        [row]
+      );
+
+  } else {
+
+    sheet
+      .appendRow(
+        row
+      );
+  }
+
+
+  return {
+
+    ok:
+      true,
+
+    message:
+      'บันทึกหัวข้อ “' +
+      name +
+      '” แล้ว',
+
+    rows:
+      getDeductionLimitTypes()
+  };
+}
+
+
+function deleteDeductionLimit(
+  limitCode
+) {
+
+  ensureDeductionSheets_();
+
+
+  limitCode =
+    normalizeDeductionLimitCode_(
+      limitCode
     );
 
 
-  box.innerHTML = `
-    <b>
-      ${escapeHtml(employee.employeeId)}
-      ·
-      ${escapeHtml(employee.nickname || '-')}
-    </b>
-    &nbsp; | &nbsp;
-    ${escapeHtml(employee.team || '-')}
-    &nbsp; | &nbsp;
-    ${escapeHtml(employee.position || '-')}
-  `;
+  if (!limitCode) {
+
+    throw new Error(
+      'ไม่พบรหัสหัวข้อวงเงิน'
+    );
+  }
 
 
-  setValue(
-    'deductLimitType',
-    getDefaultDeductionLimitCode(
-      employee
-    )
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.DEDUCTION_LIMITS
+      );
+
+
+  const values =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  let rowNumber =
+    0;
+
+
+  let name =
+    limitCode;
+
+
+  for (
+    let r = 1;
+    r < values.length;
+    r++
+  ) {
+
+    if (
+      String(
+        values[r][0] || ''
+      )
+      .trim()
+      .toUpperCase() ===
+      limitCode
+    ) {
+
+      rowNumber =
+        r + 1;
+
+      name =
+        String(
+          values[r][1] ||
+          limitCode
+        );
+
+      break;
+    }
+  }
+
+
+  if (!rowNumber) {
+
+    throw new Error(
+      'ไม่พบหัวข้อวงเงินที่ต้องการลบ'
+    );
+  }
+
+
+  /*
+   * ห้ามลบหัวข้อที่ถูกใช้ในรายการตัดยอดแล้ว
+   * เพื่อไม่ให้ประวัติเดิมเสียความหมาย
+   */
+  const used =
+    getRawDeductions_()
+      .some(
+        row =>
+          row.limitType ===
+          limitCode
+      );
+
+
+  if (used) {
+
+    throw new Error(
+      'หัวข้อ “' +
+      name +
+      '” มีรายการตัดยอดใช้งานอยู่แล้ว จึงไม่สามารถลบได้'
+    );
+  }
+
+
+  sheet.deleteRow(
+    rowNumber
   );
+
+
+  return {
+
+    ok:
+      true,
+
+    message:
+      'ลบหัวข้อ “' +
+      name +
+      '” แล้ว',
+
+    rows:
+      getDeductionLimitTypes()
+  };
 }
 
 
-function clearDeductionForm() {
-
-  setValue(
-    'deductEmployeeId',
-    ''
-  );
-
-  setValue(
-    'deductAmount',
-    ''
-  );
-
-  setValue(
-    'deductLimitType',
-    STATE.deductionLimitTypes?.[0]?.limitCode || ''
-  );
-
-  setValue(
-    'deductDetail',
-    ''
-  );
-
-  setValue(
-    'deductDate',
-    STATE.today
-  );
 
 
-  previewDeductionEmployee();
-}
+function saveDeduction(
+  data
+) {
+
+  ensureDeductionSheets_();
 
 
-function saveDeductionForm() {
+  data =
+    data || {};
+
 
   const employeeId =
     String(
-      value(
-        'deductEmployeeId'
-      ) || ''
+      data.employeeId || ''
     )
     .trim()
     .toUpperCase();
 
 
   const employee =
-    getDeductionEmployee(
+    getEmployeeById_(
       employeeId
     );
 
 
-  const amount =
-    Number(
-      value(
-        'deductAmount'
-      )
-    );
-
-
-  const limitType =
-    value(
-      'deductLimitType'
-    ) ||
-    'GENERAL';
-
-
-  const transactionDate =
-    value(
-      'deductDate'
-    );
-
-
-  const detail =
-    String(
-      value(
-        'deductDetail'
-      ) || ''
-    )
-    .trim();
-
-
   if (!employee) {
 
-    return toast(
-      'ไม่พบรหัสพนักงานในระบบ',
-      'error'
+    throw new Error(
+      'ไม่พบรหัสพนักงาน ' +
+      employeeId
     );
   }
+
+
+  const amount =
+    Number(
+      data.amount
+    );
 
 
   if (
@@ -8416,1081 +4791,235 @@ function saveDeductionForm() {
     amount <= 0
   ) {
 
-    return toast(
-      'กรุณากรอกยอดเงินมากกว่า 0',
-      'warning'
+    throw new Error(
+      'ยอดเงินต้องมากกว่า 0 บาท'
     );
   }
 
 
-  if (!transactionDate) {
+  const limitType =
+    normalizeDeductionLimitCode_(
+      data.limitType
+    );
 
-    return toast(
-      'กรุณาเลือกวันที่รายการ',
-      'warning'
+
+  const limitMap =
+    getDeductionLimitMap_();
+
+
+  const limitConfig =
+    limitMap[
+      limitType
+    ];
+
+
+  if (!limitConfig) {
+
+    throw new Error(
+      'ไม่พบหัวข้อวงเงินที่เลือก'
     );
   }
 
 
   if (
     limitType === 'WD' &&
-    !isWdPositionClient(
-      employee.position
+    !isWdEmployee_(
+      employee
     )
   ) {
 
-    return toast(
-      'วงเงิน WD ใช้ได้เฉพาะพนักงานตำแหน่งฝาก-ถอน',
-      'warning'
+    throw new Error(
+      'วงเงินฝาก-ถอนใช้ได้เฉพาะพนักงานตำแหน่งฝาก-ถอน'
     );
   }
 
 
-  const button =
-    document.getElementById(
-      'deductSaveButton'
-    );
-
-
-  if (button) {
-
-    button.disabled =
-      true;
-
-    button.textContent =
-      '⏳ บันทึก...';
-  }
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      res => {
-
-        if (button) {
-
-          button.disabled =
-            false;
-
-          button.textContent =
-            '💾 บันทึกรายการ';
-        }
-
-
-        STATE.deductionDirty =
-          true;
-
-        STATE.deductionListLoaded =
-          false;
-
-        STATE.deductionLimitLoaded =
-          false;
-
-
-        clearDeductionForm();
-
-
-        toast(
-          res?.message ||
-          'บันทึกรายการตัดยอดแล้ว'
-        );
-      }
+  const transactionDate =
+    String(
+      data.transactionDate || ''
     )
-
-    .withFailureHandler(
-      err => {
-
-        if (button) {
-
-          button.disabled =
-            false;
-
-          button.textContent =
-            '💾 บันทึกรายการ';
-        }
+    .trim();
 
 
-        showServerError(
-          err
-        );
-      }
-    )
-
-    .saveDeduction({
-      employeeId:
-        employeeId,
-
-      amount:
-        amount,
-
-      limitType:
-        limitType,
-
-      detail:
-        detail,
-
-      transactionDate:
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/
+      .test(
         transactionDate
-    });
-}
-
-
-function resetDeductionListFilters() {
-
-  initializeDeductionUI();
-
-
-  const today =
-    String(
-      STATE.today || ''
-    );
-
-
-  const month =
-    today.slice(
-      0,
-      7
-    );
-
-
-  setValue(
-    'deductListFrom',
-    month + '-01'
-  );
-
-  setValue(
-    'deductListTo',
-    today
-  );
-
-  setValue(
-    'deductListEmployee',
-    ''
-  );
-
-
-  loadDeductionRecords(
-    true
-  );
-}
-
-
-function loadDeductionRecords(
-  force
-) {
-
-  if (
-    STATE.deductionListLoaded &&
-    !STATE.deductionDirty &&
-    !force
-  ) {
-
-    renderDeductionRecords(
-      STATE.deductionRecords
-    );
-
-    return;
-  }
-
-
-  const container =
-    document.getElementById(
-      'deductListTable'
-    );
-
-
-  if (container) {
-
-    container.innerHTML =
-      emptyHtml(
-        '⏳ กำลังโหลดรายการตัดยอด...'
-      );
-  }
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      data => {
-
-        STATE.deductionRecords =
-          data?.rows ||
-          [];
-
-
-        STATE.deductionListLoaded =
-          true;
-
-        STATE.deductionDirty =
-          false;
-
-
-        renderDeductionRecords(
-          STATE.deductionRecords,
-          data
-        );
-      }
-    )
-
-    .withFailureHandler(
-      showServerError
-    )
-
-    .getDeductionRecords({
-      from:
-        value(
-          'deductListFrom'
-        ),
-
-      to:
-        value(
-          'deductListTo'
-        ),
-
-      employee:
-        value(
-          'deductListEmployee'
-        )
-    });
-}
-
-
-function moneyTH(
-  value
-) {
-
-  return new Intl.NumberFormat(
-    'th-TH',
-    {
-      minimumFractionDigits:0,
-      maximumFractionDigits:2
-    }
-  )
-  .format(
-    Number(value) || 0
-  );
-}
-
-
-function deductionTypeHtml(
-  row
-) {
-
-  const isWd =
-    row?.limitType ===
-    'WD';
-
-
-  return `
-    <span
-      class="
-        deduct-type
-        ${isWd ? 'wd' : 'general'}
-      "
-    >
-      ${escapeHtml(row?.limitLabel || row?.limitType || '-')}
-    </span>
-  `;
-}
-
-
-function deductionStatusHtml(
-  row
-) {
-
-  if (
-    Number(
-      row.actualDeduction || 0
-    ) > 0
-  ) {
-
-    return `
-      <span class="deduct-status actual">
-        หักเงินจริง
-      </span>
-    `;
-  }
-
-
-  if (
-    Number(
-      row.monthlyLimit || 0
-    ) > 0 &&
-    Number(
-      row.limitUsedAfter || 0
-    ) >=
-    Number(
-      row.monthlyLimit || 0
-    )
-  ) {
-
-    return `
-      <span class="deduct-status full">
-        เต็มวงเงิน
-      </span>
-    `;
-  }
-
-
-  if (
-    Number(
-      row.monthlyLimit || 0
-    ) > 0
-  ) {
-
-    return `
-      <span class="deduct-status limit">
-        ใช้วงเงิน
-      </span>
-    `;
-  }
-
-
-  return `
-    <span class="deduct-status actual">
-      หักเงินจริง
-    </span>
-  `;
-}
-
-
-function renderDeductionRecords(
-  rows,
-  summary
-) {
-
-  rows =
-    rows ||
-    [];
-
-
-  const stats =
-    document.getElementById(
-      'deductListStats'
-    );
-
-
-  if (stats) {
-
-    const totalDamage =
-      summary?.totalDamage ??
-      rows.reduce(
-        (
-          total,
-          row
-        ) =>
-          total +
-          Number(
-            row.amount || 0
-          ),
-        0
-      );
-
-
-    const covered =
-      summary?.totalCovered ??
-      rows.reduce(
-        (
-          total,
-          row
-        ) =>
-          total +
-          Number(
-            row.coveredByLimit || 0
-          ),
-        0
-      );
-
-
-    const actual =
-      summary?.totalActual ??
-      rows.reduce(
-        (
-          total,
-          row
-        ) =>
-          total +
-          Number(
-            row.actualDeduction || 0
-          ),
-        0
-      );
-
-
-    stats.innerHTML = `
-
-      <div class="deduct-stat">
-        <div class="deduct-stat-label">
-          ยอดรายการทั้งหมด
-        </div>
-        <div class="deduct-stat-value">
-          ${moneyTH(totalDamage)} ฿
-        </div>
-      </div>
-
-      <div class="deduct-stat">
-        <div class="deduct-stat-label">
-          ใช้วงเงิน
-        </div>
-        <div class="deduct-stat-value">
-          ${moneyTH(covered)} ฿
-        </div>
-      </div>
-
-      <div class="deduct-stat">
-        <div class="deduct-stat-label">
-          หักเงินจริง
-        </div>
-        <div
-          class="deduct-stat-value"
-          style="color:#c25067"
-        >
-          ${moneyTH(actual)} ฿
-        </div>
-      </div>
-    `;
-  }
-
-
-  if (!rows.length) {
-
-    setHtml(
-      'deductListTable',
-      emptyHtml(
-        'ไม่พบรายการตัดยอดตามเงื่อนไข'
       )
-    );
-
-    return;
-  }
-
-
-  let html = `
-
-    <table>
-
-      <thead>
-
-        <tr>
-          <th>วันที่</th>
-          <th>พนักงาน</th>
-          <th>รายละเอียด</th>
-          <th>ประเภท</th>
-          <th>ยอดรายการ</th>
-          <th>ใช้วงเงิน</th>
-          <th>หักเงินจริง</th>
-          <th>สถานะ</th>
-        </tr>
-
-      </thead>
-
-      <tbody>
-  `;
-
-
-  rows
-    .forEach(
-      row => {
-
-        html += `
-
-          <tr>
-
-            <td>
-              ${escapeHtml(row.transactionDate || '-')}
-            </td>
-
-            <td>
-              <b>
-                ${escapeHtml(row.employeeId || '-')}
-              </b>
-              ·
-              ${escapeHtml(row.nickname || '-')}
-            </td>
-
-            <td>
-              ${escapeHtml(row.detail || '-')}
-            </td>
-
-            <td>
-              ${deductionTypeHtml(row)}
-            </td>
-
-            <td class="deduct-money">
-              ${moneyTH(row.amount)} ฿
-            </td>
-
-            <td class="deduct-money covered">
-              ${moneyTH(row.coveredByLimit)} ฿
-            </td>
-
-            <td class="deduct-money actual">
-              ${moneyTH(row.actualDeduction)} ฿
-            </td>
-
-            <td>
-              ${deductionStatusHtml(row)}
-            </td>
-
-          </tr>
-        `;
-      }
-    );
-
-
-  html += `
-
-      </tbody>
-
-    </table>
-  `;
-
-
-  setHtml(
-    'deductListTable',
-    html
-  );
-}
-
-
-function loadDeductionDashboard(
-  force
-) {
-
-  if (
-    STATE.deductionLimitLoaded &&
-    !STATE.deductionDirty &&
-    !force
   ) {
 
-    renderDeductionDashboard(
-      STATE.deductionDashboard
+    throw new Error(
+      'วันที่รายการไม่ถูกต้อง'
     );
-
-    return;
   }
 
 
-  const month =
-    value(
-      'deductLimitMonth'
-    ) ||
+  const detail =
     String(
-      STATE.today || ''
+      data.detail || ''
     )
+    .trim()
     .slice(
       0,
-      7
+      1000
     );
 
 
-  setHtml(
-    'wdLimitCards',
-    emptyHtml(
-      '⏳ กำลังคำนวณวงเงิน...'
+  const deductionId =
+    Utilities
+      .getUuid();
+
+
+  getDatabase_()
+    .getSheetByName(
+      APP.SHEETS.DEDUCTIONS
     )
-  );
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      data => {
-
-        STATE.deductionDashboard =
-          data;
-
-        STATE.deductionLimitLoaded =
-          true;
-
-        STATE.deductionDirty =
-          false;
-
-
-        renderDeductionDashboard(
-          data
-        );
-      }
-    )
-
-    .withFailureHandler(
-      showServerError
-    )
-
-    .getDeductionDashboard(
-      month
-    );
-}
-
-
-function renderDeductionDashboard(
-  data
-) {
-
-  data =
-    data || {};
-
-
-  const wdRows =
-    data.wdEmployees ||
-    [];
-
-
-  if (
-    !wdRows.length
-  ) {
-
-    setHtml(
-      'wdLimitCards',
-      emptyHtml(
-        'ยังไม่มีพนักงานฝาก-ถอน'
-      )
-    );
-
-  } else {
-
-    setHtml(
-      'wdLimitCards',
-      wdRows
-        .map(
-          row => {
-
-            const limit =
-              Number(
-                row.limit || 0
-              );
-
-
-            const used =
-              Number(
-                row.limitUsed || 0
-              );
-
-
-            const percent =
-              limit > 0
-                ? Math.min(
-                    100,
-                    Math.max(
-                      0,
-                      (
-                        used /
-                        limit
-                      ) *
-                      100
-                    )
-                  )
-                : 0;
-
-
-            const isFull =
-              (
-                limit > 0 &&
-                used >= limit
-              );
-
-
-            return `
-
-              <div class="deduct-limit-card">
-
-                <div class="deduct-limit-person">
-
-                  <div>
-
-                    <div class="deduct-limit-name">
-                      ${escapeHtml(row.employeeId)}
-                      ·
-                      ${escapeHtml(row.nickname || '-')}
-                    </div>
-
-                    <div class="deduct-limit-meta">
-                      ${escapeHtml(row.team || '-')}
-                      ·
-                      ฝาก-ถอน
-                    </div>
-
-                  </div>
-
-                  <b>
-                    ${moneyTH(used)}
-                    /
-                    ${moneyTH(limit)}
-                  </b>
-
-                </div>
-
-
-                <div class="deduct-progress">
-
-                  <div
-                    class="
-                      deduct-progress-bar
-                      ${isFull ? 'full' : ''}
-                    "
-                    style="width:${percent}%"
-                  ></div>
-
-                </div>
-
-
-                <div class="deduct-progress-row">
-
-                  <span>
-                    ใช้แล้ว ${moneyTH(used)} ฿
-                  </span>
-
-                  <span>
-                    เหลือ ${moneyTH(row.remainingLimit)} ฿
-                  </span>
-
-                </div>
-
-
-                ${
-                  Number(
-                    row.actualDeduction || 0
-                  ) > 0
-                    ? `
-                        <div class="deduct-real-box">
-                          💸 หักเงินจริงแล้ว
-                          ${moneyTH(row.actualDeduction)}
-                          บาท
-                        </div>
-                      `
-                    : ''
-                }
-
-              </div>
-            `;
-          }
-        )
-        .join('')
-    );
-  }
-
-
-  const generalRows =
-    data.generalEmployees ||
-    [];
-
-
-  if (
-    !generalRows.length
-  ) {
-
-    setHtml(
-      'generalDeductTable',
-      emptyHtml(
-        'ยังไม่มีพนักงานทั่วไป'
-      )
-    );
-
-    return;
-  }
-
-
-  let html = `
-
-    <table>
-
-      <thead>
-        <tr>
-          <th>รหัส / ชื่อเล่น</th>
-          <th>TEAM</th>
-          <th>ตำแหน่ง</th>
-          <th>ยอดหักสะสมเดือนนี้</th>
-        </tr>
-      </thead>
-
-      <tbody>
-  `;
-
-
-  generalRows
-    .forEach(
-      row => {
-
-        html += `
-
-          <tr>
-
-            <td>
-              <b>
-                ${escapeHtml(row.employeeId)}
-              </b>
-              ·
-              ${escapeHtml(row.nickname || '-')}
-            </td>
-
-            <td>
-              ${badgeTeam(row.team)}
-            </td>
-
-            <td>
-              ${badgePosition(row.position)}
-            </td>
-
-            <td
-              class="deduct-money actual"
-            >
-              ${moneyTH(row.actualDeduction)} ฿
-            </td>
-
-          </tr>
-        `;
-      }
-    );
-
-
-  html += `
-      </tbody>
-    </table>
-  `;
-
-
-  setHtml(
-    'generalDeductTable',
-    html
-  );
-}
-
-
-/* =========================
-   SEATING PLAN
-========================= */
-
-function loadSeatingPlan(
-  force
-) {
-
-  if (
-    STATE.seatingLoading
-  ) {
-    return;
-  }
-
-
-  if (
-    STATE.seatingLoaded &&
-    !force
-  ) {
-
-    renderSeatPlan();
-
-    return;
-  }
-
-
-  const container =
-    document.getElementById(
-      'seatingPlan'
-    );
-
-
-  if (container) {
-
-    container.innerHTML = `
-      <div
-        style="
-          min-height:220px;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          color:#8b96a6;
-          font-size:12px;
-          font-weight:850;
-        "
-      >
-        ⏳ กำลังโหลดผังที่นั่ง...
-      </div>
-    `;
-  }
-
-
-  STATE.seatingLoading =
-    true;
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      data => {
-
-        STATE.seatingPlan =
-          Array.isArray(data)
-            ? data
-            : [];
-
-
-        STATE.seatingLoaded =
-          true;
-
-
-        STATE.seatingLoading =
-          false;
-
-
-        renderSeatPlan();
-      }
-    )
-
-    .withFailureHandler(
-      err => {
-
-        STATE.seatingLoading =
-          false;
-
-
-        if (container) {
-
-          container.innerHTML = `
-            <div
-              style="
-                min-height:220px;
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                text-align:center;
-                color:#b65f70;
-                font-size:11px;
-                font-weight:850;
-                line-height:1.7;
-              "
-            >
-              โหลดผังที่นั่งไม่สำเร็จ<br>
-              กรุณาลองเปิดเมนูนี้ใหม่อีกครั้ง
-            </div>
-          `;
-        }
-
-
-        showServerError(
-          err
-        );
-      }
-    )
-
-    .getSeatingPlan();
-}
-
-
-function getSeatSide(
-  seatNo
-) {
-
-  const index =
-    (
-      Number(seatNo) - 1
-    ) % 8;
-
-
-  return index < 5
-    ? 'LEFT'
-    : 'RIGHT';
-}
-
-
-function getSeatSideLabel(
-  seatNo
-) {
-
-  return getSeatSide(
-    seatNo
-  ) === 'LEFT'
-    ? 'ฝั่งซ้าย · แอดมิน / ฝาก-ถอน / Follow'
-    : 'ฝั่งขวา · การตลาด / พัฒนา / AE';
-}
-
-
-function normalizeSeatPosition(
-  value
-) {
-
-  return String(
-    value || ''
-  )
-    .trim()
-    .toLowerCase()
-    .replace(
-      /\s+/g,
+    .appendRow([
+      deductionId,
+      employeeId,
+      amount,
+      limitType,
+      detail,
+      transactionDate,
+      nowText_(),
+      'WAITING',
       ''
-    )
-    .replace(
-      /[-–—]/g,
-      ''
-    );
+    ]);
+
+
+  return {
+
+    ok:
+      true,
+
+    message:
+      'บันทึกรายการตัดยอด ' +
+      amount +
+      ' บาทแล้ว',
+
+    deductionId:
+      deductionId
+  };
 }
 
 
-function employeeAllowedForSeat(
-  employee,
-  seatNo
+function findDeductionRow_(
+  deductionId
 ) {
 
-  const position =
-    normalizeSeatPosition(
-      employee?.position
-    );
+  ensureDeductionSheets_();
 
 
-  if (
-    getSeatSide(
-      seatNo
-    ) === 'LEFT'
-  ) {
+  deductionId =
+    String(
+      deductionId || ''
+    )
+    .trim();
 
-    return (
-      position.includes(
-        'แอดมิน'
-      ) ||
-      (
-        position.includes(
-          'ฝาก'
-        ) &&
-        position.includes(
-          'ถอน'
-        )
-      ) ||
-      position.includes(
-        'follow'
-      ) ||
-      position.includes(
-        'ติดตาม'
-      )
+
+  if (!deductionId) {
+
+    throw new Error(
+      'ไม่พบรหัสรายการตัดยอด'
     );
   }
 
 
-  return (
-    position.includes(
-      'การตลาด'
-    ) ||
-    position.includes(
-      'พัฒนา'
-    ) ||
-    position === 'ae'
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.DEDUCTIONS
+      );
+
+
+  const lastRow =
+    sheet.getLastRow();
+
+
+  if (
+    lastRow < 2
+  ) {
+
+    throw new Error(
+      'ไม่พบรายการตัดยอด'
+    );
+  }
+
+
+  const ids =
+    sheet
+      .getRange(
+        2,
+        1,
+        lastRow - 1,
+        1
+      )
+      .getDisplayValues();
+
+
+  for (
+    let i = 0;
+    i < ids.length;
+    i++
+  ) {
+
+    if (
+      String(
+        ids[i][0] || ''
+      )
+      .trim() ===
+      deductionId
+    ) {
+
+      return {
+
+        sheet:
+          sheet,
+
+        row:
+          i + 2
+      };
+    }
+  }
+
+
+  throw new Error(
+    'ไม่พบรายการตัดยอดที่ต้องการ'
   );
 }
 
 
-function getSeatingMap() {
+function getDeductionHeaderMap_(
+  sheet
+) {
+
+  const headers =
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        sheet.getLastColumn()
+      )
+      .getDisplayValues()[0];
+
 
   const map = {};
 
 
-  (
-    STATE.seatingPlan ||
-    []
-  )
+  headers
     .forEach(
-      seat => {
+      (
+        header,
+        index
+      ) => {
 
         map[
-          Number(
-            seat.seatNo
+          String(
+            header || ''
           )
-        ] = seat;
+          .trim()
+        ] = index + 1;
       }
     );
 
@@ -9499,3004 +5028,4349 @@ function getSeatingMap() {
 }
 
 
-function getSeatEmployee(
-  employeeId
+function markDeductionDone(
+  deductionId
 ) {
 
-  return (
-    STATE.employees ||
-    []
+  const found =
+    findDeductionRow_(
+      deductionId
+    );
+
+
+  const headerMap =
+    getDeductionHeaderMap_(
+      found.sheet
+    );
+
+
+  const statusColumn =
+    headerMap.status;
+
+
+  const completedAtColumn =
+    headerMap.completedAt;
+
+
+  if (
+    !statusColumn ||
+    !completedAtColumn
+  ) {
+
+    throw new Error(
+      'โครงสร้างฐานข้อมูลตัดยอดยังไม่สมบูรณ์ กรุณารีเฟรชระบบอีกครั้ง'
+    );
+  }
+
+
+  found.sheet
+    .getRange(
+      found.row,
+      statusColumn
+    )
+    .setValue(
+      'DONE'
+    );
+
+
+  found.sheet
+    .getRange(
+      found.row,
+      completedAtColumn
+    )
+    .setValue(
+      nowText_()
+    );
+
+
+  return {
+
+    ok:
+      true,
+
+    message:
+      'ทำรายการแล้ว · สถานะเปลี่ยนเป็น “หักแล้ว”'
+  };
+}
+
+
+function deleteDeductionRecord(
+  deductionId
+) {
+
+  const found =
+    findDeductionRow_(
+      deductionId
+    );
+
+
+  found.sheet
+    .deleteRow(
+      found.row
+    );
+
+
+  return {
+
+    ok:
+      true,
+
+    message:
+      'ลบรายการตัดยอดแล้ว'
+  };
+}
+
+
+function getRawDeductions_() {
+
+  ensureDeductionSheets_();
+
+
+  return getSheetObjects_(
+    APP.SHEETS.DEDUCTIONS
   )
-    .find(
-      employee =>
+  .map(
+    row => ({
+
+      deductionId:
         String(
-          employee.employeeId || ''
+          row.deductionId || ''
+        ),
+
+      employeeId:
+        String(
+          row.employeeId || ''
+        )
+        .trim()
+        .toUpperCase(),
+
+      amount:
+        Number(
+          String(
+            row.amount || '0'
+          )
+          .replace(
+            /,/g,
+            ''
+          )
+        ) || 0,
+
+      limitType:
+        normalizeDeductionLimitCode_(
+          row.limitType
+        ),
+
+      detail:
+        String(
+          row.detail || ''
+        ),
+
+      transactionDate:
+        String(
+          row.transactionDate || ''
+        )
+        .trim(),
+
+      createdAt:
+        String(
+          row.createdAt || ''
+        ),
+
+      status:
+        String(
+          row.status || 'WAITING'
         )
         .trim()
         .toUpperCase() ===
+        'DONE'
+          ? 'DONE'
+          : 'WAITING',
+
+      completedAt:
         String(
-          employeeId || ''
+          row.completedAt || ''
         )
-        .trim()
-        .toUpperCase()
-    );
+    }))
+  .filter(
+    row =>
+      row.employeeId &&
+      row.transactionDate &&
+      row.amount > 0
+  );
 }
 
 
-function renderSeatPlan() {
+function calculateDeductions_() {
 
-  const container =
-    document.getElementById(
-      'seatingPlan'
-    );
+  const employees =
+    getEmployees_();
 
 
-  if (!container) {
-    return;
-  }
+  const employeeMap = {};
 
 
-  const seatingMap =
-    getSeatingMap();
-
-
-  let seatNumber =
-    1;
-
-
-  let html = `
-
-    <div class="seating-side-head">
-
-      <div class="seating-side-label left">
-        ฝั่งซ้าย · ทีม แอดมิน / ฝาก-ถอน / Follow
-      </div>
-
-      <div class="seating-side-label aisle">
-        ทางเดิน
-      </div>
-
-      <div class="seating-side-label right">
-        ฝั่งขวา · ทีม การตลาด / พัฒนา / AE
-      </div>
-
-    </div>
-  `;
-
-
-  for (
-    let row = 1;
-    row <= 6;
-    row++
-  ) {
-
-    html += `
-      <div>
-
-        <div
-          class="seating-row"
-          data-seat-row="${row}"
-        >
-    `;
-
-
-    for (
-      let left = 1;
-      left <= 5;
-      left++
-    ) {
-
-      html +=
-        seatBoxHtml(
-          seatNumber,
-          seatingMap[
-            seatNumber
-          ]
-        );
-
-
-      seatNumber++;
-    }
-
-
-    html += `
-      <div class="seat-aisle">
-        ทางเดิน
-      </div>
-    `;
-
-
-    for (
-      let right = 1;
-      right <= 3;
-      right++
-    ) {
-
-      html +=
-        seatBoxHtml(
-          seatNumber,
-          seatingMap[
-            seatNumber
-          ]
-        );
-
-
-      seatNumber++;
-    }
-
-
-    html += `
-        </div>
-
-        <div class="seating-row-label">
-          แถว ${row}
-        </div>
-
-      </div>
-    `;
-  }
-
-
-  container.innerHTML =
-    html;
-}
-
-
-function seatTeamTag(
-  team
-) {
-
-  const value =
-    String(
-      team || '-'
-    )
-    .trim();
-
-
-  const normalized =
-    value
-      .toUpperCase();
-
-
-  let className =
-    'seat-team-other';
-
-
-  if (
-    normalized === 'TEAM A'
-  ) {
-
-    className =
-      'seat-team-a';
-
-  } else if (
-    normalized === 'TEAM B'
-  ) {
-
-    className =
-      'seat-team-b';
-
-  } else if (
-    normalized === 'TEAM C'
-  ) {
-
-    className =
-      'seat-team-c';
-  }
-
-
-  return `
-    <span
-      class="
-        seat-mini-tag
-        ${className}
-      "
-    >
-      ${escapeHtml(value)}
-    </span>
-  `;
-}
-
-
-function seatPositionClass(
-  position
-) {
-
-  const raw =
-    String(
-      position || ''
-    )
-    .trim();
-
-
-  const normalized =
-    raw
-      .toLowerCase()
-      .replace(/\s+/g,'')
-      .replace(/[-–—]/g,'');
-
-
-  if (
-    normalized.includes('แอดมิน')
-  ) {
-    return 'seat-pos-admin';
-  }
-
-
-  if (
-    normalized.includes('ฝาก') &&
-    normalized.includes('ถอน')
-  ) {
-    return 'seat-pos-wd';
-  }
-
-
-  if (
-    normalized.includes('follow') ||
-    normalized.includes('ติดตาม')
-  ) {
-    return 'seat-pos-follow';
-  }
-
-
-  if (
-    normalized.includes('การตลาด')
-  ) {
-    return 'seat-pos-marketing';
-  }
-
-
-  if (
-    normalized.includes('พัฒนา')
-  ) {
-    return 'seat-pos-dev';
-  }
-
-
-  if (
-    normalized === 'ae'
-  ) {
-    return 'seat-pos-ae';
-  }
-
-
-  if (
-    normalized === 'ag'
-  ) {
-    return 'seat-pos-ag';
-  }
-
-
-  if (
-    normalized.includes('seo')
-  ) {
-    return 'seat-pos-seo';
-  }
-
-
-  if (
-    normalized.includes('ตัดต่อ')
-  ) {
-    return 'seat-pos-edit';
-  }
-
-
-  if (
-    normalized.includes('กราฟ')
-  ) {
-    return 'seat-pos-graphic';
-  }
-
-
-  if (
-    normalized.includes('audit')
-  ) {
-    return 'seat-pos-audit';
-  }
-
-
-  if (
-    normalized === 'pr'
-  ) {
-    return 'seat-pos-pr';
-  }
-
-
-  if (
-    normalized.includes('telesell') ||
-    normalized.includes('tele')
-  ) {
-    return 'seat-pos-telesell';
-  }
-
-
-  return 'seat-pos-other';
-}
-
-
-function seatPositionTag(
-  position
-) {
-
-  const value =
-    String(
-      position || '-'
-    )
-    .trim();
-
-
-  return `
-    <span
-      class="
-        seat-mini-tag
-        ${seatPositionClass(value)}
-      "
-    >
-      ${escapeHtml(value)}
-    </span>
-  `;
-}
-
-
-function seatBoxHtml(
-  number,
-  seat
-) {
-
-  const employeeIds =
-    Array.isArray(
-      seat?.employeeIds
-    )
-      ? seat.employeeIds
-      : [];
-
-
-  const emailNames =
-    Array.isArray(
-      seat?.emailNames
-    )
-      ? seat.emailNames
-      : [];
-
-
-  const people =
-    employeeIds
-      .map(
-        employeeId =>
-          getSeatEmployee(
-            employeeId
-          )
-      )
-      .filter(Boolean);
-
-
-  const occupied =
-    (
-      employeeIds.length > 0 ||
-      emailNames.length > 0
-    );
-
-
-  let peopleHtml = '';
-
-
-  people
-    .slice(
-      0,
-      3
-    )
+  employees
     .forEach(
       employee => {
 
-        peopleHtml += `
-          <div class="seat-person">
-
-            <div class="seat-person-main">
-              ${escapeHtml(employee.employeeId)}
-              ·
-              ${escapeHtml(employee.nickname || '-')}
-            </div>
-
-            <div class="seat-person-tags">
-              ${seatTeamTag(employee.team)}
-              ${seatPositionTag(employee.position)}
-            </div>
-
-          </div>
-        `;
-      }
-    );
-
-
-  if (
-    employeeIds.length >
-    3
-  ) {
-
-    peopleHtml += `
-      <div class="seat-more">
-        + อีก ${
-          employeeIds.length - 3
-        } คน
-      </div>
-    `;
-  }
-
-
-  const emailPreview =
-    emailNames
-      .slice(
-        0,
-        3
-      )
-      .map(
-        value =>
-          escapeHtml(
-            value
-          )
-      )
-      .join(
-        ' · '
-      );
-
-
-  return `
-
-    <div
-      class="
-        seat-box
-        ${
-          occupied
-            ? 'occupied'
-            : ''
-        }
-      "
-      data-seat="${number}"
-      onclick="openSeatEditor(${number})"
-      title="คลิกเพื่อจัดโต๊ะที่ ${number}"
-    >
-
-      <div class="seat-top">
-
-        <div class="seat-number">
-          โต๊ะที่ ${number}
-        </div>
-
-        <div class="seat-status">
-          ${
-            occupied
-              ? (
-                  employeeIds.length
-                    ? employeeIds.length + ' คน'
-                    : 'มีเมล'
-                )
-              : 'ว่าง'
-          }
-        </div>
-
-      </div>
-
-
-      ${
-        occupied
-          ? peopleHtml
-          : `
-              <div class="seat-empty">
-                + คลิกเพื่อเลือกพนักงาน
-              </div>
-            `
-      }
-
-
-      ${
-        emailNames.length
-          ? `
-              <div class="seat-mails">
-                ✉️ ${emailPreview}
-                ${
-                  emailNames.length > 3
-                    ? ' · +' + (emailNames.length - 3)
-                    : ''
-                }
-              </div>
-            `
-          : ''
-      }
-
-    </div>
-  `;
-}
-
-
-function openSeatEditor(
-  seatNo
-) {
-
-  seatNo =
-    Number(
-      seatNo
-    );
-
-
-  if (
-    !Number.isFinite(
-      seatNo
-    ) ||
-    seatNo < 1 ||
-    seatNo > 48
-  ) {
-    return;
-  }
-
-
-  const seat =
-    getSeatingMap()[
-      seatNo
-    ] || {};
-
-
-  STATE.seatEditSeatNo =
-    seatNo;
-
-
-  STATE.seatEditEmployeeIds =
-    Array.isArray(
-      seat.employeeIds
-    )
-      ? [
-          ...seat.employeeIds
-        ]
-      : [];
-
-
-  STATE.seatEditEmails =
-    Array.isArray(
-      seat.emailNames
-    )
-      ? [
-          ...seat.emailNames
-        ]
-      : [];
-
-
-  STATE.seatEmployeeSearch =
-    '';
-
-
-  setText(
-    'seatEditorTitle',
-    '🪑 โต๊ะที่ ' +
-      seatNo
-  );
-
-
-  setText(
-    'seatEditorSub',
-    getSeatSideLabel(
-      seatNo
-    ) +
-      ' · เลือกพนักงานได้หลายคนจากรายชื่อทั้งหมด'
-  );
-
-
-  setValue(
-    'seatEmployeeSearch',
-    ''
-  );
-
-
-  setValue(
-    'seatEmailInput',
-    ''
-  );
-
-
-  renderSeatEmployeeEditor();
-
-  renderSeatEmailChips();
-
-
-  document
-    .getElementById(
-      'seatEditorModal'
-    )
-    ?.classList
-    .add(
-      'show'
-    );
-}
-
-
-function closeSeatEditor() {
-
-  document
-    .getElementById(
-      'seatEditorModal'
-    )
-    ?.classList
-    .remove(
-      'show'
-    );
-
-
-  STATE.seatEditSeatNo =
-    0;
-
-  STATE.seatEditEmployeeIds =
-    [];
-
-  STATE.seatEditEmails =
-    [];
-
-  STATE.seatEmployeeSearch =
-    '';
-}
-
-
-function handleSeatModalBackdrop(
-  event
-) {
-
-  if (
-    event?.target?.id ===
-    'seatEditorModal'
-  ) {
-
-    closeSeatEditor();
-  }
-}
-
-
-function getSeatCandidateEmployees() {
-
-  /*
-   * รายชื่อในหน้าจัดโต๊ะต้องเป็น "พนักงานทั้งหมด"
-   * ไม่กรองตามฝั่ง / ตำแหน่ง / TEAM
-   *
-   * ป้ายฝั่งซ้าย-ขวาเป็นเพียงชื่อโซนของโต๊ะเท่านั้น
-   */
-  return (
-    STATE.employees ||
-    []
-  )
-    .slice()
-    .sort(
-      (
-        a,
-        b
-      ) => {
-
-        const teamCompare =
+        employeeMap[
           String(
-            a.team || ''
+            employee.employeeId || ''
+          )
+          .trim()
+          .toUpperCase()
+        ] = employee;
+      }
+    );
+
+
+  const limitMap =
+    getDeductionLimitMap_();
+
+
+  const rows =
+    getRawDeductions_()
+      .sort(
+        (
+          a,
+          b
+        ) => {
+
+          const dateCompare =
+            String(
+              a.transactionDate
+            )
+            .localeCompare(
+              String(
+                b.transactionDate
+              )
+            );
+
+
+          if (dateCompare) {
+            return dateCompare;
+          }
+
+
+          const createdCompare =
+            String(
+              a.createdAt
+            )
+            .localeCompare(
+              String(
+                b.createdAt
+              )
+            );
+
+
+          if (createdCompare) {
+            return createdCompare;
+          }
+
+
+          return String(
+            a.deductionId
           )
           .localeCompare(
             String(
-              b.team || ''
-            ),
-            'th'
+              b.deductionId
+            )
+          );
+        }
+      );
+
+
+  const monthlyLimitUsed = {};
+
+
+  return rows
+    .map(
+      row => {
+
+        const employee =
+          employeeMap[
+            row.employeeId
+          ] || {};
+
+
+        const month =
+          row.transactionDate
+            .slice(
+              0,
+              7
+            );
+
+
+        const limitConfig =
+          limitMap[
+            row.limitType
+          ] || {
+
+            limitCode:
+              row.limitType,
+
+            name:
+              row.limitType ||
+              'ไม่ระบุ',
+
+            amount:
+              0
+          };
+
+
+        const monthlyLimit =
+          Number(
+            limitConfig.amount || 0
           );
 
 
-        if (teamCompare) {
-          return teamCompare;
+        const key =
+          row.employeeId +
+          '|' +
+          month +
+          '|' +
+          row.limitType;
+
+
+        let coveredByLimit =
+          0;
+
+
+        let actualDeduction =
+          row.amount;
+
+
+        let before =
+          Number(
+            monthlyLimitUsed[
+              key
+            ] || 0
+          );
+
+
+        let after =
+          before;
+
+
+        if (
+          monthlyLimit > 0
+        ) {
+
+          const remainingBefore =
+            Math.max(
+              0,
+              monthlyLimit -
+              before
+            );
+
+
+          coveredByLimit =
+            Math.min(
+              row.amount,
+              remainingBefore
+            );
+
+
+          actualDeduction =
+            Math.max(
+              0,
+              row.amount -
+              coveredByLimit
+            );
+
+
+          after =
+            Math.min(
+              monthlyLimit,
+              before +
+              row.amount
+            );
+
+
+          monthlyLimitUsed[
+            key
+          ] = after;
         }
 
 
-        return String(
-          a.employeeId || ''
-        )
-        .localeCompare(
-          String(
-            b.employeeId || ''
-          ),
-          'th'
-        );
+        return {
+
+          ...row,
+
+          nickname:
+            employee.nickname || '',
+
+          team:
+            employee.team || '',
+
+          position:
+            employee.position || '',
+
+          month:
+            month,
+
+          limitLabel:
+            limitConfig.name,
+
+          monthlyLimit:
+            monthlyLimit,
+
+          coveredByLimit:
+            coveredByLimit,
+
+          actualDeduction:
+            actualDeduction,
+
+          limitUsedBefore:
+            before,
+
+          limitUsedAfter:
+            after
+        };
       }
     );
 }
 
 
-function filterSeatEmployeeList(
-  search
+function getDeductionRecords(
+  filters
 ) {
 
-  STATE.seatEmployeeSearch =
+  filters =
+    filters || {};
+
+
+  const from =
     String(
-      search || ''
+      filters.from || ''
+    )
+    .trim();
+
+
+  const to =
+    String(
+      filters.to || ''
+    )
+    .trim();
+
+
+  const employeeQuery =
+    String(
+      filters.employee || ''
     )
     .trim()
     .toLowerCase();
 
 
-  renderSeatEmployeeEditor();
-}
+  let rows =
+    calculateDeductions_();
 
 
-function renderSeatEmployeeEditor() {
+  if (from) {
 
-  const list =
-    document.getElementById(
-      'seatEmployeeList'
-    );
-
-
-  const chips =
-    document.getElementById(
-      'seatSelectedEmployees'
-    );
-
-
-  if (
-    !list ||
-    !chips
-  ) {
-    return;
+    rows =
+      rows.filter(
+        row =>
+          row.transactionDate >=
+          from
+      );
   }
 
 
-  const selected =
-    new Set(
-      STATE.seatEditEmployeeIds ||
-      []
-    );
+  if (to) {
+
+    rows =
+      rows.filter(
+        row =>
+          row.transactionDate <=
+          to
+      );
+  }
 
 
-  let employees =
-    getSeatCandidateEmployees();
+  if (employeeQuery) {
+
+    rows =
+      rows.filter(
+        row =>
+          [
+            row.employeeId,
+            row.nickname
+          ]
+          .join(
+            ' '
+          )
+          .toLowerCase()
+          .includes(
+            employeeQuery
+          )
+      );
+  }
 
 
-  const q =
-    STATE.seatEmployeeSearch;
+  rows =
+    rows
+      .sort(
+        (
+          a,
+          b
+        ) => {
 
-
-  if (q) {
-
-    employees =
-      employees
-        .filter(
-          employee =>
-            [
-              employee.employeeId,
-              employee.nickname,
-              employee.team,
-              employee.position
-            ]
-            .join(
-              ' '
+          const dateCompare =
+            String(
+              b.transactionDate
             )
-            .toLowerCase()
-            .includes(
-              q
-            )
-        );
-  }
-
-
-  if (
-    !employees.length
-  ) {
-
-    list.innerHTML = `
-      <div class="empty" style="grid-column:1/-1;padding:22px 12px">
-        ไม่พบพนักงานตามคำค้น
-      </div>
-    `;
-
-  } else {
-
-    list.innerHTML =
-      employees
-        .map(
-          employee => {
-
-            const checked =
-              selected.has(
-                employee.employeeId
-              );
-
-
-            return `
-              <label
-                class="
-                  seat-employee-option
-                  ${
-                    checked
-                      ? 'selected'
-                      : ''
-                  }
-                "
-              >
-
-                <input
-                  type="checkbox"
-                  ${
-                    checked
-                      ? 'checked'
-                      : ''
-                  }
-                  onchange='toggleSeatEmployee(${jsonString(employee.employeeId)},this.checked)'
-                >
-
-                <span>
-
-                  <div class="seat-employee-name">
-                    ${escapeHtml(employee.employeeId)}
-                    ·
-                    ${escapeHtml(employee.nickname || '-')}
-                  </div>
-
-                  <div class="seat-employee-meta">
-                    ${escapeHtml(employee.team || '-')}
-                    ·
-                    ${escapeHtml(employee.position || '-')}
-                    ·
-                    ${escapeHtml(employee.status || '-')}
-                  </div>
-
-                </span>
-
-              </label>
-            `;
-          }
-        )
-        .join(
-          ''
-        );
-  }
-
-
-  chips.innerHTML =
-    (
-      STATE.seatEditEmployeeIds ||
-      []
-    )
-      .map(
-        employeeId => {
-
-          const employee =
-            getSeatEmployee(
-              employeeId
+            .localeCompare(
+              String(
+                a.transactionDate
+              )
             );
 
 
-          return `
-            <span class="seat-chip">
+          if (dateCompare) {
+            return dateCompare;
+          }
 
-              ${
-                employee
-                  ? (
-                      escapeHtml(
-                        employee.employeeId
-                      ) +
-                      ' · ' +
-                      escapeHtml(
-                        employee.nickname ||
-                        '-'
-                      )
-                    )
-                  : escapeHtml(
-                      employeeId
-                    )
-              }
 
-              <button
-                type="button"
-                onclick='removeSeatEmployee(${jsonString(employeeId)})'
-              >
-                ×
-              </button>
-
-            </span>
-          `;
+          return String(
+            b.createdAt
+          )
+          .localeCompare(
+            String(
+              a.createdAt
+            )
+          );
         }
+      );
+
+
+  return {
+
+    rows:
+      rows,
+
+    totalDamage:
+      rows.reduce(
+        (
+          sum,
+          row
+        ) =>
+          sum +
+          Number(
+            row.amount || 0
+          ),
+        0
+      ),
+
+    totalCovered:
+      rows.reduce(
+        (
+          sum,
+          row
+        ) =>
+          sum +
+          Number(
+            row.coveredByLimit || 0
+          ),
+        0
+      ),
+
+    totalActual:
+      rows.reduce(
+        (
+          sum,
+          row
+        ) =>
+          sum +
+          Number(
+            row.actualDeduction || 0
+          ),
+        0
       )
-      .join(
-        ''
-      );
-
-
-  setText(
-    'seatEmployeeCountHint',
-    (
-      STATE.seatEditEmployeeIds ||
-      []
-    ).length
-      ? (
-          'เลือกแล้ว ' +
-          STATE.seatEditEmployeeIds.length +
-          ' คน'
-        )
-      : 'เลือกได้มากกว่า 1 คน'
-  );
+  };
 }
 
 
-function toggleSeatEmployee(
-  employeeId,
-  checked
+function getDeductionDashboard(
+  month
 ) {
 
-  const current =
-    new Set(
-      STATE.seatEditEmployeeIds ||
-      []
-    );
-
-
-  if (checked) {
-
-    current.add(
-      employeeId
-    );
-
-  } else {
-
-    current.delete(
-      employeeId
-    );
-  }
-
-
-  STATE.seatEditEmployeeIds =
-    [
-      ...current
-    ];
-
-
-  renderSeatEmployeeEditor();
-}
-
-
-function removeSeatEmployee(
-  employeeId
-) {
-
-  STATE.seatEditEmployeeIds =
-    (
-      STATE.seatEditEmployeeIds ||
-      []
+  month =
+    String(
+      month || ''
     )
-      .filter(
-        id =>
-          id !==
-          employeeId
-      );
+    .trim();
 
-
-  renderSeatEmployeeEditor();
-}
-
-
-function handleSeatEmailKey(
-  event
-) {
 
   if (
-    event.key ===
-    'Enter' ||
-    event.key ===
-    ','
+    !/^\d{4}-\d{2}$/
+      .test(
+        month
+      )
   ) {
 
-    event.preventDefault();
-
-    addSeatEmail();
+    month =
+      todayText_()
+        .slice(
+          0,
+          7
+        );
   }
+
+
+  const employees =
+    getEmployees_();
+
+
+  const wdLimit =
+    getWdLimitAmount_();
+
+
+  const monthRows =
+    calculateDeductions_()
+      .filter(
+        row =>
+          row.month ===
+          month
+      );
+
+
+  const byEmployee = {};
+
+
+  monthRows
+    .forEach(
+      row => {
+
+        if (
+          !byEmployee[
+            row.employeeId
+          ]
+        ) {
+
+          byEmployee[
+            row.employeeId
+          ] = {
+
+            totalDamage:
+              0,
+
+            limitUsed:
+              0,
+
+            actualDeduction:
+              0
+          };
+        }
+
+
+        const bucket =
+          byEmployee[
+            row.employeeId
+          ];
+
+
+        bucket.totalDamage +=
+          Number(
+            row.amount || 0
+          );
+
+
+        bucket.limitUsed +=
+          Number(
+            row.coveredByLimit || 0
+          );
+
+
+        bucket.actualDeduction +=
+          Number(
+            row.actualDeduction || 0
+          );
+      }
+    );
+
+
+  const wdEmployees =
+    employees
+      .filter(
+        isWdEmployee_
+      )
+      .map(
+        employee => {
+
+          const totals =
+            byEmployee[
+              employee.employeeId
+            ] || {
+
+              totalDamage:
+                0,
+
+              limitUsed:
+                0,
+
+              actualDeduction:
+                0
+            };
+
+
+          return {
+
+            employeeId:
+              employee.employeeId,
+
+            nickname:
+              employee.nickname,
+
+            team:
+              employee.team,
+
+            position:
+              employee.position,
+
+            limit:
+              wdLimit,
+
+            totalDamage:
+              totals.totalDamage,
+
+            limitUsed:
+              Math.min(
+                wdLimit,
+                totals.limitUsed
+              ),
+
+            remainingLimit:
+              Math.max(
+                0,
+                wdLimit -
+                totals.limitUsed
+              ),
+
+            actualDeduction:
+              totals.actualDeduction
+          };
+        }
+      )
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          Number(
+            b.limitUsed
+          ) -
+          Number(
+            a.limitUsed
+          )
+      );
+
+
+  const generalEmployees =
+    employees
+      .filter(
+        employee =>
+          !isWdEmployee_(
+            employee
+          )
+      )
+      .map(
+        employee => {
+
+          const totals =
+            byEmployee[
+              employee.employeeId
+            ] || {
+
+              actualDeduction:
+                0
+            };
+
+
+          return {
+
+            employeeId:
+              employee.employeeId,
+
+            nickname:
+              employee.nickname,
+
+            team:
+              employee.team,
+
+            position:
+              employee.position,
+
+            actualDeduction:
+              totals.actualDeduction
+          };
+        }
+      )
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          Number(
+            b.actualDeduction
+          ) -
+          Number(
+            a.actualDeduction
+          )
+      );
+
+
+  return {
+
+    month:
+      month,
+
+    wdLimit:
+      wdLimit,
+
+    limitTypes:
+      getDeductionLimitTypes(),
+
+    wdEmployees:
+      wdEmployees,
+
+    generalEmployees:
+      generalEmployees
+  };
 }
 
 
-function addSeatEmail() {
+/* =========================================================
+   SEATING PLAN
+========================================================= */
 
-  const input =
-    document.getElementById(
-      'seatEmailInput'
-    );
+function parseStringArrayJson_(
+  text
+) {
 
-
-  if (!input) {
-    return;
+  if (!text) {
+    return [];
   }
 
 
-  const raw =
-    String(
-      input.value || ''
-    );
+  try {
+
+    const value =
+      JSON.parse(
+        String(text)
+      );
 
 
-  const names =
-    raw
-      .split(
-        /[,;\n]+/
+    if (
+      !Array.isArray(
+        value
       )
+    ) {
+      return [];
+    }
+
+
+    return value
       .map(
-        value =>
-          value.trim()
+        item =>
+          String(
+            item ?? ''
+          )
+          .trim()
       )
       .filter(Boolean);
 
+  } catch (_) {
 
-  if (
-    !names.length
-  ) {
-    return;
+    return [];
   }
-
-
-  const current =
-    new Set(
-      STATE.seatEditEmails ||
-      []
-    );
-
-
-  names
-    .forEach(
-      name => {
-
-        /*
-         * เมลเป็น "ชื่อสั้น ๆ" เท่านั้น
-         * จึงไม่บังคับรูปแบบ @domain
-         */
-        current.add(
-          name.slice(
-            0,
-            80
-          )
-        );
-      }
-    );
-
-
-  STATE.seatEditEmails =
-    [
-      ...current
-    ];
-
-
-  input.value =
-    '';
-
-
-  renderSeatEmailChips();
 }
 
 
-function renderSeatEmailChips() {
-
-  const container =
-    document.getElementById(
-      'seatEmailChips'
-    );
-
-
-  if (!container) {
-    return;
-  }
-
-
-  if (
-    !STATE.seatEditEmails
-      ?.length
-  ) {
-
-    container.innerHTML = `
-      <span
-        style="
-          color:#a0a9b7;
-          font-size:9px;
-          font-weight:750;
-        "
-      >
-        ยังไม่มีชื่อเมล
-      </span>
-    `;
-
-    return;
-  }
-
-
-  container.innerHTML =
-    STATE.seatEditEmails
-      .map(
-        (
-          email,
-          index
-        ) => `
-          <span class="seat-chip email">
-
-            ✉️
-            ${escapeHtml(email)}
-
-            <button
-              type="button"
-              onclick="removeSeatEmail(${index})"
-            >
-              ×
-            </button>
-
-          </span>
-        `
-      )
-      .join(
-        ''
-      );
-}
-
-
-function removeSeatEmail(
-  index
+function uniqueCleanStrings_(
+  values,
+  maxLength
 ) {
 
-  STATE.seatEditEmails =
-    (
-      STATE.seatEditEmails ||
-      []
-    )
-      .filter(
-        (
-          _,
-          i
-        ) =>
-          i !==
-          Number(index)
-      );
+  const result = [];
+  const seen = new Set();
 
 
-  renderSeatEmailChips();
-}
+  (
+    Array.isArray(values)
+      ? values
+      : []
+  )
+    .forEach(
+      value => {
 
-
-function saveCurrentSeat() {
-
-  if (
-    !STATE.seatEditSeatNo
-  ) {
-    return;
-  }
-
-
-  /*
-   * ถ้ามีชื่อเมลค้างอยู่ในช่อง
-   * เพิ่มเข้า list ก่อนบันทึก
-   */
-  const emailInput =
-    document.getElementById(
-      'seatEmailInput'
-    );
-
-
-  if (
-    String(
-      emailInput?.value || ''
-    ).trim()
-  ) {
-
-    addSeatEmail();
-  }
-
-
-  const seatNo =
-    Number(
-      STATE.seatEditSeatNo
-    );
-
-
-  const nextSeat = {
-
-    seatNo:
-      seatNo,
-
-    employeeIds:
-      [
-        ...(
-          STATE.seatEditEmployeeIds ||
-          []
-        )
-      ],
-
-    emailNames:
-      [
-        ...(
-          STATE.seatEditEmails ||
-          []
-        )
-      ],
-
-    updatedAt:
-      ''
-  };
-
-
-  /*
-   * เก็บค่าเดิมไว้ เผื่อ server บันทึกไม่สำเร็จ
-   */
-  const previousSeat =
-    (
-      STATE.seatingPlan ||
-      []
-    )
-      .find(
-        seat =>
-          Number(
-            seat.seatNo
-          ) ===
-          seatNo
-      );
-
-
-  /*
-   * อัปเดตหน้าจอทันที ไม่รอ Apps Script
-   */
-  STATE.seatingPlan =
-    (
-      STATE.seatingPlan ||
-      []
-    )
-      .filter(
-        seat =>
-          Number(
-            seat.seatNo
-          ) !==
-          seatNo
-      );
-
-
-  STATE.seatingPlan
-    .push(
-      nextSeat
-    );
-
-
-  STATE.seatingPlan
-    .sort(
-      (
-        a,
-        b
-      ) =>
-        Number(
-          a.seatNo
-        ) -
-        Number(
-          b.seatNo
-        )
-    );
-
-
-  renderSeatPlan();
-
-  closeSeatEditor();
-
-
-  /*
-   * ค่อยบันทึกขึ้น Backend ด้านหลัง
-   * ผู้ใช้ไม่ต้องนั่งรอหน้าต่างค้าง
-   */
-  google.script.run
-
-    .withSuccessHandler(
-      res => {
-
-        const savedSeat =
-          res?.seat ||
-          nextSeat;
-
-
-        STATE.seatingLoaded =
-          true;
-
-
-        STATE.seatingPlan =
-          (
-            STATE.seatingPlan ||
-            []
+        const cleaned =
+          String(
+            value ?? ''
           )
-            .filter(
-              seat =>
-                Number(
-                  seat.seatNo
-                ) !==
-                seatNo
-            );
-
-
-        STATE.seatingPlan
-          .push(
-            savedSeat
+          .trim()
+          .slice(
+            0,
+            maxLength || 120
           );
 
 
-        STATE.seatingPlan
-          .sort(
-            (
-              a,
-              b
-            ) =>
-              Number(
-                a.seatNo
-              ) -
-              Number(
-                b.seatNo
-              )
-          );
-
-
-        renderSeatPlan();
-
-
-        toast(
-          res?.message ||
-          'บันทึกโต๊ะแล้ว'
-        );
-      }
-    )
-
-    .withFailureHandler(
-      err => {
-
-        /*
-         * ถ้าบันทึกไม่สำเร็จ ให้คืนข้อมูลเดิม
-         */
-        STATE.seatingPlan =
-          (
-            STATE.seatingPlan ||
-            []
-          )
-            .filter(
-              seat =>
-                Number(
-                  seat.seatNo
-                ) !==
-                seatNo
-            );
-
-
-        if (
-          previousSeat
-        ) {
-
-          STATE.seatingPlan
-            .push(
-              previousSeat
-            );
+        if (!cleaned) {
+          return;
         }
 
 
-        STATE.seatingPlan
-          .sort(
-            (
-              a,
-              b
-            ) =>
-              Number(
-                a.seatNo
-              ) -
-              Number(
-                b.seatNo
-              )
-          );
-
-
-        renderSeatPlan();
-
-        showServerError(
-          err
-        );
-      }
-    )
-
-    .saveSeatAssignment({
-      seatNo:
-        seatNo,
-
-      employeeIds:
-        nextSeat.employeeIds,
-
-      emailNames:
-        nextSeat.emailNames
-    });
-}
-
-
-function clearCurrentSeat() {
-
-  if (
-    !STATE.seatEditSeatNo
-  ) {
-    return;
-  }
-
-
-  const seatNo =
-    Number(
-      STATE.seatEditSeatNo
-    );
-
-
-  if (
-    !confirm(
-      'ล้างพนักงานและชื่อเมลของโต๊ะที่ ' +
-      seatNo +
-      ' ใช่ไหม?'
-    )
-  ) {
-    return;
-  }
-
-
-  const previousSeat =
-    (
-      STATE.seatingPlan ||
-      []
-    )
-      .find(
-        seat =>
-          Number(
-            seat.seatNo
-          ) ===
-          seatNo
-      );
-
-
-  const emptySeat = {
-
-    seatNo:
-      seatNo,
-
-    employeeIds:
-      [],
-
-    emailNames:
-      [],
-
-    updatedAt:
-      ''
-  };
-
-
-  /*
-   * ล้างหน้าจอทันที
-   */
-  STATE.seatingPlan =
-    (
-      STATE.seatingPlan ||
-      []
-    )
-      .filter(
-        seat =>
-          Number(
-            seat.seatNo
-          ) !==
-          seatNo
-      );
-
-
-  STATE.seatingPlan
-    .push(
-      emptySeat
-    );
-
-
-  STATE.seatingPlan
-    .sort(
-      (
-        a,
-        b
-      ) =>
-        Number(
-          a.seatNo
-        ) -
-        Number(
-          b.seatNo
-        )
-    );
-
-
-  renderSeatPlan();
-
-  closeSeatEditor();
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      res => {
-
-        toast(
-          res?.message ||
-          'ล้างโต๊ะแล้ว'
-        );
-      }
-    )
-
-    .withFailureHandler(
-      err => {
-
-        STATE.seatingPlan =
-          (
-            STATE.seatingPlan ||
-            []
-          )
-            .filter(
-              seat =>
-                Number(
-                  seat.seatNo
-                ) !==
-                seatNo
-            );
+        const key =
+          cleaned.toUpperCase();
 
 
         if (
-          previousSeat
+          seen.has(
+            key
+          )
         ) {
-
-          STATE.seatingPlan
-            .push(
-              previousSeat
-            );
+          return;
         }
 
 
-        STATE.seatingPlan
-          .sort(
-            (
-              a,
-              b
-            ) =>
-              Number(
-                a.seatNo
-              ) -
-              Number(
-                b.seatNo
-              )
-          );
+        seen.add(
+          key
+        );
 
-
-        renderSeatPlan();
-
-        showServerError(
-          err
+        result.push(
+          cleaned
         );
       }
-    )
+    );
 
-    .saveSeatAssignment({
-      seatNo:
-        seatNo,
 
-      employeeIds:
-        [],
-
-      emailNames:
-        []
-    });
+  return result;
 }
 
 
+function ensureSeatingSheet_() {
+
+  const ss =
+    getDatabase_();
 
 
-/* =========================
-   DROPDOWNS
-========================= */
-
-function refreshAllDropdowns() {
-
-  fillSelect(
-    'empTeam',
-    STATE.teams,
-    'เลือก TEAM'
-  );
-
-  fillSelect(
-    'empPosition',
-    STATE.positions,
-    'เลือกตำแหน่ง'
-  );
-
-  fillSelect(
-    'empBranch',
-    STATE.branches,
-    'เลือกสาขา'
-  );
-
-  fillSelect(
-    'empGender',
-    STATE.genders,
-    'เลือกเพศ'
-  );
-
-  fillSelect(
-    'empStatus',
-    STATE.employeeStatus
+  ensureSheet_(
+    ss,
+    APP.SHEETS.SEATING,
+    [
+      'seatNo',
+      'employeeIdsJson',
+      'emailNamesJson',
+      'updatedAt'
+    ]
   );
 
 
-  fillSelect(
-    'employeeTeamFilter',
-    STATE.teams,
-    'ทุก TEAM'
-  );
-
-  fillSelect(
-    'employeePositionFilter',
-    STATE.positions,
-    'ทุกตำแหน่ง'
-  );
-
-
-  fillSelect(
-    'employeeImportSheet',
-    STATE.importSheets || [],
-    'เลือกชีตที่มีข้อมูลพนักงาน'
-  );
-
-
-  fillSelect(
-    'scheduleTeam',
-    STATE.teams,
-    'ทุก TEAM'
-  );
-
-  fillSelect(
-    'schedulePosition',
-    STATE.positions,
-    'ทุกตำแหน่ง'
-  );
-
-
-  fillSelect(
-    'assignTeamSelect',
-    STATE.teams,
-    'เลือก TEAM'
-  );
-
-
-  fillSelect(
-    'assignPositionSelect',
-    STATE.positions,
-    'เลือกตำแหน่ง'
-  );
-
-
-  fillSelect(
-    'assignTeamFilter',
-    STATE.teams,
-    'ทุก TEAM'
-  );
-
-
-  fillSelect(
-    'historyTeam',
-    STATE.teams,
-    'ทุก TEAM'
-  );
-
-
-  refreshEmployeeDropdowns();
-
-  refreshShiftSetDropdown();
-
-  updateAssignScope();
+  return ss
+    .getSheetByName(
+      APP.SHEETS.SEATING
+    );
 }
 
 
-function refreshEmployeeDropdowns() {
+function getSeatingPlan() {
 
-  const options =
-    STATE.employees
-      .filter(
-        e =>
-          e.status !== 'ออก'
-      )
-      .map(e => ({
+  ensureSeatingSheet_();
 
-        value:
-          e.employeeId,
-
-        label:
-          e.employeeId +
-          ' · ' +
-          e.nickname
-      }));
-
-
-  fillObjectSelect(
-    'calendarEmployee',
-    options,
-    'เลือกพนักงาน'
-  );
-
-
-  fillObjectSelect(
-    'scheduleEmployee',
-    options,
-    'พนักงานทั้งหมด'
-  );
-
-
-  fillObjectSelect(
-    'employeeViewSelect',
-    options,
-    'เลือกพนักงาน'
-  );
-
-
-  fillObjectSelect(
-    'historyEmployee',
-    options,
-    'พนักงานทั้งหมด'
-  );
-
-
-
-  fillObjectSelect(
-    'assignEmployeeSelect',
-    options,
-    'เลือกพนักงาน'
-  );
+  return getSeatingPlan_();
 }
 
 
-function refreshShiftSetDropdown() {
+function getSeatingPlan_() {
 
-  fillObjectSelect(
-    'assignSet',
-    STATE.shiftSets
-      .map(s => ({
-
-        value:
-          s.setId,
-
-        label:
-          s.setName
-      })),
-
-    'เลือกเซตกะ'
-  );
-}
+  const saved = {};
 
 
-/* =========================
-   DASHBOARD
-========================= */
+  getSheetObjects_(
+    APP.SHEETS.SEATING
+  )
+  .forEach(
+    row => {
 
-function renderDashboard() {
-
-  const active =
-    STATE.employees
-      .filter(
-        e =>
-          e.status !== 'ออก'
-      );
+      const seatNo =
+        Number(
+          row.seatNo
+        );
 
 
-  const data =
-    STATE.dashboard || {
-
-      summary: {
-        MORNING:0,
-        NIGHT:0,
-        OFF:0,
-        UNSET:0
+      if (
+        !Number.isInteger(
+          seatNo
+        ) ||
+        seatNo < 1 ||
+        seatNo > 48
+      ) {
+        return;
       }
-    };
 
 
-  setHtml(
-    'dashboardStats',
+      saved[
+        seatNo
+      ] = {
 
-    statCard(
-      'พนักงานทั้งหมด',
-      active.length,
-      'คน',
-      'green'
-    )
+        seatNo:
+          seatNo,
 
-    +
+        employeeIds:
+          uniqueCleanStrings_(
+            parseStringArrayJson_(
+              row.employeeIdsJson
+            ),
+            80
+          ),
 
-    statCard(
-      'กะเช้า',
-      data.summary.MORNING || 0,
-      'คน',
-      'blue'
-    )
+        emailNames:
+          uniqueCleanStrings_(
+            parseStringArrayJson_(
+              row.emailNamesJson
+            ),
+            80
+          ),
 
-    +
-
-    statCard(
-      'กะดึก',
-      data.summary.NIGHT || 0,
-      'คน',
-      'purple'
-    )
-
-    +
-
-    statCard(
-      'หยุดวันนี้',
-      data.summary.OFF || 0,
-      'คน',
-      'yellow'
-    )
+        updatedAt:
+          String(
+            row.updatedAt || ''
+          )
+      };
+    }
   );
 
 
-  let teamHtml = '';
+  const result = [];
 
 
-  STATE.teams
-    .forEach(team => {
+  for (
+    let seatNo = 1;
+    seatNo <= 48;
+    seatNo++
+  ) {
 
-      const count =
-        active.filter(
-          e =>
-            e.team === team
-        ).length;
+    result.push(
+      saved[
+        seatNo
+      ] || {
 
+        seatNo:
+          seatNo,
 
-      teamHtml +=
-        summaryRow(
-          team,
-          count
-        );
-    });
+        employeeIds:
+          [],
 
+        emailNames:
+          [],
 
-  setHtml(
-    'dashboardTeams',
-    teamHtml ||
-      emptyHtml(
-        'ยังไม่มีข้อมูล TEAM'
-      )
-  );
-
-
-  setHtml(
-    'dashboardToday',
-
-    summaryRow(
-      '☀️ กะเช้า',
-      data.summary.MORNING || 0
-    )
-
-    +
-
-    summaryRow(
-      '🌙 กะดึก',
-      data.summary.NIGHT || 0
-    )
-
-    +
-
-    summaryRow(
-      '❤️ หยุด',
-      data.summary.OFF || 0
-    )
-
-    +
-
-    summaryRow(
-      '⚪ ยังไม่ตั้งกะ',
-      data.summary.UNSET || 0
-    )
-  );
-}
-
-
-/* =========================
-   EMPLOYEE IMPORT
-========================= */
-
-function refreshImportSheets() {
-
-  setLoading(true);
-
-  google.script.run
-
-    .withSuccessHandler(
-      sheets => {
-
-        STATE.importSheets =
-          sheets || [];
-
-        fillSelect(
-          'employeeImportSheet',
-          STATE.importSheets,
-          'เลือกชีตที่มีข้อมูลพนักงาน'
-        );
-
-        setHtml(
-          'employeeImportPreview',
+        updatedAt:
           ''
-        );
-
-        setLoading(false);
-
-        toast(
-          'รีเฟรชรายชื่อชีตแล้ว'
-        );
       }
-    )
-
-    .withFailureHandler(
-      showServerError
-    )
-
-    .getImportSheets();
-}
-
-
-function previewEmployeeImportUI() {
-
-  const sheetName =
-    value('employeeImportSheet');
-
-
-  if (!sheetName) {
-
-    return toast(
-      'กรุณาเลือกชีตต้นทาง'
     );
   }
 
 
-  setLoading(true);
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      data => {
-
-        setLoading(false);
-
-        renderEmployeeImportPreview(
-          data
-        );
-      }
-    )
-
-    .withFailureHandler(
-      showServerError
-    )
-
-    .previewEmployeeImport(
-      sheetName
-    );
+  return result;
 }
 
 
-function renderEmployeeImportPreview(
+function saveSeatAssignment(
   data
 ) {
 
-  if (!data) return;
+  data =
+    data || {};
 
 
-  let html = `
-
-    <div class="import-summary">
-
-      ${importStat(
-        'ข้อมูลทั้งหมด',
-        data.totalSourceRows || 0
-      )}
-
-      ${importStat(
-        'นำเข้าได้',
-        data.validCount || 0
-      )}
-
-      ${importStat(
-        'เพิ่มใหม่',
-        data.newCount || 0
-      )}
-
-      ${importStat(
-        'อัปเดตเดิม',
-        data.updateCount || 0
-      )}
-
-      ${importStat(
-        'ข้าม/ผิดพลาด',
-        data.invalidCount || 0
-      )}
-
-    </div>
-  `;
-
-
-  if (
-    data.duplicateCount
-  ) {
-
-    html += `
-      <div class="import-hint">
-        พบรหัสพนักงานซ้ำในชีตต้นทาง
-        <b>${data.duplicateCount}</b> รายการ
-        — ระบบจะใช้ข้อมูลแถวล่าสุดของรหัสนั้น
-      </div>
-    `;
-  }
-
-
-  if (
-    data.rows &&
-    data.rows.length
-  ) {
-
-    html += `
-
-      <div class="table-wrap import-preview-table">
-
-        <table>
-
-          <thead>
-            <tr>
-              <th>แถว</th>
-              <th>รหัสพนักงาน</th>
-              <th>ชื่อ</th>
-              <th>ตำแหน่ง</th>
-              <th>TEAM</th>
-              <th>สาขา</th>
-              <th>เพศ</th>
-              <th>สถานะ</th>
-            </tr>
-          </thead>
-
-          <tbody>
-    `;
-
-
-    data.rows.forEach(
-      row => {
-
-        html += `
-          <tr>
-            <td>${escapeHtml(row.sourceRow || '')}</td>
-            <td><b>${escapeHtml(row.employeeId || '')}</b></td>
-            <td>${escapeHtml(row.nickname || '')}</td>
-            <td>${escapeHtml(row.position || '-')}</td>
-            <td>${escapeHtml(row.team || '-')}</td>
-            <td>${escapeHtml(row.branch || '-')}</td>
-            <td>${escapeHtml(row.gender || '-')}</td>
-            <td>${escapeHtml(row.status || '-')}</td>
-          </tr>
-        `;
-      }
+  const seatNo =
+    Number(
+      data.seatNo
     );
 
 
-    html += `
-          </tbody>
-        </table>
-      </div>
-    `;
+  if (
+    !Number.isInteger(
+      seatNo
+    ) ||
+    seatNo < 1 ||
+    seatNo > 48
+  ) {
+
+    throw new Error(
+      'หมายเลขโต๊ะไม่ถูกต้อง'
+    );
   }
 
 
-  if (
-    data.invalidRows &&
-    data.invalidRows.length
-  ) {
+  const employeeIds =
+    uniqueCleanStrings_(
+      data.employeeIds,
+      80
+    );
 
-    html += `
-      <div class="import-hint">
-        <b>แถวที่ข้าม:</b><br>
-        ${data.invalidRows
-          .map(
-            row =>
-              'แถว ' +
-              escapeHtml(row.row || '') +
-              ' — ' +
-              escapeHtml(row.reason || '')
+
+  const emailNames =
+    uniqueCleanStrings_(
+      data.emailNames,
+      80
+    );
+
+
+  const sheet =
+    ensureSeatingSheet_();
+
+
+  /*
+   * เร็วกว่าแบบเดิม:
+   * - โต๊ะ 1 อยู่แถว 2
+   * - โต๊ะ 2 อยู่แถว 3
+   * - ...
+   * - โต๊ะ 48 อยู่แถว 49
+   *
+   * ไม่ต้องอ่านทั้งชีตเพื่อหาแถวทุกครั้ง
+   */
+  const targetRow =
+    seatNo + 1;
+
+
+  const updatedAt =
+    nowText_();
+
+
+  sheet
+    .getRange(
+      targetRow,
+      1,
+      1,
+      4
+    )
+    .setValues([
+      [
+        seatNo,
+        JSON.stringify(
+          employeeIds
+        ),
+        JSON.stringify(
+          emailNames
+        ),
+        updatedAt
+      ]
+    ]);
+
+
+  /*
+   * ไม่อ่าน DB_Seating ทั้งชีตซ้ำอีกครั้ง
+   * ส่งกลับเฉพาะโต๊ะที่เพิ่งบันทึก
+   */
+  return {
+
+    ok:
+      true,
+
+    message:
+      (
+        employeeIds.length ||
+        emailNames.length
+      )
+        ? (
+            'บันทึกโต๊ะที่ ' +
+            seatNo +
+            ' แล้ว'
           )
-          .join('<br>')}
-      </div>
-    `;
-  }
+        : (
+            'ล้างโต๊ะที่ ' +
+            seatNo +
+            ' แล้ว'
+          ),
 
+    seat: {
 
-  html += `
-    <div class="actions" style="margin-top:14px">
-      <button
-        class="btn btn-green"
-        onclick="importEmployeesNow()"
-      >
-        ⚡ ยืนยันนำเข้า ${data.validCount || 0} คน
-      </button>
-    </div>
-  `;
+      seatNo:
+        seatNo,
 
+      employeeIds:
+        employeeIds,
 
-  setHtml(
-    'employeeImportPreview',
-    html
-  );
-}
+      emailNames:
+        emailNames,
 
-
-function importStat(
-  label,
-  valueText
-) {
-
-  return `
-    <div class="import-stat">
-      <div class="import-stat-label">
-        ${escapeHtml(label)}
-      </div>
-      <div class="import-stat-value">
-        ${escapeHtml(valueText)}
-      </div>
-    </div>
-  `;
-}
-
-
-function importEmployeesNow() {
-
-  const sheetName =
-    value('employeeImportSheet');
-
-
-  if (!sheetName) {
-
-    return toast(
-      'กรุณาเลือกชีตต้นทาง'
-    );
-  }
-
-
-  if (
-    !confirm(
-      'นำเข้าพนักงานทั้งหมดจากชีต "' +
-      sheetName +
-      '" ใช่หรือไม่?\n\n' +
-      'รหัสที่มีอยู่แล้วจะถูกอัปเดต และรหัสใหม่จะถูกเพิ่มเข้าไป'
-    )
-  ) {
-    return;
-  }
-
-
-  setLoading(true);
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      res => {
-
-        STATE.employees =
-          res.employees || [];
-
-        STATE.settings =
-          res.settings ||
-          STATE.settings;
-
-        STATE.teams =
-          res.teams ||
-          STATE.teams;
-
-        STATE.branches =
-          res.branches ||
-          STATE.branches;
-
-
-        refreshAllDropdowns();
-
-        renderEmployees();
-
-        refreshEmployeeDropdowns();
-
-        setHtml(
-          'employeeImportPreview',
-          ''
-        );
-
-        refreshDashboard();
-
-        setLoading(false);
-
-        toast(
-          'นำเข้าสำเร็จ ' +
-          (res.importedCount || 0) +
-          ' คน · เพิ่มใหม่ ' +
-          (res.newCount || 0) +
-          ' · อัปเดต ' +
-          (res.updateCount || 0)
-        );
-      }
-    )
-
-    .withFailureHandler(
-      showServerError
-    )
-
-    .importEmployeesFromSheet(
-      sheetName
-    );
-}
-
-
-/* =========================
-   EMPLOYEE
-========================= */
-
-function saveEmployeeForm() {
-
-  const data = {
-
-    employeeId:
-      value('empId').trim(),
-
-    nickname:
-      value(
-        'empNickname'
-      ).trim(),
-
-    team:
-      value('empTeam'),
-
-    position:
-      value('empPosition'),
-
-    branch:
-      value('empBranch'),
-
-    gender:
-      value('empGender'),
-
-    status:
-      value('empStatus') ||
-      'ทำงาน',
-
-    isNew:
-      document
-        .getElementById(
-          'empIsNew'
-        )
-        ?.checked ===
-        true,
-
-    mode:
-      'create'
+      updatedAt:
+        updatedAt
+    }
   };
-
-
-  if (
-    !data.employeeId
-  ) {
-
-    return toast(
-      'กรุณากรอกรหัสพนักงาน'
-    );
-  }
-
-
-  if (
-    !data.nickname
-  ) {
-
-    return toast(
-      'กรุณากรอกชื่อเล่น'
-    );
-  }
-
-
-  const duplicateEmployee =
-    STATE.employees
-      .find(
-        employee =>
-          String(
-            employee.employeeId || ''
-          )
-          .trim()
-          .toUpperCase() ===
-          String(
-            data.employeeId || ''
-          )
-          .trim()
-          .toUpperCase()
-      );
-
-
-  if (
-    duplicateEmployee
-  ) {
-
-    return toast(
-      'รหัสพนักงาน ' +
-      data.employeeId +
-      ' มีอยู่ในระบบแล้ว ไม่สามารถบันทึกข้อมูลซ้ำได้',
-      'error'
-    );
-  }
-
-
-  setLoading(true);
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      res => {
-
-        STATE.employees =
-          res.employees;
-
-        clearEmployeeForm();
-
-        renderEmployees();
-
-        refreshEmployeeDropdowns();
-
-        refreshDashboard();
-
-        setLoading(false);
-
-        toast(res.message);
-      }
-    )
-
-    .withFailureHandler(
-      showServerError
-    )
-
-    .saveEmployee(data);
 }
 
 
-function startInlineEmployeeEdit(
-  id
-) {
 
-  const employee =
-    STATE.employees
-      .find(
-        item =>
-          item.employeeId ===
-          id
+/* =========================================================
+   SHIFT SET
+========================================================= */
+
+function getShiftSets_() {
+
+  return getSheetObjects_(
+    APP.SHEETS.SHIFT_SETS
+  )
+  .map(
+    x => ({
+
+      setId:
+        x.setId,
+
+      setName:
+        x.setName,
+
+      workDays:
+        Number(
+          x.workDays || 10
+        ),
+
+      offDays:
+        Number(
+          x.offDays || 5
+        ),
+
+      alternate:
+        String(
+          x.alternate
+        ).toUpperCase() === 'TRUE',
+
+      startShift:
+        x.startShift ||
+        'MORNING',
+
+      fixedShift:
+        x.fixedShift || '',
+
+      createdAt:
+        x.createdAt || '',
+
+      updatedAt:
+        x.updatedAt || ''
+    })
+  );
+}
+
+
+function saveShiftSet(data) {
+
+  const setName =
+    String(
+      data?.setName || ''
+    ).trim();
+
+
+  if (!setName) {
+
+    throw new Error(
+      'กรุณาตั้งชื่อเซตกะ'
+    );
+  }
+
+
+  const workDays =
+    Math.max(
+      1,
+      Number(
+        data.workDays || 10
+      )
+    );
+
+
+  const offDays =
+    Math.max(
+      0,
+      Number(
+        data.offDays || 5
+      )
+    );
+
+
+  const alternate =
+    data.alternate === true ||
+    String(
+      data.alternate
+    ).toUpperCase() === 'TRUE';
+
+
+  let setId =
+    String(
+      data.setId || ''
+    ).trim();
+
+
+  if (!setId) {
+
+    setId =
+      'SET_' +
+      new Date().getTime();
+  }
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.SHIFT_SETS
       );
 
 
-  if (!employee) {
+  const rows =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  let foundRow = 0;
+  let oldCreatedAt = '';
+
+
+  for (
+    let r = 1;
+    r < rows.length;
+    r++
+  ) {
+
+    if (
+      String(
+        rows[r][0]
+      ) === setId
+    ) {
+
+      foundRow =
+        r + 1;
+
+      oldCreatedAt =
+        rows[r][7] || '';
+
+      break;
+    }
+  }
+
+
+  const now =
+    nowText_();
+
+
+  const row = [
+
+    setId,
+
+    setName,
+
+    workDays,
+
+    offDays,
+
+    alternate
+      ? 'TRUE'
+      : 'FALSE',
+
+    String(
+      data.startShift ||
+      'MORNING'
+    ),
+
+    alternate
+      ? ''
+      : String(
+          data.fixedShift ||
+          data.startShift ||
+          'MORNING'
+        ),
+
+    oldCreatedAt || now,
+
+    now
+  ];
+
+
+  if (foundRow) {
+
+    sheet
+      .getRange(
+        foundRow,
+        1,
+        1,
+        row.length
+      )
+      .setValues([row]);
+
+  } else {
+
+    sheet.appendRow(row);
+  }
+
+
+  return {
+
+    ok: true,
+
+    message:
+      'บันทึกเซตกะแล้ว',
+
+    shiftSets:
+      getShiftSets_()
+  };
+}
+
+
+function deleteShiftSet(
+  setId
+) {
+
+  const assignments =
+    getAssignments_();
+
+
+  const inUse =
+    assignments.some(
+      a =>
+        a.setId === setId &&
+        String(
+          a.active || 'TRUE'
+        ).toUpperCase() !== 'FALSE'
+    );
+
+
+  if (inUse) {
+
+    throw new Error(
+      'เซตกะนี้กำลังถูกใช้งานอยู่'
+    );
+  }
+
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.SHIFT_SETS
+      );
+
+
+  const rows =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  for (
+    let r =
+      rows.length - 1;
+    r >= 1;
+    r--
+  ) {
+
+    if (
+      String(
+        rows[r][0]
+      ) ===
+      String(setId)
+    ) {
+
+      sheet.deleteRow(
+        r + 1
+      );
+    }
+  }
+
+
+  return {
+
+    ok: true,
+
+    message:
+      'ลบเซตกะแล้ว',
+
+    shiftSets:
+      getShiftSets_()
+  };
+}
+
+
+
+/* =========================================================
+   TEAM PLANNER — แบบร่างเปรียบเทียบ TEAM A / B / C
+========================================================= */
+
+function getTeamPlanner(request) {
+  const anchorDate = String(request?.anchorDate || todayText_()).trim();
+  const range = getRoundRange_(anchorDate);
+  const dates = createDateRange_(range.from,range.to,40);
+  const shiftSets = getShiftSets_();
+  const setMap = {};
+  shiftSets.forEach(set => { setMap[set.setId] = set; });
+  const savedMap = getTeamPlannerMap_();
+  const assignments = getAssignments_();
+
+  const teams = APP.DEFAULT_TEAMS.map(team => {
+    const saved = savedMap[team] || {};
+    const fallback = getDefaultTeamPlannerConfig_(team,assignments,shiftSets,range.from);
+    const setId = String(saved.setId || fallback.setId || shiftSets[0]?.setId || '');
+    const set = setMap[setId] || {};
+    const cycleStartDate = String(saved.cycleStartDate || fallback.cycleStartDate || range.from);
+    const startShift = String(saved.startShift || fallback.startShift || set.startShift || 'MORNING');
+    const overrides = parsePlannerOverrides_(saved.overridesJson);
+    const days = dates.map(date => {
+      const autoShift = calculateTeamPlannerShift_(set,cycleStartDate,date,startShift);
+      const override = String(overrides[date] || '').trim().toUpperCase();
+      const isOverride = ['MORNING','NIGHT','OFF','UNSET'].includes(override);
+      return {date:date,autoShift:autoShift,shift:isOverride?override:autoShift,isOverride:isOverride};
+    });
+    return {team:team,setId:setId,cycleStartDate:cycleStartDate,startShift:startShift,overrides:overrides,overrideCount:Object.keys(overrides).filter(date=>dates.includes(date)).length,days:days};
+  });
+
+  return {anchorDate:anchorDate,from:range.from,to:range.to,dates:dates,teams:teams};
+}
+
+function saveTeamPlanner(request) {
+  const teams = Array.isArray(request?.teams) ? request.teams : [];
+  if (!teams.length) throw new Error('ไม่พบข้อมูล TEAM ที่จะบันทึก');
+  const validSetIds = new Set(getShiftSets_().map(set => String(set.setId)));
+  const sheet = getDatabase_().getSheetByName(APP.SHEETS.TEAM_PLANNER);
+  const now = nowText_();
+  const rows = [];
+
+  APP.DEFAULT_TEAMS.forEach(team => {
+    const item = teams.find(row => String(row?.team || '').trim() === team);
+    if (!item) return;
+    const setId = String(item.setId || '').trim();
+    if (setId && !validSetIds.has(setId)) throw new Error('ไม่พบเซตกะของ ' + team);
+    const cycleStartDate = String(item.cycleStartDate || '').trim();
+    if (!cycleStartDate) throw new Error('กรุณาเลือกวันเริ่ม Cycle ของ ' + team);
+    const startShift = String(item.startShift || 'MORNING').trim().toUpperCase();
+    if (!['MORNING','NIGHT'].includes(startShift)) throw new Error('กะเริ่มต้นของ ' + team + ' ไม่ถูกต้อง');
+    const overrides = sanitizePlannerOverrides_(item.overrides);
+    rows.push([team,setId,cycleStartDate,startShift,JSON.stringify(overrides),now]);
+  });
+
+  if (sheet.getLastRow() > 1) sheet.getRange(2,1,sheet.getLastRow()-1,sheet.getLastColumn()).clearContent();
+  if (rows.length) sheet.getRange(2,1,rows.length,6).setValues(rows);
+
+  const planner = getTeamPlanner({anchorDate:String(request?.anchorDate || todayText_())});
+  return {ok:true,message:'บันทึกแบบร่าง TEAM A / B / C แล้ว',planner:planner};
+}
+
+function getTeamPlannerMap_() {
+  const sheet = getDatabase_().getSheetByName(APP.SHEETS.TEAM_PLANNER);
+  if (!sheet || sheet.getLastRow() < 2) return {};
+  const values = sheet.getDataRange().getDisplayValues();
+  const headers = values[0].map(value => String(value || '').trim());
+  const result = {};
+  values.slice(1).forEach(row => {
+    const obj = {};
+    headers.forEach((header,index) => { obj[header] = row[index]; });
+    const team = String(obj.team || '').trim();
+    if (team) result[team] = obj;
+  });
+  return result;
+}
+
+function getDefaultTeamPlannerConfig_(team,assignments,shiftSets,anchorDate) {
+  const assignment = assignments.filter(item => String(item.active || 'TRUE').toUpperCase() !== 'FALSE' && String(item.scopeType || '').toUpperCase() === 'TEAM' && String(item.scopeValue || '').trim() === team && String(item.startDate || '') <= anchorDate).sort((a,b) => String(b.startDate || '').localeCompare(String(a.startDate || '')) || String(b.createdAt || '').localeCompare(String(a.createdAt || '')))[0];
+  if (assignment) {
+    const set = shiftSets.find(item => String(item.setId) === String(assignment.setId)) || {};
+    return {setId:String(assignment.setId || ''),cycleStartDate:String(assignment.cycleStartDate || assignment.startDate || anchorDate),startShift:String(assignment.startShift || set.startShift || 'MORNING')};
+  }
+  const firstSet = shiftSets[0] || {};
+  return {setId:String(firstSet.setId || ''),cycleStartDate:anchorDate,startShift:String(firstSet.startShift || 'MORNING')};
+}
+
+function calculateTeamPlannerShift_(set,cycleStartDate,date,startShift) {
+  if (!set || !set.setId || !cycleStartDate) return 'UNSET';
+  const diff = dayDiff_(cycleStartDate,date);
+  if (diff < 0) return 'UNSET';
+  const workDays = Math.max(1,Number(set.workDays || 10));
+  const offDays = Math.max(0,Number(set.offDays || 5));
+  const cycleLength = workDays + offDays;
+  if (cycleLength <= 0) return 'UNSET';
+  const cycleIndex = Math.floor(diff/cycleLength);
+  const dayInCycle = diff % cycleLength;
+  if (dayInCycle >= workDays) return 'OFF';
+  const baseShift = String(startShift || set.startShift || 'MORNING').toUpperCase();
+  const alternate = set.alternate === true || String(set.alternate).toUpperCase() === 'TRUE';
+  if (alternate) return cycleIndex%2===1 ? (baseShift==='MORNING'?'NIGHT':'MORNING') : baseShift;
+  return String(set.fixedShift || baseShift).toUpperCase();
+}
+
+function parsePlannerOverrides_(text) {
+  if (!text) return {};
+  try { return sanitizePlannerOverrides_(JSON.parse(String(text))); } catch (_) { return {}; }
+}
+
+function sanitizePlannerOverrides_(input) {
+  const result = {};
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return result;
+  Object.entries(input).forEach(([date,shift]) => {
+    date = String(date || '').trim();
+    shift = String(shift || '').trim().toUpperCase();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date) && ['MORNING','NIGHT','OFF','UNSET'].includes(shift)) result[date] = shift;
+  });
+  return result;
+}
+
+
+/* =========================================================
+   ASSIGNMENTS
+========================================================= */
+
+function getAssignments_() {
+
+  return getSheetObjects_(
+    APP.SHEETS.ASSIGNMENTS
+  )
+  .map(
+    assignment => ({
+
+      ...assignment,
+
+      cycleStartDate:
+        String(
+          assignment.cycleStartDate ||
+          assignment.startDate ||
+          ''
+        ).trim(),
+
+      cycleReset:
+        String(
+          assignment.cycleReset ||
+          'FALSE'
+        ).toUpperCase() === 'TRUE'
+    })
+  );
+}
+
+
+/**
+ * แปลงข้อมูลการจัดกะเวอร์ชันเก่าให้มี cycleStartDate
+ * โดยไม่รีเซ็ตรอบ 10/5 ทุกครั้งที่ขึ้นรอบเดือนใหม่
+ *
+ * หลักการ:
+ * - startDate = วันที่เริ่มใช้รายการ/เซตกะนั้น
+ * - cycleStartDate = จุดอ้างอิงสำหรับนับ ทำงาน X วัน / หยุด Y วัน
+ * - ถ้าเป็น Cycle รูปแบบเดิมของ scope เดิม ให้สืบทอดจุดอ้างอิงเดิม
+ */
+function migrateAssignmentCycles_() {
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.ASSIGNMENTS
+      );
+
+  if (
+    !sheet ||
+    sheet.getLastRow() <= 1
+  ) {
     return;
   }
 
 
-  /*
-   * จำตำแหน่ง Scroll ไว้ก่อน render ตารางใหม่
-   * เพื่อไม่ให้หน้ากระโดดขึ้นฟอร์มด้านบน
-   */
-  const currentScrollY =
-    window.scrollY;
-
-
-  /*
-   * ล้างค่าในฟอร์มเพิ่มพนักงานด้านบน
-   * แต่ไม่เลื่อนหน้า
-   */
-  setValue(
-    'empId',
-    ''
-  );
-
-  setValue(
-    'empNickname',
-    ''
-  );
-
-  setValue(
-    'empTeam',
-    ''
-  );
-
-  setValue(
-    'empPosition',
-    ''
-  );
-
-  setValue(
-    'empBranch',
-    ''
-  );
-
-  setValue(
-    'empGender',
-    ''
-  );
-
-  setValue(
-    'empStatus',
-    'ทำงาน'
-  );
-
-
-  const newEmployeeCheckbox =
-    document.getElementById(
-      'empIsNew'
-    );
-
-
-  if (
-    newEmployeeCheckbox
-  ) {
-
-    newEmployeeCheckbox.checked =
-      false;
-  }
-
-
-  STATE.inlineEmployeeEditId =
-    id;
-
-
-  renderEmployees();
-
-
-  /*
-   * บังคับให้อยู่ตำแหน่งเดิม
-   * แล้ว focus ช่องชื่อโดยไม่ให้ browser scroll เอง
-   */
-  requestAnimationFrame(
-    () => {
-
-      window.scrollTo(
-        0,
-        currentScrollY
+  const headers =
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        sheet.getLastColumn()
+      )
+      .getDisplayValues()[0]
+      .map(
+        value =>
+          String(value || '').trim()
       );
 
 
-      const row =
-        document.querySelector(
-          `[data-inline-employee="${cssEscapeValue(id)}"]`
-        );
+  const index = {};
+
+  headers.forEach(
+    (header, i) => {
+      index[header] = i;
+    }
+  );
 
 
-      const nicknameInput =
-        row
-          ?.querySelector(
-            '[data-field="nickname"]'
+  if (
+    index.cycleStartDate === undefined ||
+    index.cycleReset === undefined
+  ) {
+    return;
+  }
+
+
+  const values =
+    sheet
+      .getRange(
+        2,
+        1,
+        sheet.getLastRow() - 1,
+        headers.length
+      )
+      .getDisplayValues();
+
+
+  const setMap = {};
+
+  getShiftSets_()
+    .forEach(
+      set => {
+        setMap[set.setId] = set;
+      }
+    );
+
+
+  const rows =
+    values
+      .map(
+        (row, offset) => {
+
+          const obj = {};
+
+          headers.forEach(
+            (header, i) => {
+              obj[header] =
+                row[i] !== undefined
+                  ? row[i]
+                  : '';
+            }
           );
 
+          obj.__rowNumber =
+            offset + 2;
 
-      if (nicknameInput) {
+          return obj;
+        }
+      )
+      .filter(
+        row =>
+          String(
+            row.assignmentId || ''
+          ).trim()
+      )
+      .sort(
+        (a, b) => {
 
-        try {
+          const dateCompare =
+            String(
+              a.startDate || ''
+            ).localeCompare(
+              String(
+                b.startDate || ''
+              )
+            );
 
-          nicknameInput.focus({
-            preventScroll: true
-          });
+          if (dateCompare !== 0) {
+            return dateCompare;
+          }
 
-        } catch (error) {
-
-          /*
-           * browser เก่าบางตัวไม่รองรับ preventScroll
-           */
-          nicknameInput.focus();
-
-          window.scrollTo(
-            0,
-            currentScrollY
+          return String(
+            a.createdAt || ''
+          ).localeCompare(
+            String(
+              b.createdAt || ''
+            )
           );
         }
+      );
+
+
+  const chainAnchors = {};
+
+
+  rows.forEach(
+    row => {
+
+      const set =
+        setMap[row.setId] || {};
+
+      const cycleKey =
+        getAssignmentCycleKey_(
+          row,
+          set
+        );
+
+      const reset =
+        String(
+          row.cycleReset ||
+          'FALSE'
+        ).toUpperCase() === 'TRUE';
+
+      let cycleStart =
+        String(
+          row.cycleStartDate || ''
+        ).trim();
+
+
+      if (!cycleStart) {
+
+        if (
+          reset ||
+          !chainAnchors[cycleKey]
+        ) {
+
+          cycleStart =
+            String(
+              row.startDate || ''
+            ).trim();
+
+        } else {
+
+          cycleStart =
+            chainAnchors[cycleKey];
+        }
+
+
+        if (cycleStart) {
+
+          sheet
+            .getRange(
+              row.__rowNumber,
+              index.cycleStartDate + 1
+            )
+            .setValue(
+              cycleStart
+            );
+        }
+      }
+
+
+      if (cycleStart) {
+        chainAnchors[cycleKey] =
+          cycleStart;
       }
     }
   );
 }
 
 
-/*
- * compatibility:
- * ถ้ามีส่วนเก่าเรียก editEmployee() อยู่
- * ให้ส่งต่อเข้า inline edit เท่านั้น
- */
-window.editEmployee =
-  startInlineEmployeeEdit;
-
-
-function cancelInlineEmployeeEdit() {
-
-  STATE.inlineEmployeeEditId =
-    '';
-
-
-  renderEmployees();
-}
-
-
-function inlineEmployeeOptions(
-  values,
-  selected,
-  placeholder
+function getAssignmentCycleKey_(
+  assignment,
+  set
 ) {
 
-  let html = '';
-
-
-  if (
-    placeholder !==
-    undefined
-  ) {
-
-    html += `
-      <option value="">
-        ${escapeHtml(placeholder)}
-      </option>
-    `;
-  }
-
-
-  (values || [])
-    .forEach(
-      item => {
-
-        const value =
-          String(
-            item ?? ''
-          );
-
-
-        html += `
-          <option
-            value="${escapeAttr(value)}"
-            ${
-              value ===
-              String(
-                selected ?? ''
-              )
-                ? 'selected'
-                : ''
-            }
-          >
-            ${escapeHtml(value)}
-          </option>
-        `;
-      }
-    );
-
-
-  return html;
-}
-
-
-function cssEscapeValue(
-  value
-) {
-
-  if (
-    window.CSS &&
-    typeof CSS.escape ===
-    'function'
-  ) {
-
-    return CSS.escape(
-      String(
-        value ?? ''
+  const workDays =
+    Math.max(
+      1,
+      Number(
+        set?.workDays || 10
       )
     );
-  }
 
-
-  return String(
-    value ?? ''
-  )
-    .replace(
-      /\\/g,
-      '\\\\'
-    )
-    .replace(
-      /"/g,
-      '\\"'
+  const offDays =
+    Math.max(
+      0,
+      Number(
+        set?.offDays || 5
+      )
     );
+
+  return [
+    String(
+      assignment.scopeType || ''
+    ).trim(),
+    String(
+      assignment.scopeValue || ''
+    ).trim(),
+    String(
+      assignment.teamFilter || ''
+    ).trim(),
+    workDays + '/' + offDays
+  ].join('|');
 }
 
 
-function saveInlineEmployee(
-  id
+function sameAssignmentScope_(
+  a,
+  b
 ) {
 
-  const row =
-    document.querySelector(
-      `[data-inline-employee="${cssEscapeValue(id)}"]`
-    );
+  return (
+    String(
+      a.scopeType || ''
+    ).trim() ===
+    String(
+      b.scopeType || ''
+    ).trim()
 
+    &&
 
-  if (!row) {
-    return;
-  }
+    String(
+      a.scopeValue || ''
+    ).trim() ===
+    String(
+      b.scopeValue || ''
+    ).trim()
 
+    &&
 
-  const getField =
-    field =>
-      row
-        .querySelector(
-          `[data-field="${field}"]`
-        )
-        ?.value ?? '';
-
-
-  const data = {
-
-    employeeId:
-      id,
-
-    nickname:
-      String(
-        getField(
-          'nickname'
-        )
-      ).trim(),
-
-    team:
-      getField(
-        'team'
-      ),
-
-    position:
-      getField(
-        'position'
-      ),
-
-    branch:
-      getField(
-        'branch'
-      ),
-
-    gender:
-      getField(
-        'gender'
-      ),
-
-    status:
-      getField(
-        'status'
-      ) ||
-      'ทำงาน',
-
-    mode:
-      'update'
-  };
-
-
-  if (!data.nickname) {
-
-    return toast(
-      'กรุณากรอกชื่อเล่น'
-    );
-  }
-
-
-  const saveButton =
-    row.querySelector(
-      '.employee-inline-save'
-    );
-
-
-  const cancelButton =
-    row.querySelector(
-      '.employee-inline-cancel'
-    );
-
-
-  if (saveButton) {
-
-    saveButton.disabled =
-      true;
-
-    saveButton.textContent =
-      '⏳ บันทึก...';
-  }
-
-
-  if (cancelButton) {
-
-    cancelButton.disabled =
-      true;
-  }
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      res => {
-
-        STATE.employees =
-          res.employees;
-
-
-        STATE.inlineEmployeeEditId =
-          '';
-
-
-        renderEmployees();
-
-        refreshEmployeeDropdowns();
-
-        /*
-         * Dashboard ค่อย refresh เมื่อกลับไปหน้า Dashboard
-         * ไม่ต้องโหลดทั้งหน้าใหม่หลังแก้พนักงาน 1 คน
-         */
-        STATE.dashboardDirty =
-          true;
-
-
-        toast(
-          res.message ||
-          'บันทึกข้อมูลพนักงานแล้ว'
-        );
-      }
-    )
-
-    .withFailureHandler(
-      err => {
-
-        if (saveButton) {
-
-          saveButton.disabled =
-            false;
-
-          saveButton.textContent =
-            '💾 บันทึก';
-        }
-
-
-        if (cancelButton) {
-
-          cancelButton.disabled =
-            false;
-        }
-
-
-        showServerError(
-          err
-        );
-      }
-    )
-
-    .saveEmployee(
-      data
-    );
+    String(
+      a.teamFilter || ''
+    ).trim() ===
+    String(
+      b.teamFilter || ''
+    ).trim()
+  );
 }
 
 
-function clearEmployeeForm() {
+/**
+ * ปิดรายการจัดกะ "อนาคต" ของ scope เดียวกัน
+ * เพื่อไม่ให้รายการเก่ากลับมาทับรายการใหม่
+ *
+ * ตัวอย่าง:
+ * เดิม TEAM B เริ่ม 26/08 = เช้า
+ * ใหม่ TEAM B เริ่ม 25/08 = ดึก
+ *
+ * เมื่อบันทึกรายการใหม่:
+ * - รายการ TEAM B วันที่ 26/08 เดิมจะถูกปิด
+ * - รายการเก่าที่เริ่มก่อน 25/08 ยังเก็บไว้สำหรับประวัติ
+ *
+ * Scope ต้องตรงกันทั้งหมด:
+ * scopeType + scopeValue + teamFilter
+ *
+ * ดังนั้น TEAM จะไม่ไปปิด POSITION
+ * และ POSITION จะไม่ไปปิด EMPLOYEE
+ */
+function supersedeFutureAssignments_(
+  newAssignment,
+  assignments,
+  excludeAssignmentId
+) {
 
-  setValue(
-    'empId',
-    ''
-  );
-
-  setValue(
-    'empNickname',
-    ''
-  );
-
-  setValue(
-    'empTeam',
-    ''
-  );
-
-  setValue(
-    'empPosition',
-    ''
-  );
-
-  setValue(
-    'empBranch',
-    ''
-  );
-
-  setValue(
-    'empGender',
-    ''
-  );
-
-  setValue(
-    'empStatus',
-    'ทำงาน'
-  );
+  const newStart =
+    String(
+      newAssignment.startDate || ''
+    ).trim();
 
 
-  const newEmployeeCheckbox =
-    document.getElementById(
-      'empIsNew'
-    );
+  if (!newStart) {
+    return 0;
+  }
+
+
+  const futureIds =
+    assignments
+      .filter(
+        old => {
+
+          if (
+            String(
+              old.active || 'TRUE'
+            ).toUpperCase() === 'FALSE'
+          ) {
+            return false;
+          }
+
+
+          if (
+            excludeAssignmentId &&
+            String(
+              old.assignmentId || ''
+            ).trim() ===
+              String(
+                excludeAssignmentId
+              ).trim()
+          ) {
+            return false;
+          }
+
+
+          if (
+            !sameAssignmentScope_(
+              old,
+              newAssignment
+            )
+          ) {
+            return false;
+          }
+
+
+          const oldStart =
+            String(
+              old.startDate || ''
+            ).trim();
+
+
+          if (!oldStart) {
+            return false;
+          }
+
+
+          return (
+            oldStart >=
+            newStart
+          );
+        }
+      )
+      .map(
+        old =>
+          String(
+            old.assignmentId || ''
+          ).trim()
+      )
+      .filter(Boolean);
 
 
   if (
-    newEmployeeCheckbox
+    !futureIds.length
   ) {
-
-    newEmployeeCheckbox.checked =
-      false;
+    return 0;
   }
-}
 
 
-function removeEmployee(id) {
+  const idSet =
+    new Set(
+      futureIds
+    );
 
-  const e =
-    STATE.employees
-      .find(
-        x =>
-          x.employeeId === id
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.ASSIGNMENTS
       );
 
 
+  const rows =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
   if (
-    !confirm(
-      'ลบ ' +
-      (e?.employeeId || '') +
-      ' · ' +
-      (e?.nickname || '') +
-      ' ใช่หรือไม่?'
-    )
+    rows.length < 2
   ) {
-    return;
+    return 0;
   }
 
 
-  setLoading(true);
+  const headers =
+    rows[0]
+      .map(
+        value =>
+          String(
+            value || ''
+          ).trim()
+      );
 
 
-  google.script.run
+  const idIndex =
+    headers.indexOf(
+      'assignmentId'
+    );
 
-    .withSuccessHandler(
-      res => {
 
-        STATE.employees =
-          res.employees;
+  const activeIndex =
+    headers.indexOf(
+      'active'
+    );
 
-        renderEmployees();
 
-        refreshEmployeeDropdowns();
+  const updatedIndex =
+    headers.indexOf(
+      'updatedAt'
+    );
 
-        refreshDashboard();
 
-        setLoading(false);
+  if (
+    idIndex < 0 ||
+    activeIndex < 0
+  ) {
 
-        toast(res.message);
-      }
-    )
+    throw new Error(
+      'โครงสร้าง DB_Assignments ไม่ครบ'
+    );
+  }
 
-    .withFailureHandler(
-      showServerError
-    )
 
-    .deleteEmployee(id);
+  const now =
+    nowText_();
+
+
+  let count = 0;
+
+
+  for (
+    let r = 1;
+    r < rows.length;
+    r++
+  ) {
+
+    const assignmentId =
+      String(
+        rows[r][idIndex] || ''
+      ).trim();
+
+
+    if (
+      !idSet.has(
+        assignmentId
+      )
+    ) {
+      continue;
+    }
+
+
+    sheet
+      .getRange(
+        r + 1,
+        activeIndex + 1
+      )
+      .setValue(
+        'FALSE'
+      );
+
+
+    if (
+      updatedIndex >= 0
+    ) {
+
+      sheet
+        .getRange(
+          r + 1,
+          updatedIndex + 1
+        )
+        .setValue(
+          now
+        );
+    }
+
+
+    count++;
+  }
+
+
+  return count;
 }
 
 
-function employeeHasNewBadge(
-  employee
+function appendObjectRow_(
+  sheetName,
+  object
 ) {
 
-  const until =
-    String(
-      employee?.newUntil || ''
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        sheetName
+      );
+
+  const headers =
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        sheet.getLastColumn()
+      )
+      .getDisplayValues()[0]
+      .map(
+        value =>
+          String(value || '').trim()
+      );
+
+  sheet.appendRow(
+    headers.map(
+      header =>
+        object[header] !== undefined &&
+        object[header] !== null
+          ? object[header]
+          : ''
     )
-    .trim();
+  );
+}
 
 
-  if (!until) {
-    return false;
+function saveAssignment(data) {
+
+  if (
+    !data ||
+    !data.scopeType ||
+    !data.scopeValue ||
+    !data.setId ||
+    !data.startDate
+  ) {
+
+    throw new Error(
+      'กรุณากรอกข้อมูลการจัดกะให้ครบ'
+    );
+  }
+
+
+  const now =
+    nowText_();
+
+
+  const startDate =
+    String(
+      data.startDate || ''
+    ).trim();
+
+
+  const setMap = {};
+
+
+  getShiftSets_()
+    .forEach(
+      set => {
+
+        setMap[
+          set.setId
+        ] = set;
+      }
+    );
+
+
+  const selectedSet =
+    setMap[
+      String(
+        data.setId
+      )
+    ];
+
+
+  if (!selectedSet) {
+
+    throw new Error(
+      'ไม่พบเซตกะที่เลือก'
+    );
   }
 
 
   /*
-   * newUntil เป็นวันสิ้นสุดแบบ exclusive
-   * เช่นเริ่ม 25 ส.ค. -> newUntil 8 ก.ย.
-   * จะแสดง NEW ตั้งแต่ 25 ส.ค. ถึง 7 ก.ย. = 14 วัน
+   * กติกาหลัก:
+   *
+   * วันที่เริ่มใช้เซต = วันแรกของ Cycle ใหม่เสมอ
+   *
+   * ตัวอย่าง 10 ทำ / 5 หยุด
+   * เริ่ม 25/08:
+   * 25/08 - 03/09 = ทำงาน 10 วัน
+   * 04/09 - 08/09 = หยุด 5 วัน
+   * แล้ววนต่อไปเรื่อย ๆ
+   *
+   * รอบ 26-25 มีไว้ "แสดงผล" เท่านั้น
+   * ไม่มีสิทธิ์รีเซ็ต Cycle
    */
-  const parts =
-    until
-      .split(
-        '-'
+  const newAssignment = {
+
+    assignmentId:
+      'ASN_' +
+      new Date().getTime() +
+      '_' +
+      Utilities.getUuid()
+        .slice(
+          0,
+          8
+        ),
+
+    scopeType:
+      String(
+        data.scopeType
       )
-      .map(Number);
+      .trim()
+      .toUpperCase(),
+
+    scopeValue:
+      String(
+        data.scopeValue
+      )
+      .trim(),
+
+    teamFilter:
+      String(
+        data.teamFilter || ''
+      )
+      .trim(),
+
+    setId:
+      String(
+        data.setId
+      )
+      .trim(),
+
+    startDate:
+      startDate,
+
+    startShift:
+      String(
+        data.startShift ||
+        selectedSet.startShift ||
+        'MORNING'
+      )
+      .trim()
+      .toUpperCase(),
+
+    active:
+      'TRUE',
+
+    createdAt:
+      now,
+
+    /*
+     * สำคัญ:
+     * ใช้วันที่ที่เลือกเป็น Anchor ของ 10/5 โดยตรง
+     */
+    cycleStartDate:
+      startDate,
+
+    cycleReset:
+      'TRUE',
+
+    updatedAt:
+      now
+  };
 
 
-  if (
-    parts.length !== 3 ||
-    !parts[0] ||
-    !parts[1] ||
-    !parts[2]
-  ) {
-    return false;
-  }
+  const assignments =
+    getAssignments_();
 
 
-  const expire =
-    new Date(
-      parts[0],
-      parts[1] - 1,
-      parts[2],
-      0,
-      0,
-      0
+  /*
+   * ถ้ามีรายการ scope เดียวกันที่เริ่ม "วันเดียวกันหรือหลังจากนี้"
+   * ให้ปิดก่อน เพื่อไม่ให้ของเก่ากลับมาทับของใหม่
+   *
+   * ตัวอย่าง:
+   * เดิม TEAM B 26/08 = เช้า
+   * ใหม่ TEAM B 25/08 = ดึก
+   *
+   * 26/08 เดิมจะถูกปิด
+   * แล้ว 25/08 ดึกจะวิ่งต่อเนื่องตาม 10/5
+   */
+  const supersededCount =
+    supersedeFutureAssignments_(
+      newAssignment,
+      assignments
     );
 
 
-  const today =
-    new Date();
-
-
-  today.setHours(
-    0,
-    0,
-    0,
-    0
+  appendObjectRow_(
+    APP.SHEETS.ASSIGNMENTS,
+    newAssignment
   );
 
 
-  return (
-    today <
-    expire
-  );
+  return {
+
+    ok:
+      true,
+
+    supersededCount:
+      supersededCount,
+
+    message:
+      'จัดกะเรียบร้อย · เริ่ม Cycle 10/5 จาก ' +
+      formatThaiDateServer_(
+        startDate
+      ) +
+      (
+        supersededCount
+          ? ' · ปิดรายการเดิมที่ทับ ' +
+            supersededCount +
+            ' รายการ'
+          : ''
+      ),
+
+    assignments:
+      getAssignments_()
+  };
 }
 
 
-function employeeNewRibbonHtml(
-  employee
+function formatThaiDateServer_(
+  dateText
+) {
+
+  if (!dateText) {
+    return '-';
+  }
+
+  const date =
+    parseDate_(dateText);
+
+  const months = [
+    'ม.ค.',
+    'ก.พ.',
+    'มี.ค.',
+    'เม.ย.',
+    'พ.ค.',
+    'มิ.ย.',
+    'ก.ค.',
+    'ส.ค.',
+    'ก.ย.',
+    'ต.ค.',
+    'พ.ย.',
+    'ธ.ค.'
+  ];
+
+  return (
+    date.getDate() +
+    ' ' +
+    months[date.getMonth()] +
+    ' ' +
+    (date.getFullYear() + 543)
+  );
+}
+
+function deactivateAssignment(
+  assignmentId
+) {
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.ASSIGNMENTS
+      );
+
+
+  const rows =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  for (
+    let r = 1;
+    r < rows.length;
+    r++
+  ) {
+
+    if (
+      String(
+        rows[r][0]
+      ) ===
+      String(assignmentId)
+    ) {
+
+      const headers =
+        rows[0];
+
+      const activeIndex =
+        headers.indexOf('active');
+
+      const updatedIndex =
+        headers.indexOf('updatedAt');
+
+      if (activeIndex >= 0) {
+
+        sheet
+          .getRange(
+            r + 1,
+            activeIndex + 1
+          )
+          .setValue(
+            'FALSE'
+          );
+      }
+
+      if (updatedIndex >= 0) {
+
+        sheet
+          .getRange(
+            r + 1,
+            updatedIndex + 1
+          )
+          .setValue(
+            nowText_()
+          );
+      }
+
+      break;
+    }
+  }
+
+
+  return {
+
+    ok: true,
+
+    message:
+      'ปิดการจัดกะแล้ว',
+
+    assignments:
+      getAssignments_()
+  };
+}
+
+
+/* =========================================================
+   INDIVIDUAL CALENDAR
+========================================================= */
+
+function getEmployeeCalendar(
+  request
+) {
+
+  const employeeId =
+    String(
+      request?.employeeId || ''
+    ).trim();
+
+
+  const anchorDate =
+    String(
+      request?.anchorDate ||
+      todayText_()
+    ).trim();
+
+
+  const employee =
+    getEmployees_()
+      .find(
+        e =>
+          e.employeeId ===
+          employeeId
+      );
+
+
+  if (!employee) {
+
+    throw new Error(
+      'ไม่พบพนักงาน'
+    );
+  }
+
+
+  const range =
+    getRoundRange_(
+      anchorDate
+    );
+
+
+  const dates =
+    createDateRange_(
+      range.from,
+      range.to,
+      40
+    );
+
+
+  const setMap = {};
+
+
+  getShiftSets_()
+    .forEach(
+      set => {
+
+        setMap[
+          set.setId
+        ] = set;
+      }
+    );
+
+
+  const assignments =
+    getAssignments_();
+
+
+  const overrides =
+    getOverrideMap_(
+      range.from,
+      range.to
+    );
+
+
+  const days =
+    dates.map(
+      date => {
+
+        const result =
+          calculateEmployeeShift_(
+            employee,
+            date,
+            setMap,
+            assignments,
+            overrides
+          );
+
+
+        const automatic =
+          calculateEmployeeShift_(
+            employee,
+            date,
+            setMap,
+            assignments,
+            {}
+          );
+
+
+        return {
+
+          date:
+            date,
+
+          shift:
+            result.shift,
+
+          autoShift:
+            automatic.shift,
+
+          hasOverride:
+            result.source ===
+            'OVERRIDE',
+
+          source:
+            result.source,
+
+          setName:
+            automatic.setName || '',
+
+          note:
+            String(
+              overrides[
+                employee.employeeId +
+                '|' +
+                date
+              ]?.note || ''
+            )
+        };
+      }
+    );
+
+
+  return {
+
+    employee:
+      employee,
+
+    anchorDate:
+      anchorDate,
+
+    from:
+      range.from,
+
+    to:
+      range.to,
+
+    days:
+      days
+  };
+}
+
+
+function saveShiftOverridesBatch(
+  data
+) {
+
+  const employeeId =
+    String(
+      data?.employeeId || ''
+    ).trim();
+
+
+  const rawItems =
+    Array.isArray(
+      data?.items
+    )
+      ? data.items
+      : [];
+
+
+  if (!employeeId) {
+
+    throw new Error(
+      'กรุณาเลือกพนักงาน'
+    );
+  }
+
+
+  if (!rawItems.length) {
+
+    return {
+
+      ok: true,
+
+      message:
+        'ไม่มีรายการเปลี่ยนแปลง',
+
+      savedItems:
+        []
+    };
+  }
+
+
+  /*
+   * ถ้าวันเดียวกันถูกส่งมาซ้ำ
+   * ใช้ค่าล่าสุดเพียงรายการเดียว
+   */
+  const itemMap =
+    new Map();
+
+
+  rawItems.forEach(
+    item => {
+
+      const date =
+        String(
+          item?.date || ''
+        ).trim();
+
+
+      if (!date) {
+        return;
+      }
+
+
+      let shift =
+        String(
+          item?.shift || 'AUTO'
+        )
+        .trim()
+        .toUpperCase();
+
+
+      if (
+        ![
+          'AUTO',
+          'MORNING',
+          'NIGHT',
+          'OFF',
+          'UNSET'
+        ].includes(
+          shift
+        )
+      ) {
+
+        shift =
+          'AUTO';
+      }
+
+
+      itemMap.set(
+        date,
+        shift
+      );
+    }
+  );
+
+
+  const items =
+    Array.from(
+      itemMap.entries()
+    )
+    .map(
+      ([date, shift]) => ({
+        date:
+          date,
+
+        shift:
+          shift
+      })
+    );
+
+
+  if (!items.length) {
+
+    return {
+
+      ok: true,
+
+      message:
+        'ไม่มีรายการเปลี่ยนแปลง',
+
+      savedItems:
+        []
+    };
+  }
+
+
+  const lock =
+    LockService
+      .getScriptLock();
+
+
+  lock.waitLock(
+    15000
+  );
+
+
+  try {
+
+    const employee =
+      getEmployees_()
+        .find(
+          e =>
+            e.employeeId ===
+            employeeId
+        );
+
+
+    if (!employee) {
+
+      throw new Error(
+        'ไม่พบพนักงาน'
+      );
+    }
+
+
+    const setMap = {};
+
+
+    getShiftSets_()
+      .forEach(
+        set => {
+
+          setMap[
+            set.setId
+          ] = set;
+        }
+      );
+
+
+    const assignments =
+      getAssignments_();
+
+
+    /*
+     * อ่าน DB_ShiftOverrides เพียง 1 ครั้ง
+     * แล้วแก้เฉพาะแถวที่เกี่ยวข้อง
+     * ไม่ล้างและเขียนทั้งตารางใหม่
+     */
+    const state =
+      loadOverrideSheetState_();
+
+
+    const validManualShifts = [
+      'MORNING',
+      'NIGHT',
+      'OFF',
+      'UNSET'
+    ];
+
+
+    const historyRows = [];
+
+    const rowWrites =
+      new Map();
+
+    const clearRows =
+      new Set();
+
+    const appendRows = [];
+
+    const availableBlankRows =
+      [...state.blankRows];
+
+
+    const savedItems = [];
+
+    let changedCount = 0;
+
+
+    items.forEach(
+      item => {
+
+        const date =
+          item.date;
+
+
+        const shift =
+          item.shift;
+
+
+        const key =
+          employeeId +
+          '|' +
+          date;
+
+
+        const oldEntry =
+          state.byKey.get(
+            key
+          );
+
+
+        const old =
+          oldEntry
+            ? oldEntry.object
+            : {
+                employeeId:
+                  employeeId,
+
+                date:
+                  date,
+
+                shift:
+                  'AUTO',
+
+                note:
+                  '',
+
+                updatedAt:
+                  ''
+              };
+
+
+        const oldStoredShift =
+          String(
+            old.shift || 'AUTO'
+          )
+          .trim()
+          .toUpperCase() ||
+          'AUTO';
+
+
+        const automatic =
+          calculateEmployeeShift_(
+            employee,
+            date,
+            setMap,
+            assignments,
+            {}
+          );
+
+
+        const oldEffectiveShift =
+          validManualShifts.includes(
+            oldStoredShift
+          )
+            ? oldStoredShift
+            : automatic.shift;
+
+
+        const newEffectiveShift =
+          validManualShifts.includes(
+            shift
+          )
+            ? shift
+            : automatic.shift;
+
+
+        const note =
+          String(
+            old.note || ''
+          );
+
+
+        const storageChanged =
+          oldStoredShift !==
+          shift;
+
+
+        if (
+          storageChanged
+        ) {
+
+          changedCount++;
+
+
+          historyRows.push({
+
+            historyId:
+              'HIS_' +
+              Utilities.getUuid(),
+
+            employeeId:
+              employee.employeeId,
+
+            nickname:
+              employee.nickname,
+
+            team:
+              employee.team,
+
+            position:
+              employee.position,
+
+            date:
+              date,
+
+            oldShift:
+              oldEffectiveShift,
+
+            newShift:
+              newEffectiveShift,
+
+            action:
+              shift === 'AUTO'
+                ? 'กลับไปใช้ตามเซตกะ'
+                : shift === 'UNSET'
+                  ? 'กำหนดไม่มีกะ'
+                  : 'แก้กะรายบุคคล',
+
+            changedAt:
+              nowText_()
+          });
+        }
+
+
+        /*
+         * AUTO + ไม่มี note = ไม่ต้องมีแถวใน DB
+         */
+        if (
+          shift === 'AUTO' &&
+          !note.trim()
+        ) {
+
+          if (
+            oldEntry &&
+            storageChanged
+          ) {
+
+            clearRows.add(
+              oldEntry.rowNumber
+            );
+          }
+
+
+          state.byKey.delete(
+            key
+          );
+
+        } else if (
+          storageChanged ||
+          !oldEntry
+        ) {
+
+          const rowObject = {
+
+            employeeId:
+              employeeId,
+
+            date:
+              date,
+
+            shift:
+              shift,
+
+            note:
+              note,
+
+            updatedAt:
+              nowText_()
+          };
+
+
+          const rowValues =
+            buildOverrideRowValues_(
+              state,
+              oldEntry?.values,
+              rowObject
+            );
+
+
+          if (oldEntry) {
+
+            rowWrites.set(
+              oldEntry.rowNumber,
+              rowValues
+            );
+
+
+            state.byKey.set(
+              key,
+              {
+                rowNumber:
+                  oldEntry.rowNumber,
+
+                values:
+                  rowValues,
+
+                object:
+                  rowObject
+              }
+            );
+
+          } else if (
+            availableBlankRows.length
+          ) {
+
+            const rowNumber =
+              availableBlankRows.shift();
+
+
+            rowWrites.set(
+              rowNumber,
+              rowValues
+            );
+
+
+            state.byKey.set(
+              key,
+              {
+                rowNumber:
+                  rowNumber,
+
+                values:
+                  rowValues,
+
+                object:
+                  rowObject
+              }
+            );
+
+          } else {
+
+            appendRows.push(
+              {
+                key:
+                  key,
+
+                values:
+                  rowValues,
+
+                object:
+                  rowObject
+              }
+            );
+          }
+        }
+
+
+        savedItems.push({
+
+          date:
+            date,
+
+          shift:
+            newEffectiveShift,
+
+          autoShift:
+            automatic.shift,
+
+          hasOverride:
+            validManualShifts
+              .includes(
+                shift
+              ),
+
+          source:
+            validManualShifts
+              .includes(
+                shift
+              )
+              ? 'OVERRIDE'
+              : automatic.source,
+
+          setName:
+            automatic.setName || '',
+
+          note:
+            note
+        });
+      }
+    );
+
+
+    /*
+     * เขียนเฉพาะแถวที่เปลี่ยน
+     */
+    writeOverrideRowsFast_(
+      state.sheet,
+      rowWrites,
+      state.lastColumn
+    );
+
+
+    clearOverrideRowsFast_(
+      state.sheet,
+      clearRows,
+      state.lastColumn
+    );
+
+
+    if (
+      appendRows.length
+    ) {
+
+      const startRow =
+        Math.max(
+          2,
+          state.sheet.getLastRow() + 1
+        );
+
+
+      state.sheet
+        .getRange(
+          startRow,
+          1,
+          appendRows.length,
+          state.lastColumn
+        )
+        .setValues(
+          appendRows.map(
+            item =>
+              item.values
+          )
+        );
+    }
+
+
+    appendShiftHistory_(
+      historyRows
+    );
+
+
+    return {
+
+      ok:
+        true,
+
+      message:
+        changedCount
+          ? 'บันทึกกะรายบุคคลแล้ว ' +
+            changedCount +
+            ' วัน'
+          : 'ข้อมูลกะเป็นค่าปัจจุบันอยู่แล้ว',
+
+      changedCount:
+        changedCount,
+
+      savedItems:
+        savedItems
+    };
+
+  } finally {
+
+    lock.releaseLock();
+  }
+}
+
+/**
+ * เพิ่มประวัติการแก้กะ
+ */
+function appendShiftHistory_(
+  rows
 ) {
 
   if (
-    !employeeHasNewBadge(
-      employee
-    )
+    !rows ||
+    !rows.length
   ) {
-
-    return '';
+    return;
   }
 
 
-  return `
-    <span
-      class="employee-new-ribbon"
-      title="พนักงานใหม่ · ป้ายหายอัตโนมัติหลัง 14 วัน"
-    >
-      NEW
-    </span>
-  `;
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.SHIFT_HISTORY
+      );
+
+
+  const headers = [
+    'historyId',
+    'employeeId',
+    'nickname',
+    'team',
+    'position',
+    'date',
+    'oldShift',
+    'newShift',
+    'action',
+    'changedAt'
+  ];
+
+
+  const values =
+    rows.map(
+      row =>
+        headers.map(
+          header =>
+            row[header] || ''
+        )
+    );
+
+
+  sheet
+    .getRange(
+      sheet.getLastRow() + 1,
+      1,
+      values.length,
+      headers.length
+    )
+    .setValues(
+      values
+    );
 }
 
 
-function renderEmployees() {
+/**
+ * ดึงประวัติการแก้กะสำหรับหน้า Admin
+ */
+function getShiftHistory(
+  request
+) {
 
-  let rows =
-    [...STATE.employees];
+  request =
+    request || {};
 
 
-  const search =
-    value(
-      'employeeSearch'
-    )
-    .toLowerCase()
-    .trim();
+  const employeeId =
+    String(
+      request.employeeId || ''
+    ).trim();
 
 
   const team =
-    value(
-      'employeeTeamFilter'
+    String(
+      request.team || ''
+    ).trim();
+
+
+  const from =
+    String(
+      request.from || ''
+    ).trim();
+
+
+  const to =
+    String(
+      request.to || ''
+    ).trim();
+
+
+  const search =
+    String(
+      request.search || ''
+    )
+    .trim()
+    .toLowerCase();
+
+
+  let rows =
+    getSheetObjects_(
+      APP.SHEETS.SHIFT_HISTORY
     );
 
 
-  const position =
-    value(
-      'employeePositionFilter'
+  if (
+    employeeId
+  ) {
+
+    rows =
+      rows.filter(
+        row =>
+          String(
+            row.employeeId || ''
+          ) === employeeId
+      );
+  }
+
+
+  if (
+    team
+  ) {
+
+    rows =
+      rows.filter(
+        row =>
+          String(
+            row.team || ''
+          ) === team
+      );
+  }
+
+
+  if (
+    from
+  ) {
+
+    rows =
+      rows.filter(
+        row =>
+          String(
+            row.date || ''
+          ) >= from
+      );
+  }
+
+
+  if (
+    to
+  ) {
+
+    rows =
+      rows.filter(
+        row =>
+          String(
+            row.date || ''
+          ) <= to
+      );
+  }
+
+
+  if (
+    search
+  ) {
+
+    rows =
+      rows.filter(
+        row => {
+
+          const text =
+            [
+              row.employeeId,
+              row.nickname,
+              row.team,
+              row.position,
+              row.action
+            ]
+            .join(
+              ' '
+            )
+            .toLowerCase();
+
+
+          return text.includes(
+            search
+          );
+        }
+      );
+  }
+
+
+  rows.sort(
+    (a,b) =>
+      String(
+        b.changedAt || ''
+      )
+      .localeCompare(
+        String(
+          a.changedAt || ''
+        )
+      )
+  );
+
+
+  return {
+    total:
+      rows.length,
+
+    rows:
+      rows.slice(
+        0,
+        1000
+      )
+  };
+}
+
+
+/**
+ * บันทึก / แก้ไข / ลบ หมายเหตุของวัน
+ * โดยไม่กระทบกะที่กำหนดไว้
+ */
+function saveEmployeeDayNote(
+  data
+) {
+
+  const employeeId =
+    String(
+      data?.employeeId || ''
+    ).trim();
+
+
+  const date =
+    String(
+      data?.date || ''
+    ).trim();
+
+
+  const note =
+    String(
+      data?.note || ''
+    )
+    .trim()
+    .slice(
+      0,
+      200
     );
+
+
+  if (!employeeId) {
+
+    throw new Error(
+      'กรุณาเลือกพนักงาน'
+    );
+  }
+
+
+  if (!date) {
+
+    throw new Error(
+      'ไม่พบวันที่'
+    );
+  }
+
+
+  const lock =
+    LockService
+      .getScriptLock();
+
+
+  lock.waitLock(
+    15000
+  );
+
+
+  try {
+
+    const state =
+      loadOverrideSheetState_();
+
+
+    const key =
+      employeeId +
+      '|' +
+      date;
+
+
+    const oldEntry =
+      state.byKey.get(
+        key
+      );
+
+
+    const old =
+      oldEntry
+        ? oldEntry.object
+        : {
+            employeeId:
+              employeeId,
+
+            date:
+              date,
+
+            shift:
+              'AUTO',
+
+            note:
+              '',
+
+            updatedAt:
+              ''
+          };
+
+
+    let shift =
+      String(
+        old.shift || 'AUTO'
+      )
+      .trim()
+      .toUpperCase();
+
+
+    if (
+      ![
+        'AUTO',
+        'MORNING',
+        'NIGHT',
+        'OFF',
+        'UNSET'
+      ].includes(
+        shift
+      )
+    ) {
+
+      shift =
+        'AUTO';
+    }
+
+
+    /*
+     * ถ้าค่า note เดิมเท่ากัน ไม่ต้องเขียนชีต
+     */
+    if (
+      String(
+        old.note || ''
+      ) === note
+    ) {
+
+      return {
+
+        ok:
+          true,
+
+        message:
+          note
+            ? 'หมายเหตุเป็นค่าปัจจุบันอยู่แล้ว'
+            : 'ไม่มีหมายเหตุให้ลบ',
+
+        employeeId:
+          employeeId,
+
+        date:
+          date,
+
+        note:
+          note
+      };
+    }
+
+
+    if (
+      !note &&
+      shift === 'AUTO'
+    ) {
+
+      if (oldEntry) {
+
+        state.sheet
+          .getRange(
+            oldEntry.rowNumber,
+            1,
+            1,
+            state.lastColumn
+          )
+          .clearContent();
+      }
+
+    } else {
+
+      const rowObject = {
+
+        employeeId:
+          employeeId,
+
+        date:
+          date,
+
+        shift:
+          shift,
+
+        note:
+          note,
+
+        updatedAt:
+          nowText_()
+      };
+
+
+      const rowValues =
+        buildOverrideRowValues_(
+          state,
+          oldEntry?.values,
+          rowObject
+        );
+
+
+      let rowNumber =
+        oldEntry?.rowNumber;
+
+
+      if (!rowNumber) {
+
+        rowNumber =
+          state.blankRows.length
+            ? state.blankRows[0]
+            : Math.max(
+                2,
+                state.sheet.getLastRow() + 1
+              );
+      }
+
+
+      state.sheet
+        .getRange(
+          rowNumber,
+          1,
+          1,
+          state.lastColumn
+        )
+        .setValues([
+          rowValues
+        ]);
+    }
+
+
+    return {
+
+      ok:
+        true,
+
+      message:
+        note
+          ? 'บันทึกหมายเหตุแล้ว'
+          : 'ลบหมายเหตุแล้ว',
+
+      employeeId:
+        employeeId,
+
+      date:
+        date,
+
+      note:
+        note
+    };
+
+  } finally {
+
+    lock.releaseLock();
+  }
+}
+
+/**
+ * โหลด DB_ShiftOverrides 1 ครั้ง พร้อมตำแหน่งแถวจริง
+ * ใช้สำหรับบันทึกแบบเร็วโดยไม่ rewrite ทั้งชีต
+ */
+function loadOverrideSheetState_() {
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.OVERRIDES
+      );
+
+
+  const lastColumn =
+    Math.max(
+      5,
+      sheet.getLastColumn()
+    );
+
+
+  const headers =
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        lastColumn
+      )
+      .getDisplayValues()[0]
+      .map(
+        value =>
+          String(
+            value || ''
+          ).trim()
+      );
+
+
+  const required = [
+    'employeeId',
+    'date',
+    'shift',
+    'note',
+    'updatedAt'
+  ];
+
+
+  const columns = {};
+
+
+  required.forEach(
+    header => {
+
+      const index =
+        headers.indexOf(
+          header
+        );
+
+
+      if (
+        index < 0
+      ) {
+
+        throw new Error(
+          'DB_ShiftOverrides ไม่มีคอลัมน์ ' +
+          header
+        );
+      }
+
+
+      columns[
+        header
+      ] = index;
+    }
+  );
+
+
+  const lastRow =
+    sheet.getLastRow();
+
+
+  const values =
+    lastRow > 1
+      ? sheet
+          .getRange(
+            2,
+            1,
+            lastRow - 1,
+            lastColumn
+          )
+          .getDisplayValues()
+      : [];
+
+
+  const byKey =
+    new Map();
+
+
+  const blankRows = [];
+
+
+  values.forEach(
+    (
+      row,
+      index
+    ) => {
+
+      const rowNumber =
+        index + 2;
+
+
+      const employeeId =
+        String(
+          row[
+            columns.employeeId
+          ] || ''
+        ).trim();
+
+
+      const date =
+        String(
+          row[
+            columns.date
+          ] || ''
+        ).trim();
+
+
+      if (
+        !employeeId &&
+        !date
+      ) {
+
+        blankRows.push(
+          rowNumber
+        );
+
+        return;
+      }
+
+
+      if (
+        !employeeId ||
+        !date
+      ) {
+        return;
+      }
+
+
+      byKey.set(
+        employeeId +
+        '|' +
+        date,
+        {
+          rowNumber:
+            rowNumber,
+
+          values:
+            [...row],
+
+          object: {
+            employeeId:
+              employeeId,
+
+            date:
+              date,
+
+            shift:
+              String(
+                row[
+                  columns.shift
+                ] || 'AUTO'
+              )
+              .trim()
+              .toUpperCase() ||
+              'AUTO',
+
+            note:
+              String(
+                row[
+                  columns.note
+                ] || ''
+              ),
+
+            updatedAt:
+              String(
+                row[
+                  columns.updatedAt
+                ] || ''
+              )
+          }
+        }
+      );
+    }
+  );
+
+
+  return {
+
+    sheet:
+      sheet,
+
+    lastColumn:
+      lastColumn,
+
+    headers:
+      headers,
+
+    columns:
+      columns,
+
+    byKey:
+      byKey,
+
+    blankRows:
+      blankRows
+  };
+}
+
+
+/**
+ * สร้าง array สำหรับเขียน 1 แถว
+ * โดยรักษาคอลัมน์อื่นที่อาจมีอยู่ในชีต
+ */
+function buildOverrideRowValues_(
+  state,
+  existingValues,
+  rowObject
+) {
+
+  const values =
+    Array.isArray(
+      existingValues
+    )
+      ? [
+          ...existingValues
+        ]
+      : new Array(
+          state.lastColumn
+        ).fill('');
+
+
+  while (
+    values.length <
+    state.lastColumn
+  ) {
+
+    values.push('');
+  }
+
+
+  Object
+    .entries(
+      rowObject
+    )
+    .forEach(
+      (
+        [key, value]
+      ) => {
+
+        if (
+          state.columns[
+            key
+          ] === undefined
+        ) {
+          return;
+        }
+
+
+        values[
+          state.columns[
+            key
+          ]
+        ] =
+          value ?? '';
+      }
+    );
+
+
+  return values;
+}
+
+
+/**
+ * เขียนแถวที่เปลี่ยนแบบ batch เป็นช่วงติดกัน
+ */
+function writeOverrideRowsFast_(
+  sheet,
+  rowWrites,
+  lastColumn
+) {
+
+  if (
+    !rowWrites ||
+    !rowWrites.size
+  ) {
+    return;
+  }
+
+
+  const entries =
+    Array
+      .from(
+        rowWrites.entries()
+      )
+      .sort(
+        (a, b) =>
+          a[0] - b[0]
+      );
+
+
+  let startRow =
+    entries[0][0];
+
+
+  let previousRow =
+    entries[0][0];
+
+
+  let values = [
+    entries[0][1]
+  ];
+
+
+  for (
+    let i = 1;
+    i < entries.length;
+    i++
+  ) {
+
+    const [
+      rowNumber,
+      rowValues
+    ] =
+      entries[i];
+
+
+    if (
+      rowNumber ===
+      previousRow + 1
+    ) {
+
+      values.push(
+        rowValues
+      );
+
+    } else {
+
+      sheet
+        .getRange(
+          startRow,
+          1,
+          values.length,
+          lastColumn
+        )
+        .setValues(
+          values
+        );
+
+
+      startRow =
+        rowNumber;
+
+
+      values = [
+        rowValues
+      ];
+    }
+
+
+    previousRow =
+      rowNumber;
+  }
+
+
+  sheet
+    .getRange(
+      startRow,
+      1,
+      values.length,
+      lastColumn
+    )
+    .setValues(
+      values
+    );
+}
+
+
+/**
+ * ล้างเฉพาะแถวที่ต้องลบ
+ */
+function clearOverrideRowsFast_(
+  sheet,
+  clearRows,
+  lastColumn
+) {
+
+  if (
+    !clearRows ||
+    !clearRows.size
+  ) {
+    return;
+  }
+
+
+  const rows =
+    Array
+      .from(
+        clearRows
+      )
+      .sort(
+        (a, b) =>
+          a - b
+      );
+
+
+  let startRow =
+    rows[0];
+
+
+  let previousRow =
+    rows[0];
+
+
+  let count = 1;
+
+
+  for (
+    let i = 1;
+    i < rows.length;
+    i++
+  ) {
+
+    const rowNumber =
+      rows[i];
+
+
+    if (
+      rowNumber ===
+      previousRow + 1
+    ) {
+
+      count++;
+
+    } else {
+
+      sheet
+        .getRange(
+          startRow,
+          1,
+          count,
+          lastColumn
+        )
+        .clearContent();
+
+
+      startRow =
+        rowNumber;
+
+      count = 1;
+    }
+
+
+    previousRow =
+      rowNumber;
+  }
+
+
+  sheet
+    .getRange(
+      startRow,
+      1,
+      count,
+      lastColumn
+    )
+    .clearContent();
+}
+
+
+/**
+ * เขียนข้อมูล DB_ShiftOverrides ใหม่ทั้งตาราง
+ */
+function rewriteShiftOverrides_(
+  rows
+) {
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.OVERRIDES
+      );
+
+
+  const headers = [
+    'employeeId',
+    'date',
+    'shift',
+    'note',
+    'updatedAt'
+  ];
+
+
+  if (
+    sheet.getLastRow() > 1
+  ) {
+
+    sheet
+      .getRange(
+        2,
+        1,
+        sheet.getLastRow() - 1,
+        headers.length
+      )
+      .clearContent();
+  }
+
+
+  if (
+    !rows ||
+    !rows.length
+  ) {
+    return;
+  }
+
+
+  const values =
+    rows.map(
+      row =>
+        headers.map(
+          header =>
+            row[header] || ''
+        )
+    );
+
+
+  sheet
+    .getRange(
+      2,
+      1,
+      values.length,
+      headers.length
+    )
+    .setValues(values);
+}
+
+
+/* =========================================================
+   SCHEDULE
+========================================================= */
+
+function getSchedule(
+  request
+) {
+
+  /*
+   * ตารางกะจริงทั้งหมดใช้ helper ตัวเดียว
+   * หน้า "กำลังคน" จะอ้างอิง helper นี้ด้วย
+   * เพื่อให้ยอด เช้า / ดึก / หยุด / ไม่มีกะ
+   * ตรงกับหน้าตารางกะ 100%
+   */
+  return getScheduleInternal_(
+    request,
+    null
+  );
+}
+
+
+function getScheduleInternal_(
+  request,
+  preloaded
+) {
+
+  request =
+    request || {};
+
+
+  preloaded =
+    preloaded || {};
+
+
+  let from =
+    String(
+      request.from || ''
+    ).trim();
+
+
+  let to =
+    String(
+      request.to || ''
+    ).trim();
+
+
+  if (
+    !from ||
+    !to
+  ) {
+
+    const range =
+      getRoundRange_(
+        todayText_()
+      );
+
+    from =
+      range.from;
+
+    to =
+      range.to;
+  }
+
+
+  let employees =
+    (
+      preloaded.employees ||
+      getEmployees_()
+    )
+      .filter(
+        e =>
+          String(
+            e.status || ''
+          ).trim() === 'ทำงาน'
+      );
+
+
+  if (
+    request.team
+  ) {
+
+    employees =
+      employees.filter(
+        e =>
+          e.team ===
+          request.team
+      );
+  }
+
+
+  if (
+    request.position
+  ) {
+
+    employees =
+      employees.filter(
+        e =>
+          e.position ===
+          request.position
+      );
+  }
+
+
+  if (
+    request.employeeId
+  ) {
+
+    employees =
+      employees.filter(
+        e =>
+          e.employeeId ===
+          request.employeeId
+      );
+  }
+
+
+  const search =
+    String(
+      request.search || ''
+    )
+    .trim()
+    .toLowerCase();
 
 
   if (search) {
 
-    rows =
-      rows.filter(
+    employees =
+      employees.filter(
         e =>
-
           String(
             e.employeeId || ''
           )
@@ -12514,5800 +9388,2031 @@ function renderEmployees() {
   }
 
 
-  if (team) {
-
-    rows =
-      rows.filter(
-        e =>
-          e.team === team
-      );
-  }
-
-
-  if (position) {
-
-    rows =
-      rows.filter(
-        e =>
-          e.position ===
-          position
-      );
-  }
-
-
-  setText(
-    'employeeCountText',
-    'แสดง ' +
-      rows.length +
-      ' จาก ' +
-      STATE.employees.length +
-      ' คน'
-  );
-
-
-  if (!rows.length) {
-
-    setHtml(
-      'employeeTable',
-      emptyHtml(
-        'ยังไม่มีข้อมูลพนักงาน'
-      )
+  const dates =
+    createDateRange_(
+      from,
+      to,
+      50
     );
 
-    return;
-  }
+
+  const setMap = {};
 
 
-  let html = `
+  (
+    preloaded.shiftSets ||
+    getShiftSets_()
+  )
+    .forEach(
+      set => {
 
-  <table>
-
-  <thead>
-
-  <tr>
-
-    <th>ลำดับ</th>
-
-    <th>
-      รหัส / ชื่อเล่น
-    </th>
-
-    <th>TEAM</th>
-
-    <th>ตำแหน่ง</th>
-
-    <th>สาขา</th>
-
-    <th>เพศ</th>
-
-    <th>สถานะ</th>
-
-    <th>จัดการ</th>
-
-  </tr>
-
-  </thead>
-
-  <tbody>
-  `;
-
-
-  rows.forEach(
-    (
-      e,
-      index
-    ) => {
-
-      const isEditing =
-        STATE.inlineEmployeeEditId ===
-        e.employeeId;
-
-
-      if (isEditing) {
-
-        html += `
-
-        <tr
-          class="employee-inline-row"
-          data-inline-employee="${escapeAttr(e.employeeId)}"
-        >
-
-          <td>
-            ${index + 1}
-          </td>
-
-
-          <td>
-
-            <span
-              class="employee-inline-id"
-              style="
-                display:flex;
-                align-items:center;
-                gap:7px;
-              "
-            >
-              ${escapeHtml(e.employeeId)}
-              ${employeeNewRibbonHtml(e)}
-            </span>
-
-            <input
-              class="
-                employee-inline-input
-                employee-inline-nick
-              "
-              data-field="nickname"
-              value="${escapeAttr(e.nickname || '')}"
-              placeholder="ชื่อเล่น"
-              onkeydown="
-                if(event.key==='Enter'){
-                  saveInlineEmployee(${jsonString(e.employeeId)})
-                }
-                if(event.key==='Escape'){
-                  cancelInlineEmployeeEdit()
-                }
-              "
-            >
-
-          </td>
-
-
-          <td>
-
-            <select
-              class="employee-inline-select"
-              data-field="team"
-            >
-              ${inlineEmployeeOptions(
-                STATE.teams,
-                e.team,
-                'เลือก TEAM'
-              )}
-            </select>
-
-          </td>
-
-
-          <td>
-
-            <select
-              class="employee-inline-select"
-              data-field="position"
-            >
-              ${inlineEmployeeOptions(
-                STATE.positions,
-                e.position,
-                'เลือกตำแหน่ง'
-              )}
-            </select>
-
-          </td>
-
-
-          <td>
-
-            <select
-              class="employee-inline-select"
-              data-field="branch"
-            >
-              ${inlineEmployeeOptions(
-                STATE.branches,
-                e.branch,
-                'เลือกสาขา'
-              )}
-            </select>
-
-          </td>
-
-
-          <td>
-
-            <select
-              class="employee-inline-select"
-              data-field="gender"
-            >
-              ${inlineEmployeeOptions(
-                STATE.genders,
-                e.gender,
-                'เลือกเพศ'
-              )}
-            </select>
-
-          </td>
-
-
-          <td>
-
-            <select
-              class="employee-inline-select"
-              data-field="status"
-            >
-              ${inlineEmployeeOptions(
-                STATE.employeeStatus,
-                e.status || 'ทำงาน'
-              )}
-            </select>
-
-          </td>
-
-
-          <td>
-
-            <div class="employee-inline-actions">
-
-              <button
-                type="button"
-                class="
-                  btn
-                  btn-primary
-                  btn-sm
-                  employee-inline-save
-                "
-                onclick='saveInlineEmployee(${jsonString(e.employeeId)})'
-              >
-                💾 บันทึก
-              </button>
-
-
-              <button
-                type="button"
-                class="
-                  btn
-                  btn-soft
-                  btn-sm
-                  employee-inline-cancel
-                "
-                onclick="cancelInlineEmployeeEdit()"
-              >
-                ยกเลิก
-              </button>
-
-            </div>
-
-          </td>
-
-        </tr>
-        `;
-
-
-        return;
+        setMap[
+          set.setId
+        ] = set;
       }
-
-
-      html += `
-
-      <tr>
-
-        <td>
-          ${index + 1}
-        </td>
-
-        <td>
-
-          <span class="employee-name-wrap">
-
-            <span>
-
-              <span class="emp-code">
-                ${escapeHtml(e.employeeId)}
-              </span>
-
-              ·
-
-              <span class="emp-nick">
-                ${escapeHtml(e.nickname)}
-              </span>
-
-            </span>
-
-            ${employeeNewRibbonHtml(e)}
-
-          </span>
-
-        </td>
-
-        <td>
-          ${badgeTeam(e.team)}
-        </td>
-
-        <td>
-          ${badgePosition(e.position)}
-        </td>
-
-        <td>
-          ${escapeHtml(e.branch || '-')}
-        </td>
-
-        <td>
-          ${escapeHtml(e.gender || '-')}
-        </td>
-
-        <td>
-          ${employeeStatusBadge(e.status)}
-        </td>
-
-        <td>
-
-          <div class="actions">
-
-            <button
-              type="button"
-              class="btn btn-soft btn-sm"
-              onclick='startInlineEmployeeEdit(${jsonString(e.employeeId)})'
-            >
-              แก้ไข
-            </button>
-
-            <button
-              type="button"
-              class="btn btn-danger btn-sm"
-              onclick='removeEmployee(${jsonString(e.employeeId)})'
-            >
-              ลบ
-            </button>
-
-          </div>
-
-        </td>
-
-      </tr>
-      `;
-    }
-  );
-
-
-  html += `
-
-  </tbody>
-
-  </table>
-  `;
-
-
-  setHtml(
-    'employeeTable',
-    html
-  );
-}
-
-
-function clearEmployeeFilters() {
-
-  STATE.inlineEmployeeEditId =
-    '';
-
-
-  setValue(
-    'employeeSearch',
-    ''
-  );
-
-  setValue(
-    'employeeTeamFilter',
-    ''
-  );
-
-  setValue(
-    'employeePositionFilter',
-    ''
-  );
-
-  renderEmployees();
-}
-
-
-/* =========================
-   SHIFT SET
-========================= */
-
-function updateShiftMode() {
-
-  document
-    .getElementById(
-      'fixedShiftBox'
-    )
-    .style.display =
-      value('shiftMode') ===
-      'fixed'
-        ? ''
-        : 'none';
-}
-
-
-function saveShiftSetForm() {
-
-  const fixed =
-    value('shiftMode') ===
-    'fixed';
-
-
-  const data = {
-
-    setId:
-      value('shiftSetId'),
-
-    setName:
-      value(
-        'shiftSetName'
-      ).trim(),
-
-    workDays:
-      Number(
-        value(
-          'shiftWorkDays'
-        )
-      ),
-
-    offDays:
-      Number(
-        value(
-          'shiftOffDays'
-        )
-      ),
-
-    alternate:
-      !fixed,
-
-    startShift:
-      value('shiftStart'),
-
-    fixedShift:
-      fixed
-        ? value('shiftFixed')
-        : ''
-  };
-
-
-  if (!data.setName) {
-
-    return toast(
-      'กรุณาตั้งชื่อเซตกะ'
-    );
-  }
-
-
-  setLoading(true);
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      res => {
-
-        STATE.shiftSets =
-          res.shiftSets;
-
-        clearShiftSetForm();
-
-        renderShiftSets();
-
-        refreshShiftSetDropdown();
-
-        setLoading(false);
-
-        toast(res.message);
-      }
-    )
-
-    .withFailureHandler(
-      showServerError
-    )
-
-    .saveShiftSet(data);
-}
-
-
-function clearShiftSetForm() {
-
-  setValue(
-    'shiftSetId',
-    ''
-  );
-
-  setValue(
-    'shiftSetName',
-    ''
-  );
-
-  setValue(
-    'shiftWorkDays',
-    '10'
-  );
-
-  setValue(
-    'shiftOffDays',
-    '5'
-  );
-
-  setValue(
-    'shiftMode',
-    'alternate'
-  );
-
-  setValue(
-    'shiftStart',
-    'MORNING'
-  );
-
-  setValue(
-    'shiftFixed',
-    'MORNING'
-  );
-
-  updateShiftMode();
-}
-
-
-function editShiftSet(id) {
-
-  const s =
-    STATE.shiftSets
-      .find(
-        x =>
-          x.setId === id
-      );
-
-
-  if (!s) return;
-
-
-  setValue(
-    'shiftSetId',
-    s.setId
-  );
-
-  setValue(
-    'shiftSetName',
-    s.setName
-  );
-
-  setValue(
-    'shiftWorkDays',
-    s.workDays
-  );
-
-  setValue(
-    'shiftOffDays',
-    s.offDays
-  );
-
-  setValue(
-    'shiftMode',
-    s.alternate
-      ? 'alternate'
-      : 'fixed'
-  );
-
-  setValue(
-    'shiftStart',
-    s.startShift
-  );
-
-  setValue(
-    'shiftFixed',
-    s.fixedShift ||
-    s.startShift
-  );
-
-  updateShiftMode();
-}
-
-
-function removeShiftSet(id) {
-
-  if (
-    !confirm(
-      'ต้องการลบเซตกะนี้ใช่หรือไม่?'
-    )
-  ) {
-    return;
-  }
-
-
-  setLoading(true);
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      res => {
-
-        STATE.shiftSets =
-          res.shiftSets;
-
-        renderShiftSets();
-
-        refreshShiftSetDropdown();
-
-        setLoading(false);
-
-        toast(res.message);
-      }
-    )
-
-    .withFailureHandler(
-      showServerError
-    )
-
-    .deleteShiftSet(id);
-}
-
-
-function renderShiftSets() {
-
-  if (
-    !STATE.shiftSets.length
-  ) {
-
-    return setHtml(
-      'shiftSetList',
-      emptyHtml(
-        'ยังไม่มีเซตกะ'
-      )
-    );
-  }
-
-
-  setHtml(
-
-    'shiftSetList',
-
-    STATE.shiftSets
-      .map(s => {
-
-        const start =
-          shiftText(
-            s.startShift
-          );
-
-
-        const next =
-          s.alternate
-
-            ? shiftText(
-                s.startShift ===
-                'MORNING'
-                  ? 'NIGHT'
-                  : 'MORNING'
-              )
-
-            : shiftText(
-                s.fixedShift ||
-                s.startShift
-              );
-
-
-        return `
-
-        <div class="set-card">
-
-          <div class="set-name">
-            ${escapeHtml(s.setName)}
-          </div>
-
-          <div
-            style="
-              margin-top:4px;
-              color:#8a94a4;
-              font-size:11px
-            "
-          >
-            ${s.workDays} ทำงาน /
-            ${s.offDays} หยุด
-          </div>
-
-
-          <div class="flow">
-
-            <span
-              class="
-                flow-chip
-                flow-blue
-              "
-            >
-              ${start}
-              ${s.workDays} วัน
-            </span>
-
-            <span>→</span>
-
-            <span
-              class="
-                flow-chip
-                flow-green
-              "
-            >
-              หยุด
-              ${s.offDays} วัน
-            </span>
-
-            <span>→</span>
-
-            <span
-              class="
-                flow-chip
-                flow-purple
-              "
-            >
-              ${next}
-            </span>
-
-          </div>
-
-
-          <div
-            class="actions"
-            style="margin-top:15px"
-          >
-
-            <button
-              class="btn btn-soft btn-sm"
-              onclick='editShiftSet(${jsonString(s.setId)})'
-            >
-              แก้ไข
-            </button>
-
-            <button
-              class="btn btn-danger btn-sm"
-              onclick='removeShiftSet(${jsonString(s.setId)})'
-            >
-              ลบ
-            </button>
-
-          </div>
-
-        </div>
-        `;
-      })
-      .join('')
-  );
-}
-
-
-
-/* =========================================================
-   TEAM PLANNER
-========================================================= */
-
-function loadTeamPlanner(forceReload) {
-  if (STATE.teamPlanner && !forceReload) { renderTeamPlanner(); return; }
-  const anchorDate = STATE.teamPlannerAnchor || STATE.today;
-  setHtml('teamPlannerArea','<div class="team-planner-empty">⏳ กำลังโหลดแผน TEAM...</div>');
-  google.script.run
-    .withSuccessHandler(data => {
-      STATE.teamPlanner = data;
-      STATE.teamPlannerAnchor = data.anchorDate || anchorDate;
-      STATE.teamPlannerDirty = false;
-      STATE.teamPlannerDragging = false;
-      STATE.teamPlannerDragTeam = '';
-      renderTeamPlanner();
-      updateTeamPlannerChangeCount();
-    })
-    .withFailureHandler(showServerError)
-    .getTeamPlanner({anchorDate:anchorDate});
-}
-
-function moveTeamPlannerRound(direction) {
-  if (direction === 0) {
-    STATE.teamPlannerAnchor = STATE.today;
-  } else {
-    const current = parseLocalDate(STATE.teamPlanner?.from || STATE.teamPlannerAnchor || STATE.today);
-    current.setMonth(current.getMonth() + direction);
-    STATE.teamPlannerAnchor = dateInput(current);
-  }
-  STATE.teamPlanner = null;
-  loadTeamPlanner(true);
-}
-
-function renderTeamPlanner() {
-  const data = STATE.teamPlanner;
-  if (!data || !Array.isArray(data.dates)) {
-    setHtml('teamPlannerArea','<div class="team-planner-empty">ยังไม่มีข้อมูลแผน TEAM</div>');
-    return;
-  }
-
-  setText('teamPlannerRound','รอบ ' + formatThaiDate(data.from) + ' - ' + formatThaiDate(data.to));
-
-  const head = `
-    <div class="team-planner-corner">TEAM / เซตกะ / วันเริ่ม Cycle</div>
-    ${data.dates.map(date => {
-      const d = parseLocalDate(date);
-      const weekday = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'][d.getDay()];
-      return `<div class="team-planner-date-head ${date===STATE.today?'today':''}"><div class="team-planner-date-main">${d.getDate()}/${d.getMonth()+1}</div><div>${weekday}</div></div>`;
-    }).join('')}`;
-
-  const rows = data.teams.map(row => {
-    const teamClass = row.team === 'TEAM A' ? 'team-a' : row.team === 'TEAM B' ? 'team-b' : 'team-c';
-    const setOptions = STATE.shiftSets.map(set => `<option value="${escapeAttr(set.setId)}" ${String(row.setId)===String(set.setId)?'selected':''}>${escapeHtml(set.setName)}</option>`).join('');
-    const cells = row.days.map(day => `
-      <div class="team-planner-cell ${day.date===STATE.today?'today':''}" data-team="${escapeAttr(row.team)}" data-date="${escapeAttr(day.date)}" data-auto-shift="${escapeAttr(day.autoShift)}" data-current-shift="${escapeAttr(day.shift)}" onpointerdown="teamPlannerPointerDown(event,this)" onpointerenter="teamPlannerPointerEnter(event,this)">
-        ${teamPlannerShiftHtml(day.shift,day.isOverride)}
-      </div>`).join('');
-
-    return `
-      <div class="team-planner-left">
-        <div class="team-planner-team-line">
-          <span class="team-planner-team-badge ${teamClass}">${escapeHtml(row.team)}</span>
-          <span style="color:#98a2b3;font-size:9px">${row.overrideCount||0} วันที่แก้เอง</span>
-        </div>
-        <div class="team-planner-config">
-          <select onchange="teamPlannerConfigChanged(${jsonString(row.team)},'setId',this.value)">
-            <option value="">เลือกเซตกะ</option>${setOptions}
-          </select>
-          <input type="date" value="${escapeAttr(row.cycleStartDate||data.from)}" onchange="teamPlannerConfigChanged(${jsonString(row.team)},'cycleStartDate',this.value)" title="วันเริ่ม Cycle">
-        </div>
-        <div class="team-planner-start-shift">
-          <span>กะเริ่มต้น</span>
-          <select onchange="teamPlannerConfigChanged(${jsonString(row.team)},'startShift',this.value)">
-            <option value="MORNING" ${row.startShift==='MORNING'?'selected':''}>☀️ เช้า</option>
-            <option value="NIGHT" ${row.startShift==='NIGHT'?'selected':''}>🌙 ดึก</option>
-          </select>
-        </div>
-      </div>${cells}`;
-  }).join('');
-
-  setHtml('teamPlannerArea',`<div class="team-planner-grid" style="--planner-days:${data.dates.length}">${head}${rows}</div>`);
-}
-
-function teamPlannerShiftHtml(shift,isOverride) {
-  const map = {
-    MORNING:['morning','☀️ เช้า'],
-    NIGHT:['night','🌙 ดึก'],
-    OFF:['off','❤️ หยุด'],
-    UNSET:['unset','— ไม่มีกะ']
-  };
-  const item = map[String(shift||'UNSET').toUpperCase()] || map.UNSET;
-  return `<div class="team-planner-shift ${item[0]}"><div>${item[1]}</div><div class="small">${isOverride?'แก้เอง':'ตามเซต'}</div></div>`;
-}
-
-function setTeamPlannerBrush(shift,button) {
-  STATE.teamPlannerBrush = shift;
-  document.querySelectorAll('[data-team-planner-brush]').forEach(el => el.classList.remove('active'));
-  button.classList.add('active');
-}
-
-function teamPlannerPointerDown(event,element) {
-  event.preventDefault();
-  STATE.teamPlannerDragging = true;
-  STATE.teamPlannerDragTeam = element.dataset.team;
-  paintTeamPlannerCell(element);
-}
-
-function teamPlannerPointerEnter(event,element) {
-  if (!STATE.teamPlannerDragging || element.dataset.team !== STATE.teamPlannerDragTeam) return;
-  if (event.buttons === 0 && event.pointerType === 'mouse') {
-    STATE.teamPlannerDragging = false;
-    STATE.teamPlannerDragTeam = '';
-    return;
-  }
-  paintTeamPlannerCell(element);
-}
-
-window.addEventListener('pointerup',() => {
-  STATE.teamPlannerDragging = false;
-  STATE.teamPlannerDragTeam = '';
-});
-
-function paintTeamPlannerCell(element) {
-  const row = STATE.teamPlanner?.teams?.find(item => item.team === element.dataset.team);
-  if (!row) return;
-  const date = element.dataset.date;
-  row.overrides = row.overrides || {};
-  if (STATE.teamPlannerBrush === 'AUTO') delete row.overrides[date];
-  else row.overrides[date] = STATE.teamPlannerBrush;
-  rebuildTeamPlannerDays(row);
-  STATE.teamPlannerDirty = true;
-  renderTeamPlanner();
-  updateTeamPlannerChangeCount();
-}
-
-function teamPlannerConfigChanged(team,key,value) {
-  const row = STATE.teamPlanner?.teams?.find(item => item.team === team);
-  if (!row) return;
-  row[key] = value;
-  rebuildTeamPlannerDays(row);
-  STATE.teamPlannerDirty = true;
-  renderTeamPlanner();
-  updateTeamPlannerChangeCount();
-}
-
-function rebuildTeamPlannerDays(row) {
-  const set = STATE.shiftSets.find(item => item.setId === row.setId);
-  const dates = STATE.teamPlanner?.dates || [];
-  row.days = dates.map(date => {
-    const autoShift = calculateTeamPlannerAutoShift(set,row.cycleStartDate,date,row.startShift);
-    const override = String(row.overrides?.[date] || '').toUpperCase();
-    const isOverride = ['MORNING','NIGHT','OFF','UNSET'].includes(override);
-    return {date:date,autoShift:autoShift,shift:isOverride?override:autoShift,isOverride:isOverride};
-  });
-  row.overrideCount = Object.keys(row.overrides||{}).filter(date => dates.includes(date)).length;
-}
-
-function calculateTeamPlannerAutoShift(set,cycleStartDate,date,startShift) {
-  if (!set || !cycleStartDate) return 'UNSET';
-  const diff = Math.round((parseLocalDate(date)-parseLocalDate(cycleStartDate))/86400000);
-  if (diff < 0) return 'UNSET';
-  const workDays = Math.max(1,Number(set.workDays||10));
-  const offDays = Math.max(0,Number(set.offDays||5));
-  const cycleLength = workDays + offDays;
-  if (cycleLength <= 0) return 'UNSET';
-  const cycleIndex = Math.floor(diff/cycleLength);
-  const dayInCycle = diff % cycleLength;
-  if (dayInCycle >= workDays) return 'OFF';
-  const baseShift = startShift || set.startShift || 'MORNING';
-  if (set.alternate) return cycleIndex%2===1 ? (baseShift==='MORNING'?'NIGHT':'MORNING') : baseShift;
-  return set.fixedShift || baseShift;
-}
-
-function updateTeamPlannerChangeCount() {
-  const box = document.getElementById('teamPlannerChangeCount');
-  if (!box) return;
-  box.textContent = STATE.teamPlannerDirty ? 'มีการแก้ไขที่ยังไม่ได้บันทึก' : 'บันทึกแล้ว';
-  box.style.color = STATE.teamPlannerDirty ? '#7a61c9' : '#7b8798';
-}
-
-function saveTeamPlanner() {
-  const data = STATE.teamPlanner;
-  if (!data) return;
-  const payload = {
-    anchorDate:data.anchorDate || STATE.teamPlannerAnchor || STATE.today,
-    teams:data.teams.map(row => ({team:row.team,setId:row.setId||'',cycleStartDate:row.cycleStartDate||data.from,startShift:row.startShift||'MORNING',overrides:row.overrides||{}}))
-  };
-  google.script.run
-    .withSuccessHandler(res => {
-      STATE.teamPlanner = res.planner;
-      STATE.teamPlannerAnchor = res.planner.anchorDate;
-      STATE.teamPlannerDirty = false;
-      renderTeamPlanner();
-      updateTeamPlannerChangeCount();
-      toast(res.message || 'บันทึกแบบร่าง TEAM แล้ว');
-    })
-    .withFailureHandler(showServerError)
-    .saveTeamPlanner(payload);
-}
-
-
-/* =========================
-   ASSIGN
-========================= */
-
-function updateAssignScope() {
-
-  const type =
-    value(
-      'assignScopeType'
     );
 
 
-  const teamSelect =
-    document.getElementById(
-      'assignTeamSelect'
+  const assignments =
+    preloaded.assignments ||
+    getAssignments_();
+
+
+  const overrides =
+    getOverrideMap_(
+      from,
+      to
     );
 
-
-  const positionSelect =
-    document.getElementById(
-      'assignPositionSelect'
-    );
-
-
-  const employeeBox =
-    document.getElementById(
-      'assignEmployeeBox'
-    );
-
-
-  const teamHint =
-    document.getElementById(
-      'assignTeamHint'
-    );
-
-
-  const positionHint =
-    document.getElementById(
-      'assignPositionHint'
-    );
-
-
-  /*
-   * TEAM:
-   * TEAM ต้องเลือก
-   * ตำแหน่งเลือกเพิ่มได้
-   * - ไม่เลือกตำแหน่ง = ทุกตำแหน่งใน TEAM
-   * - เลือกตำแหน่ง = เฉพาะตำแหน่งนั้นใน TEAM
-   */
-  if (
-    type === 'TEAM'
-  ) {
-
-    teamSelect.disabled =
-      false;
-
-
-    positionSelect.disabled =
-      false;
-
-
-    employeeBox.style.display =
-      'none';
-
-
-    teamHint.textContent =
-      'เลือก TEAM ที่ต้องการจัดกะ';
-
-
-    positionHint.textContent =
-      'ไม่เลือก = ทุกตำแหน่งใน TEAM · เลือกได้หากต้องการจัดเฉพาะตำแหน่ง';
-
-
-    positionSelect.style.opacity =
-      '1';
-
-
-    return;
-  }
-
-
-  /*
-   * POSITION:
-   * ตำแหน่งต้องเลือก
-   * TEAM ไม่เลือก = ทุก TEAM
-   */
-  if (
-    type === 'POSITION'
-  ) {
-
-    teamSelect.disabled =
-      false;
-
-
-    positionSelect.disabled =
-      false;
-
-
-    employeeBox.style.display =
-      'none';
-
-
-    teamHint.textContent =
-      'ไม่เลือก TEAM = ใช้ตำแหน่งนี้ทุก TEAM';
-
-
-    positionHint.textContent =
-      'เลือกตำแหน่งที่ต้องการจัดกะ';
-
-
-    positionSelect.style.opacity =
-      '1';
-
-
-    return;
-  }
-
-
-  /*
-   * EMPLOYEE:
-   * ใช้เฉพาะรายบุคคล
-   */
-  if (
-    type === 'EMPLOYEE'
-  ) {
-
-    teamSelect.disabled =
-      true;
-
-
-    positionSelect.disabled =
-      true;
-
-
-    teamSelect.value =
-      '';
-
-
-    positionSelect.value =
-      '';
-
-
-    positionSelect.style.opacity =
-      '.55';
-
-
-    employeeBox.style.display =
-      '';
-
-
-    teamHint.textContent =
-      'โหมดพนักงาน ไม่ต้องเลือก TEAM';
-
-
-    positionHint.textContent =
-      'โหมดพนักงาน ไม่ต้องเลือกตำแหน่ง';
-  }
-}
-
-
-function saveAssignmentForm() {
-
-  const uiType =
-    value(
-      'assignScopeType'
-    );
-
-
-  const selectedTeam =
-    value(
-      'assignTeamSelect'
-    );
-
-
-  const selectedPosition =
-    value(
-      'assignPositionSelect'
-    );
-
-
-  const selectedEmployee =
-    value(
-      'assignEmployeeSelect'
-    );
-
-
-  let scopeType =
-    uiType;
-
-
-  let scopeValue =
-    '';
-
-
-  let teamFilter =
-    '';
-
-
-  /*
-   * TEAM + ตำแหน่ง:
-   * Backend เก็บเป็น POSITION + teamFilter
-   * เพื่อให้ priority "รายบุคคล > ตำแหน่ง > TEAM" ทำงานเหมือนเดิม
-   */
-  if (
-    uiType === 'TEAM'
-  ) {
-
-    if (!selectedTeam) {
-
-      return toast(
-        'กรุณาเลือก TEAM'
-      );
-    }
-
-
-    if (selectedPosition) {
-
-      scopeType =
-        'POSITION';
-
-
-      scopeValue =
-        selectedPosition;
-
-
-      teamFilter =
-        selectedTeam;
-
-    } else {
-
-      scopeType =
-        'TEAM';
-
-
-      scopeValue =
-        selectedTeam;
-    }
-  }
-
-
-  if (
-    uiType === 'POSITION'
-  ) {
-
-    if (!selectedPosition) {
-
-      return toast(
-        'กรุณาเลือกตำแหน่ง'
-      );
-    }
-
-
-    scopeType =
-      'POSITION';
-
-
-    scopeValue =
-      selectedPosition;
-
-
-    teamFilter =
-      selectedTeam;
-  }
-
-
-  if (
-    uiType === 'EMPLOYEE'
-  ) {
-
-    if (!selectedEmployee) {
-
-      return toast(
-        'กรุณาเลือกพนักงาน'
-      );
-    }
-
-
-    scopeType =
-      'EMPLOYEE';
-
-
-    scopeValue =
-      selectedEmployee;
-  }
-
-
-  const data = {
-
-    scopeType:
-      scopeType,
-
-    scopeValue:
-      scopeValue,
-
-    teamFilter:
-      teamFilter,
-
-    setId:
-      value(
-        'assignSet'
-      ),
-
-    startDate:
-      value(
-        'assignStartDate'
-      ),
-
-    startShift:
-      value(
-        'assignStartShift'
-      ),
-
-    resetCycle:
-      true
-  };
-
-
-  if (
-    !data.setId ||
-    !data.startDate
-  ) {
-
-    return toast(
-      'กรุณาเลือกเซตกะและวันที่เริ่มใช้'
-    );
-  }
-
-
-  setLoading(true);
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      res => {
-
-        STATE.assignments =
-          res.assignments;
-renderAssignments();
-
-
-        refreshDashboard();
-
-
-        setLoading(false);
-
-
-        toast(
-          res.message
-        );
-      }
-    )
-
-    .withFailureHandler(
-      showServerError
-    )
-
-    .saveAssignment(
-      data
-    );
-}
-
-
-function renderAssignments() {
 
   const rows =
-    [...STATE.assignments]
-      .reverse();
+    employees.map(
+      employee => ({
 
+        employeeId:
+          employee.employeeId,
 
-  if (!rows.length) {
+        nickname:
+          employee.nickname,
 
-    return setHtml(
-      'assignmentTable',
-      emptyHtml(
-        'ยังไม่มีการจัดกะ'
-      )
-    );
-  }
+        team:
+          employee.team,
 
+        position:
+          employee.position,
 
-  let html = `
+        branch:
+          employee.branch,
 
-  <table>
+        gender:
+          employee.gender,
 
-  <thead>
+        days:
+          dates.map(
+            date => {
 
-  <tr>
-
-    <th>ใช้กับ</th>
-    <th>รายการ</th>
-    <th>TEAM</th>
-    <th>เซตกะ</th>
-    <th>เริ่มใช้</th>
-    <th>Cycle 10/5</th>
-    <th>การนับ</th>
-    <th>กะเริ่ม</th>
-    <th>สถานะ</th>
-    <th></th>
-
-  </tr>
-
-  </thead>
-
-  <tbody>
-  `;
-
-
-  rows.forEach(a => {
-
-    let display =
-      a.scopeValue;
-
-
-    if (
-      a.scopeType ===
-      'EMPLOYEE'
-    ) {
-
-      const employee =
-        STATE.employees
-          .find(
-            e =>
-              e.employeeId ===
-              a.scopeValue
-          );
-
-
-      if (employee) {
-
-        display =
-          employee.employeeId +
-          ' · ' +
-          employee.nickname;
-      }
-    }
-
-
-    const set =
-      STATE.shiftSets
-        .find(
-          s =>
-            s.setId ===
-            a.setId
-        );
-
-
-    const active =
-      String(
-        a.active
-      ).toUpperCase() !==
-      'FALSE';
-
-
-    html += `
-
-    <tr>
-
-      <td>
-        ${scopeText(a.scopeType)}
-      </td>
-
-      <td>
-        <strong>
-          ${escapeHtml(display)}
-        </strong>
-      </td>
-
-      <td>
-        ${escapeHtml(a.teamFilter || '-')}
-      </td>
-
-      <td>
-        ${escapeHtml(set?.setName || a.setId)}
-      </td>
-
-      <td>
-        ${formatThaiDate(a.startDate)}
-      </td>
-
-      <td>
-        <strong>
-          ${formatThaiDate(a.cycleStartDate || a.startDate)}
-        </strong>
-      </td>
-
-      <td>
-        ${
-          a.cycleReset === true ||
-          String(a.cycleReset).toUpperCase() === 'TRUE'
-            ? '<span class="badge badge-off">เริ่ม Cycle ใหม่</span>'
-            : '<span class="badge badge-work">ต่อเนื่อง</span>'
-        }
-      </td>
-
-      <td>
-        ${
-          a.startShift
-            ? shiftText(a.startShift)
-            : 'ตามเซต'
-        }
-      </td>
-
-      <td>
-        ${
-          active
-            ? '<span class="badge badge-work">ใช้งาน</span>'
-            : '<span class="badge badge-out">ปิดแล้ว</span>'
-        }
-      </td>
-
-      <td>
-
-        ${
-          active
-            ? `
-            <button
-              class="btn btn-danger btn-sm"
-              onclick='disableAssignment(${jsonString(a.assignmentId)})'
-            >
-              ปิด
-            </button>
-            `
-            : ''
-        }
-
-      </td>
-
-    </tr>
-    `;
-  });
-
-
-  html += `
-
-  </tbody>
-
-  </table>
-  `;
-
-
-  setHtml(
-    'assignmentTable',
-    html
-  );
-}
-
-
-function disableAssignment(id) {
-
-  if (
-    !confirm(
-      'ต้องการปิดการจัดกะนี้หรือไม่?'
-    )
-  ) return;
-
-
-  setLoading(true);
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      res => {
-
-        STATE.assignments =
-          res.assignments;
-
-        renderAssignments();
-
-        refreshDashboard();
-
-        setLoading(false);
-
-        toast(res.message);
-      }
-    )
-
-    .withFailureHandler(
-      showServerError
-    )
-
-    .deactivateAssignment(id);
-}
-
-
-/* =========================
-   CALENDAR
-========================= */
-
-
-/* =========================================================
-   INDIVIDUAL CALENDAR — LOCAL LOADING ONLY
-   หน้านี้ไม่ใช้ Loading กลางของทั้งระบบ
-========================================================= */
-
-function setCalendarOpenBusy(
-  busy
-) {
-
-  const button =
-    document.getElementById(
-      'calendarOpenButton'
-    );
-
-
-  if (!button) {
-    return;
-  }
-
-
-  button.disabled =
-    !!busy;
-
-
-  button.textContent =
-    busy
-      ? '⏳ กำลังเปิดปฏิทิน...'
-      : 'เปิดปฏิทิน';
-}
-
-
-function setCalendarSaveBusy(
-  busy
-) {
-
-  const button =
-    document.getElementById(
-      'calendarSaveButton'
-    );
-
-
-  if (!button) {
-    return;
-  }
-
-
-  button.disabled =
-    !!busy;
-
-
-  button.textContent =
-    busy
-      ? '⏳ กำลังบันทึก...'
-      : '💾 บันทึกวันที่แก้ไข';
-}
-
-
-function setCalendarNoteBusy(
-  busy
-) {
-
-  [
-    'calendarNoteSaveButton',
-    'calendarNoteDeleteButton'
-  ]
-  .forEach(
-    id => {
-
-      const button =
-        document.getElementById(
-          id
-        );
-
-
-      if (!button) {
-        return;
-      }
-
-
-      button.disabled =
-        !!busy;
-    }
-  );
-
-
-  const saveButton =
-    document.getElementById(
-      'calendarNoteSaveButton'
-    );
-
-
-  if (saveButton) {
-
-    saveButton.textContent =
-      busy
-        ? '⏳ กำลังบันทึก...'
-        : '💾 บันทึกหมายเหตุ';
-  }
-}
-
-
-function showCalendarLocalLoading(
-  message
-) {
-
-  setHtml(
-    'calendarArea',
-    `
-      <div
-        style="
-          margin-top:14px;
-          padding:18px;
-          border:1px solid #e1e7ef;
-          border-radius:14px;
-          background:#f8fbff;
-          color:#667085;
-          text-align:center;
-          font-size:12px;
-          font-weight:800;
-        "
-      >
-        ⏳ ${escapeHtml(message || 'กำลังโหลดปฏิทิน...')}
-      </div>
-    `
-  );
-}
-
-
-function showCalendarLocalError(
-  error
-) {
-
-  console.error(
-    error
-  );
-
-
-  toast(
-    error?.message ||
-    String(error) ||
-    'เกิดข้อผิดพลาด',
-    'error'
-  );
-}
-
-
-function loadIndividualCalendar() {
-
-  const employeeId =
-    value(
-      'calendarEmployee'
-    );
-
-
-  const anchorDate =
-    value(
-      'calendarAnchor'
-    ) ||
-    STATE.today;
-
-
-  if (!employeeId) {
-
-    return toast(
-      'กรุณาเลือกพนักงาน'
-    );
-  }
-
-
-  /*
-   * ใช้ Loading เฉพาะในพื้นที่ปฏิทิน
-   * ไม่เปิดกล่อง "กำลังโหลดข้อมูล..." กลางทั้งระบบ
-   */
-  setCalendarOpenBusy(
-    true
-  );
-
-
-  showCalendarLocalLoading(
-    'กำลังโหลดปฏิทินพนักงาน...'
-  );
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      data => {
-
-        setCalendarOpenBusy(
-          false
-        );
-
-
-        STATE.calendar =
-          data;
-
-
-        STATE.calendarEdits =
-          {};
-
-
-        renderIndividualCalendar();
-      }
-    )
-
-    .withFailureHandler(
-      err => {
-
-        setCalendarOpenBusy(
-          false
-        );
-
-
-        if (
-          STATE.calendar
-        ) {
-
-          renderIndividualCalendar();
-
-        } else {
-
-          setHtml(
-            'calendarArea',
-            ''
-          );
-        }
-
-
-        showCalendarLocalError(
-          err
-        );
-      }
-    )
-
-    .getEmployeeCalendar({
-
-      employeeId:
-        employeeId,
-
-      anchorDate:
-        anchorDate
-    });
-}
-
-
-function renderIndividualCalendar() {
-
-  const data =
-    STATE.calendar;
-
-
-  if (!data) {
-
-    setHtml(
-      'calendarArea',
-      ''
-    );
-
-    return;
-  }
-
-
-  const start =
-    parseLocalDate(
-      data.from
-    );
-
-
-  const mondayOffset =
-    (
-      start.getDay() +
-      6
-    ) % 7;
-
-
-  const weekdays = [
-    'จันทร์',
-    'อังคาร',
-    'พุธ',
-    'พฤหัส',
-    'ศุกร์',
-    'เสาร์',
-    'อาทิตย์'
-  ];
-
-
-  let blanks = '';
-
-
-  for (
-    let i = 0;
-    i < mondayOffset;
-    i++
-  ) {
-
-    blanks +=
-      '<div class="calendar-blank"></div>';
-  }
-
-
-  const days =
-    data.days
-      .map(day => {
-
-        const d =
-          parseLocalDate(
-            day.date
-          );
-
-
-        const dateNumber =
-          d.getDate();
-
-
-        const month =
-          d.toLocaleDateString(
-            'th-TH',
-            {
-              month:'short'
-            }
-          );
-
-
-        return `
-
-        <div
-          class="calendar-day"
-          data-date="${escapeAttr(day.date)}"
-          data-auto-shift="${escapeAttr(day.autoShift)}"
-          data-current-shift="${escapeAttr(day.shift)}"
-          data-note="${escapeAttr(day.note || '')}"
-          onpointerdown="calendarPointerDown(event,this)"
-          onpointerenter="calendarPointerEnter(event,this)"
-        >
-
-          <div class="calendar-date">
-
-            ${dateNumber}
-
-            <span class="calendar-month">
-              ${month}
-            </span>
-
-          </div>
-
-
-          <div
-            class="calendar-shift-target"
-          >
-            ${shiftBadge(day.shift)}
-          </div>
-
-
-          <div
-            class="calendar-source"
-          >
-
-            ${
-              day.hasOverride
-                ? 'แก้รายบุคคล'
-                : escapeHtml(
-                    day.setName ||
-                    'ตามระบบ'
-                  )
-            }
-
-          </div>
-
-
-          <div
-            class="calendar-note-preview-wrap"
-          >
-            ${calendarNotePreview(
-              day.note || ''
-            )}
-          </div>
-
-        </div>
-        `;
-      })
-      .join('');
-
-
-  const employee =
-    data.employee;
-
-
-  const html = `
-
-  <div class="calendar-toolbar">
-
-
-    <div>
-
-      <div
-        style="
-          font-size:17px;
-          font-weight:900
-        "
-      >
-
-        ${escapeHtml(employee.employeeId)}
-        ·
-        ${escapeHtml(employee.nickname)}
-
-      </div>
-
-
-      <div
-        style="
-          margin-top:3px;
-          color:#7c8798;
-          font-size:11px
-        "
-      >
-
-        ${escapeHtml(employee.team || '-')}
-
-        ·
-
-        ${escapeHtml(employee.position || '-')}
-
-        ·
-
-        รอบ
-
-        ${formatThaiDate(data.from)}
-
-        -
-
-        ${formatThaiDate(data.to)}
-
-      </div>
-
-    </div>
-
-
-    <div class="actions">
-
-      <button
-        class="btn btn-soft btn-sm"
-        onclick="moveCalendarRound(-1)"
-      >
-        ‹ รอบก่อน
-      </button>
-
-      <button
-        class="btn btn-soft btn-sm"
-        onclick="moveCalendarRound(1)"
-      >
-        รอบถัดไป ›
-      </button>
-
-    </div>
-
-  </div>
-
-
-  <div
-    style="
-      margin-bottom:10px;
-      font-size:12px;
-      font-weight:800
-    "
-  >
-    เลือกสิ่งที่จะลากลงปฏิทิน
-  </div>
-
-
-  <div
-    class="calendar-brushes"
-    style="margin-bottom:17px"
-  >
-
-    <button
-      class="
-        brush-btn
-        brush-morning
-      "
-      data-brush="MORNING"
-      onclick="setCalendarBrush('MORNING',this)"
-    >
-      ☀️ กะเช้า
-    </button>
-
-
-    <button
-      class="
-        brush-btn
-        brush-night
-      "
-      data-brush="NIGHT"
-      onclick="setCalendarBrush('NIGHT',this)"
-    >
-      🌙 กะดึก
-    </button>
-
-
-    <button
-      class="
-        brush-btn
-        brush-off
-        active
-      "
-      data-brush="OFF"
-      onclick="setCalendarBrush('OFF',this)"
-    >
-      ❤️ วันหยุด
-    </button>
-
-
-    <button
-      class="
-        brush-btn
-        brush-unset
-      "
-      data-brush="UNSET"
-      onclick="setCalendarBrush('UNSET',this)"
-    >
-      🚫 ไม่มีกะ
-    </button>
-
-
-    <button
-      class="
-        brush-btn
-        brush-note
-      "
-      data-brush="NOTE"
-      onclick="setCalendarBrush('NOTE',this)"
-    >
-      📝 หมายเหตุ
-    </button>
-
-
-    <button
-      class="brush-btn"
-      data-brush="AUTO"
-      onclick="setCalendarBrush('AUTO',this)"
-    >
-      ↩ ใช้ตามเซตกะ
-    </button>
-
-  </div>
-
-
-  <div
-    style="
-      margin-bottom:14px;
-      padding:11px 13px;
-      background:var(--purple-soft);
-      border-radius:11px;
-      color:#6555a5;
-      font-size:11px
-    "
-  >
-    💡 กะต่าง ๆ กดค้างแล้วลากผ่านหลายวันได้เลย
-    · ถ้าจะจดโน้ต ให้กด 📝 หมายเหตุ แล้วกดวันที่ที่ต้องการ
-    · วันที่มีกรอบสีม่วงคือวันที่แก้กะแต่ยังไม่ได้กดบันทึก
-  </div>
-
-
-  <div class="calendar-week">
-
-    ${
-      weekdays
-        .map(x =>
-          `<div class="week-label">${x}</div>`
-        )
-        .join('')
-    }
-
-  </div>
-
-
-  <div class="calendar-grid">
-
-    ${blanks}
-
-    ${days}
-
-  </div>
-
-
-  <div
-    class="actions"
-    style="margin-top:18px"
-  >
-
-    <button
-      class="btn btn-primary"
-      id="calendarSaveButton"
-      onclick="saveCalendarChanges()"
-    >
-      💾 บันทึกวันที่แก้ไข
-    </button>
-
-    <button
-      class="btn btn-soft"
-      onclick="loadIndividualCalendar()"
-    >
-      ยกเลิกการแก้ไข
-    </button>
-
-    <span
-      id="calendarChangeCount"
-      style="
-        color:#7b8798;
-        font-size:11px
-      "
-    >
-      ยังไม่มีการแก้ไข
-    </span>
-
-  </div>
-  `;
-
-
-  setHtml(
-    'calendarArea',
-    html
-  );
-}
-
-
-function setCalendarBrush(
-  shift,
-  button
-) {
-
-  STATE.calendarBrush =
-    shift;
-
-
-  document
-    .querySelectorAll(
-      '.brush-btn'
-    )
-    .forEach(
-      x =>
-        x.classList
-          .remove('active')
-    );
-
-
-  button
-    .classList
-    .add('active');
-}
-
-
-function calendarPointerDown(
-  event,
-  element
-) {
-
-  event.preventDefault();
-
-
-  if (
-    STATE.calendarBrush ===
-    'NOTE'
-  ) {
-
-    STATE.calendarDragging =
-      false;
-
-    openCalendarNoteEditor(
-      element
-    );
-
-    return;
-  }
-
-
-  STATE.calendarDragging =
-    true;
-
-
-  paintCalendarDay(
-    element
-  );
-}
-
-
-function calendarPointerEnter(
-  event,
-  element
-) {
-
-  if (
-    STATE.calendarBrush ===
-    'NOTE'
-  ) {
-    return;
-  }
-
-
-  if (
-    !STATE.calendarDragging
-  ) {
-    return;
-  }
-
-
-  if (
-    event.buttons === 0 &&
-    event.pointerType ===
-      'mouse'
-  ) {
-
-    STATE.calendarDragging =
-      false;
-
-    return;
-  }
-
-
-  paintCalendarDay(
-    element
-  );
-}
-
-
-function paintCalendarDay(
-  element
-) {
-
-  const date =
-    element.dataset.date;
-
-
-  const brush =
-    STATE.calendarBrush;
-
-
-  STATE.calendarEdits[
-    date
-  ] = brush;
-
-
-  const displayShift =
-    brush === 'AUTO'
-
-      ? element
-          .dataset
-          .autoShift
-
-      : brush;
-
-
-  element.dataset.currentShift =
-    displayShift;
-
-
-  element.classList
-    .add('changed');
-
-
-  element
-    .querySelector(
-      '.calendar-shift-target'
-    )
-    .innerHTML =
-      shiftBadge(
-        displayShift
-      );
-
-
-  const source =
-    element.querySelector(
-      '.calendar-source'
-    );
-
-
-  source.textContent =
-    brush === 'AUTO'
-      ? 'กลับไปใช้ตามเซตกะ'
-      : brush === 'UNSET'
-        ? 'กำหนดไม่มีกะ'
-        : 'แก้ไขรายบุคคล';
-
-
-  source.classList
-    .add(
-      'changed-text'
-    );
-
-
-  updateCalendarChangeCount();
-}
-
-
-function calendarNotePreview(
-  note
-) {
-
-  note =
-    String(
-      note || ''
-    ).trim();
-
-
-  if (!note) {
-
-    return `
-      <div
-        class="
-          calendar-note-preview
-          empty
-        "
-      ></div>
-    `;
-  }
-
-
-  return `
-    <div
-      class="calendar-note-preview"
-      title="${escapeAttr(note)}"
-      style="
-        background:
-          linear-gradient(
-            135deg,
-            #dff8ee 0%,
-            #dff7fb 48%,
-            #e3efff 100%
-          ) !important;
-        border:
-          1px solid
-          #9fded8 !important;
-        color:
-          #2f756e !important;
-      "
-    >
-      📝 ${escapeHtml(note)}
-    </div>
-  `;
-}
-
-
-function openCalendarNoteEditor(
-  element
-) {
-
-  if (
-    !STATE.calendar
-  ) {
-    return;
-  }
-
-
-  const date =
-    String(
-      element.dataset.date || ''
-    );
-
-
-  const note =
-    String(
-      element.dataset.note || ''
-    );
-
-
-  if (!date) {
-    return;
-  }
-
-
-  closeCalendarNoteEditor();
-
-
-  const backdrop =
-    document.createElement(
-      'div'
-    );
-
-
-  backdrop.id =
-    'calendarNoteModal';
-
-
-  backdrop.className =
-    'calendar-note-modal-backdrop';
-
-
-  backdrop.innerHTML = `
-
-    <div
-      class="calendar-note-modal"
-      onclick="event.stopPropagation()"
-    >
-
-      <div
-        class="calendar-note-modal-title"
-      >
-        📝 หมายเหตุรายวัน
-      </div>
-
-      <div
-        class="calendar-note-modal-date"
-      >
-        ${formatThaiDate(date)}
-        ·
-        ${escapeHtml(
-          STATE.calendar
-            .employee
-            .employeeId
-        )}
-        ·
-        ${escapeHtml(
-          STATE.calendar
-            .employee
-            .nickname
-        )}
-      </div>
-
-
-      <textarea
-        id="calendarNoteTextarea"
-        class="calendar-note-textarea"
-        maxlength="200"
-        placeholder="เช่น เริ่มงานวันแรก / มาสาย 30 นาที / ลากิจครึ่งวัน / ย้ายวันหยุด..."
-      ></textarea>
-
-
-      <div
-        class="calendar-note-help"
-      >
-        หมายเหตุสูงสุด 200 ตัวอักษร
-        · บันทึกแยกจากกะ ไม่ทำให้รอบกะเปลี่ยน
-      </div>
-
-
-      <div
-        class="actions"
-        style="
-          margin-top:15px;
-          justify-content:flex-end
-        "
-      >
-
-        ${
-          note.trim()
-            ? `
-              <button
-                class="btn btn-danger"
-                id="calendarNoteDeleteButton"
-                onclick="deleteCalendarNote()"
-              >
-                ลบหมายเหตุ
-              </button>
-            `
-            : ''
-        }
-
-        <button
-          class="btn btn-soft"
-          onclick="closeCalendarNoteEditor()"
-        >
-          ยกเลิก
-        </button>
-
-        <button
-          class="btn btn-primary"
-          id="calendarNoteSaveButton"
-          onclick="saveCalendarNote()"
-        >
-          💾 บันทึกหมายเหตุ
-        </button>
-
-      </div>
-
-    </div>
-  `;
-
-
-  backdrop.onclick =
-    closeCalendarNoteEditor;
-
-
-  document.body
-    .appendChild(
-      backdrop
-    );
-
-
-  STATE.calendarNoteTarget = {
-    date:
-      date,
-    element:
-      element
-  };
-
-
-  const textarea =
-    document.getElementById(
-      'calendarNoteTextarea'
-    );
-
-
-  textarea.value =
-    note;
-
-
-  textarea.focus();
-
-
-  textarea.setSelectionRange(
-    textarea.value.length,
-    textarea.value.length
-  );
-}
-
-
-function closeCalendarNoteEditor() {
-
-  const modal =
-    document.getElementById(
-      'calendarNoteModal'
-    );
-
-
-  if (modal) {
-
-    modal.remove();
-  }
-
-
-  STATE.calendarNoteTarget =
-    null;
-}
-
-
-function saveCalendarNote() {
-
-  if (
-    !STATE.calendar ||
-    !STATE.calendarNoteTarget
-  ) {
-    return;
-  }
-
-
-  const textarea =
-    document.getElementById(
-      'calendarNoteTextarea'
-    );
-
-
-  const note =
-    String(
-      textarea?.value || ''
-    )
-    .trim()
-    .slice(
-      0,
-      200
-    );
-
-
-  sendCalendarNote(
-    note
-  );
-}
-
-
-function deleteCalendarNote() {
-
-  if (
-    !STATE.calendarNoteTarget
-  ) {
-    return;
-  }
-
-
-  sendCalendarNote(
-    ''
-  );
-}
-
-
-function sendCalendarNote(
-  note
-) {
-
-  if (
-    !STATE.calendar ||
-    !STATE.calendarNoteTarget
-  ) {
-    return;
-  }
-
-
-  const target =
-    STATE.calendarNoteTarget;
-
-
-  const employeeId =
-    STATE.calendar
-      .employee
-      .employeeId;
-
-
-  const date =
-    target.date;
-
-
-  const element =
-    target.element;
-
-
-  /*
-   * หน้านี้ใช้ Loading เฉพาะปุ่มใน Modal
-   */
-  setCalendarNoteBusy(
-    true
-  );
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      res => {
-
-        setCalendarNoteBusy(
-          false
-        );
-
-
-        if (
-          element &&
-          element.isConnected
-        ) {
-
-          element.dataset.note =
-            res.note || '';
-
-
-          const wrap =
-            element.querySelector(
-              '.calendar-note-preview-wrap'
-            );
-
-
-          if (wrap) {
-
-            wrap.innerHTML =
-              calendarNotePreview(
-                res.note || ''
-              );
-          }
-        }
-
-
-        const day =
-          STATE.calendar
-            .days
-            .find(
-              x =>
-                x.date ===
-                date
-            );
-
-
-        if (day) {
-
-          day.note =
-            res.note || '';
-        }
-
-
-        closeCalendarNoteEditor();
-
-
-        toast(
-          res.message
-        );
-      }
-    )
-
-    .withFailureHandler(
-      err => {
-
-        setCalendarNoteBusy(
-          false
-        );
-
-
-        showCalendarLocalError(
-          err
-        );
-      }
-    )
-
-    .saveEmployeeDayNote({
-
-      employeeId:
-        employeeId,
-
-      date:
-        date,
-
-      note:
-        note
-    });
-}
-
-
-function updateCalendarChangeCount() {
-
-  const count =
-    Object.keys(
-      STATE.calendarEdits
-    ).length;
-
-
-  const el =
-    document.getElementById(
-      'calendarChangeCount'
-    );
-
-
-  if (!el) return;
-
-
-  el.textContent =
-    count
-
-      ? 'แก้ไขแล้ว ' +
-        count +
-        ' วัน'
-
-      : 'ยังไม่มีการแก้ไข';
-}
-
-
-function saveCalendarChanges() {
-
-  if (!STATE.calendar) {
-
-    return toast(
-      'ยังไม่ได้เปิดปฏิทิน'
-    );
-  }
-
-
-  const items =
-    Object.entries(
-      STATE.calendarEdits
-    )
-    .map(
-      ([date,shift]) => ({
-        date,
-        shift
-      })
-    );
-
-
-  if (!items.length) {
-
-    return toast(
-      'ยังไม่มีวันที่แก้ไข'
-    );
-  }
-
-
-  /*
-   * ใช้ Loading เฉพาะปุ่ม Save
-   * จึงไม่มี Notification กลางหน้าค้างอีก
-   */
-  setCalendarSaveBusy(
-    true
-  );
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      res => {
-
-        setCalendarSaveBusy(
-          false
-        );
-
-
-        const savedItems =
-          Array.isArray(
-            res?.savedItems
-          )
-            ? res.savedItems
-            : [];
-
-
-        savedItems.forEach(
-          saved => {
-
-            const day =
-              STATE.calendar
-                .days
-                .find(
-                  item =>
-                    item.date ===
-                    saved.date
+              const result =
+                calculateEmployeeShift_(
+                  employee,
+                  date,
+                  setMap,
+                  assignments,
+                  overrides
                 );
 
 
-            if (!day) {
-              return;
+              return {
+
+                date:
+                  date,
+
+                shift:
+                  result.shift,
+
+                source:
+                  result.source,
+
+                setName:
+                  result.setName || ''
+              };
             }
+          )
+      })
+    );
 
 
-            day.shift =
-              saved.shift;
+  return {
 
+    from:
+      from,
 
-            day.autoShift =
-              saved.autoShift;
+    to:
+      to,
 
+    dates:
+      dates,
 
-            day.hasOverride =
-              !!saved.hasOverride;
-
-
-            day.source =
-              saved.hasOverride
-                ? 'OVERRIDE'
-                : saved.source || 'AUTO';
-
-
-            day.setName =
-              saved.setName ||
-              day.setName ||
-              '';
-
-
-            if (
-              saved.note !==
-              undefined
-            ) {
-
-              day.note =
-                saved.note || '';
-            }
-          }
-        );
-
-
-        STATE.calendarEdits =
-          {};
-
-
-        STATE.dashboardDirty =
-          true;
-
-
-        renderIndividualCalendar();
-
-
-        updateCalendarChangeCount();
-
-
-        toast(
-          res?.message ||
-          'บันทึกกะเรียบร้อยแล้ว'
-        );
-      }
-    )
-
-    .withFailureHandler(
-      err => {
-
-        setCalendarSaveBusy(
-          false
-        );
-
-
-        showCalendarLocalError(
-          err
-        );
-      }
-    )
-
-    .saveShiftOverridesBatch({
-
-      employeeId:
-        STATE.calendar
-          .employee
-          .employeeId,
-
-      items:
-        items
-    });
+    rows:
+      rows
+  };
 }
 
 
-function moveCalendarRound(
-  direction
+/* =========================================================
+   EMPLOYEE VIEW
+========================================================= */
+
+function getEmployeeView(
+  employeeId
 ) {
 
-  if (!STATE.calendar) {
-    return;
+  const employee =
+    getEmployees_()
+      .find(
+        e =>
+          e.employeeId ===
+          employeeId
+      );
+
+
+  if (!employee) {
+
+    throw new Error(
+      'ไม่พบพนักงาน'
+    );
   }
 
 
-  const date =
-    direction < 0
-
-      ? parseLocalDate(
-          STATE.calendar.from
-        )
-
-      : parseLocalDate(
-          STATE.calendar.to
-        );
+  const today =
+    todayText_();
 
 
-  date.setDate(
-    date.getDate() +
-    (
-      direction < 0
-        ? -1
-        : 1
-    )
-  );
-
-
-  setValue(
-    'calendarAnchor',
-    formatDateInput(
-      date
-    )
-  );
-
-
-  loadIndividualCalendar();
-}
-
-
-/* =========================
-   SHIFT HISTORY
-========================= */
-
-function loadShiftHistory() {
-
-  const request = {
-
-    team:
-      value(
-        'historyTeam'
-      ),
-
-    employeeId:
-      value(
-        'historyEmployee'
-      ),
-
-    search:
-      value(
-        'historySearch'
-      ),
-
-    from:
-      value(
-        'historyFrom'
-      ),
-
-    to:
-      value(
-        'historyTo'
-      )
-  };
-
-
-  setLoading(
-    true
-  );
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      data => {
-
-        setLoading(
-          false
-        );
-
-
-        renderShiftHistory(
-          data
-        );
-      }
-    )
-
-    .withFailureHandler(
-      showServerError
-    )
-
-    .getShiftHistory(
-      request
+  const range =
+    getRoundRange_(
+      today
     );
+
+
+  return {
+
+    employee:
+      employee,
+
+    today:
+      today,
+
+    todayShift:
+      getShiftForEmployeeDate_(
+        employeeId,
+        today
+      ),
+
+    round:
+      range,
+
+    schedule:
+      getSchedule({
+
+        employeeId:
+          employeeId,
+
+        from:
+          range.from,
+
+        to:
+          range.to
+      })
+  };
 }
 
 
-function renderShiftHistory(
-  data
-) {
 
-  const rows =
-    data?.rows || [];
+/* =========================================================
+   EMPLOYEE PUBLIC VIEW
+   อ่านอย่างเดียวสำหรับลิงก์พนักงาน
+========================================================= */
+
+function findEmployeePublic_(query) {
+
+  query =
+    String(
+      query || ''
+    )
+    .trim()
+    .replace(
+      /^["']+|["']+$/g,
+      ''
+    )
+    .trim();
 
 
   if (
-    !rows.length
+    !query ||
+    query === '""' ||
+    query === "''"
   ) {
 
-    setHtml(
-      'shiftHistoryResult',
-      emptyHtml(
-        'ยังไม่พบประวัติการแก้กะตามตัวกรองนี้'
-      )
+    throw new Error(
+      'กรุณากรอกรหัสหรือชื่อพนักงาน'
     );
-
-    return;
   }
 
 
-  let html = `
+  const q =
+    query.toLowerCase();
 
-    <div
-      style="
-        margin-bottom:10px;
-        color:#7b8798;
-        font-size:11px;
-        font-weight:700;
-      "
-    >
-      พบ ${data.total} รายการ
-      ${data.total > rows.length
-        ? ' · แสดงล่าสุด ' + rows.length + ' รายการ'
-        : ''
+
+  const employees =
+    getEmployees_()
+      .filter(
+        e =>
+          String(
+            e.status || ''
+          ).trim() !== 'ออก'
+      );
+
+
+  /*
+   * 1) รหัสพนักงานตรงกัน
+   */
+  let employee =
+    employees.find(
+      e =>
+        String(
+          e.employeeId || ''
+        )
+        .trim()
+        .toLowerCase() ===
+        q
+    );
+
+
+  if (employee) {
+    return employee;
+  }
+
+
+  /*
+   * 2) ชื่อเล่น หรือ ชื่อ-นามสกุล ตรงกัน
+   */
+  const exact =
+    employees.filter(
+      e => {
+
+        const nickname =
+          String(
+            e.nickname || ''
+          )
+          .trim()
+          .toLowerCase();
+
+
+        const fullName =
+          String(
+            e.fullName || ''
+          )
+          .trim()
+          .toLowerCase();
+
+
+        return (
+          nickname === q ||
+          fullName === q
+        );
       }
-    </div>
+    );
 
 
-    <div class="table-wrap">
+  if (
+    exact.length === 1
+  ) {
 
-      <table>
+    return exact[0];
+  }
 
-        <thead>
 
-          <tr>
+  if (
+    exact.length > 1
+  ) {
 
-            <th>เวลาที่แก้</th>
+    throw new Error(
+      'พบชื่อซ้ำ กรุณาใช้รหัสพนักงาน'
+    );
+  }
 
-            <th>
-              รหัส / ชื่อ
-            </th>
 
-            <th>TEAM</th>
+  /*
+   * 3) ค้นหาบางส่วน
+   */
+  const partial =
+    employees.filter(
+      e => {
 
-            <th>วันที่กะ</th>
+        const employeeId =
+          String(
+            e.employeeId || ''
+          )
+          .toLowerCase();
 
-            <th>กะเดิม</th>
 
-            <th>เปลี่ยนเป็น</th>
+        const nickname =
+          String(
+            e.nickname || ''
+          )
+          .toLowerCase();
 
-            <th>รายการ</th>
 
-          </tr>
+        const fullName =
+          String(
+            e.fullName || ''
+          )
+          .toLowerCase();
 
-        </thead>
 
-        <tbody>
-  `;
+        return (
+          employeeId.includes(q) ||
+          nickname.includes(q) ||
+          fullName.includes(q)
+        );
+      }
+    );
+
+
+  if (
+    partial.length === 1
+  ) {
+
+    return partial[0];
+  }
+
+
+  if (
+    partial.length > 1
+  ) {
+
+    const examples =
+      partial
+        .slice(
+          0,
+          5
+        )
+        .map(
+          e =>
+            e.employeeId +
+            ' · ' +
+            e.nickname
+        )
+        .join(
+          ', '
+        );
+
+
+    throw new Error(
+      'พบหลายคน: ' +
+      examples +
+      ' กรุณาพิมพ์ชื่อหรือรหัสให้ชัดเจนขึ้น'
+    );
+  }
+
+
+  throw new Error(
+    'ไม่พบรหัสหรือชื่อพนักงานนี้'
+  );
+}
+
+
+function getEmployeePublicSchedule(query, anchorDate) {
+  const employee = findEmployeePublic_(query);
+  const today = todayText_();
+  anchorDate = String(anchorDate || today).trim();
+  const range = getRoundRange_(anchorDate);
+  const dates = createDateRange_(range.from, range.to, 40);
+  const setMap = {};
+  getShiftSets_().forEach(set => setMap[set.setId] = set);
+  const assignments = getAssignments_();
+  const overrides = getOverrideMap_(range.from, range.to);
+
+  const days = dates.map(date => {
+    const result = calculateEmployeeShift_(employee,date,setMap,assignments,overrides);
+    return {date:date, shift:result.shift};
+  });
+
+  const todayResult = calculateEmployeeShift_(
+    employee,today,setMap,assignments,getOverrideMap_(today,today)
+  );
+
+  return {
+    employee:{
+      employeeId:employee.employeeId,
+      nickname:employee.nickname,
+      team:employee.team,
+      position:employee.position
+    },
+    today:today,
+    todayShift:todayResult.shift,
+    round:range,
+    days:days
+  };
+}
+
+
+function getEmployeePublicTeamSchedule(anchorDate) {
+  const today = todayText_();
+  anchorDate = String(anchorDate || today).trim();
+  const range = getRoundRange_(anchorDate);
+  const schedule = getSchedule({from:range.from,to:range.to});
+  const order = {'TEAM A':1,'TEAM B':2,'TEAM C':3};
+
+  const rows = schedule.rows.map(row => ({
+    employeeId:row.employeeId,
+    nickname:row.nickname,
+    team:row.team,
+    position:row.position,
+    days:row.days.map(day => ({date:day.date,shift:day.shift}))
+  })).sort((a,b) => {
+    const ta = order[String(a.team || '').toUpperCase()] || 99;
+    const tb = order[String(b.team || '').toUpperCase()] || 99;
+    if (ta !== tb) return ta-tb;
+    return String(a.employeeId || '').localeCompare(String(b.employeeId || ''));
+  });
+
+  const counts={};
+  rows.forEach(row => {
+    const team=row.team || 'ไม่ระบุ TEAM';
+    counts[team]=(counts[team]||0)+1;
+  });
+
+  return {today:today,round:range,dates:schedule.dates,rows:rows,counts:counts};
+}
+
+
+/* =========================================================
+   MANPOWER
+========================================================= */
+
+function getManpower(
+  date
+) {
+
+  return getManpowerInternal_(
+    String(
+      date ||
+      todayText_()
+    )
+  );
+}
+
+
+function getManpowerInternal_(
+  date,
+  preloaded
+) {
+
+  /*
+   * สำคัญ:
+   * ไม่คำนวณกะแยกอีกชุดแล้ว
+   *
+   * หน้า "กำลังคน" อ่านผลจากตารางกะจริง
+   * ผ่าน getScheduleInternal_() โดยตรง
+   *
+   * ถ้าหน้าตารางกะของวันที่นี้แสดง:
+   * - เช้า 20 คน
+   * - ดึก 30 คน
+   * - หยุด 50 คน
+   *
+   * หน้ากำลังคนจะนับจาก 20 / 30 / 50 ชุดเดียวกัน
+   */
+  const schedule =
+    getScheduleInternal_(
+      {
+        from:
+          date,
+
+        to:
+          date
+      },
+      preloaded || null
+    );
+
+
+  const rows =
+    Array.isArray(
+      schedule.rows
+    )
+      ? schedule.rows
+      : [];
+
+
+  const summary = {
+    MORNING: 0,
+    NIGHT: 0,
+    OFF: 0,
+    UNSET: 0
+  };
+
+
+  const byTeam = {};
+  const byPosition = {};
+  const byGender = {};
+  const byTeamGender = {};
+
+
+  const byShiftGender = {
+    MORNING: {},
+    NIGHT: {},
+    OFF: {},
+    UNSET: {}
+  };
+
+
+  const byTeamShiftGender = {};
 
 
   rows.forEach(
     row => {
 
-      html += `
-
-        <tr>
-
-          <td>
-            <strong>
-              ${escapeHtml(
-                row.changedAt || '-'
-              )}
-            </strong>
-          </td>
-
-          <td>
-
-            <span class="emp-code">
-              ${escapeHtml(
-                row.employeeId || '-'
-              )}
-            </span>
-
-            ·
-
-            <span class="emp-nick">
-              ${escapeHtml(
-                row.nickname || '-'
-              )}
-            </span>
-
-            <div
-              style="
-                margin-top:3px;
-                color:#98a2b3;
-                font-size:9px;
-              "
-            >
-              ${escapeHtml(
-                row.position || ''
-              )}
-            </div>
-
-          </td>
-
-          <td>
-            ${badgeTeam(
-              row.team
-            )}
-          </td>
-
-          <td>
-            ${formatThaiDate(
-              row.date
-            )}
-          </td>
-
-          <td>
-            ${shiftBadge(
-              row.oldShift
-            )}
-          </td>
-
-          <td>
-            ${shiftBadge(
-              row.newShift
-            )}
-          </td>
-
-          <td>
-            <span
-              class="badge badge-position"
-            >
-              ${escapeHtml(
-                row.action || '-'
-              )}
-            </span>
-          </td>
-
-        </tr>
-      `;
-    }
-  );
-
-
-  html += `
-
-        </tbody>
-
-      </table>
-
-    </div>
-  `;
-
-
-  setHtml(
-    'shiftHistoryResult',
-    html
-  );
-}
-
-
-function clearShiftHistoryFilters() {
-
-  setValue(
-    'historyTeam',
-    ''
-  );
-
-
-  setValue(
-    'historyEmployee',
-    ''
-  );
-
-
-  setValue(
-    'historySearch',
-    ''
-  );
-
-
-  if (
-    STATE.round
-  ) {
-
-    setValue(
-      'historyFrom',
-      STATE.round.from
-    );
-
-    setValue(
-      'historyTo',
-      STATE.today
-    );
-  }
-
-
-  loadShiftHistory();
-}
-
-
-/* =========================
-   SCHEDULE
-========================= */
-
-function loadSchedule() {
-
-  const request = {
-
-    team:
-      value(
-        'scheduleTeam'
-      ),
-
-    position:
-      value(
-        'schedulePosition'
-      ),
-
-    employeeId:
-      value(
-        'scheduleEmployee'
-      ),
-
-    from:
-      value(
-        'scheduleFrom'
-      ),
-
-    to:
-      value(
-        'scheduleTo'
-      ),
-
-    search:
-      value(
-        'scheduleSearch'
-      )
-  };
-
-
-  setLoading(true);
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      data => {
-
-        renderSchedule(
-          data
-        );
-
-        setLoading(false);
-      }
-    )
-
-    .withFailureHandler(
-      showServerError
-    )
-
-    .getSchedule(request);
-}
-
-
-function renderSchedule(data) {
-
-  if (
-    !data ||
-    !data.rows.length
-  ) {
-
-    return setHtml(
-      'scheduleResult',
-      emptyHtml(
-        'ไม่พบข้อมูล'
-      )
-    );
-  }
-
-
-  let html = `
-
-  <div
-    style="
-      margin-bottom:10px;
-      color:#7b8798;
-      font-size:11px
-    "
-  >
-
-    ${formatThaiDate(data.from)}
-
-    -
-
-    ${formatThaiDate(data.to)}
-
-    ·
-
-    ${data.rows.length}
-    คน
-
-  </div>
-
-
-  <div class="table-wrap">
-
-  <table class="schedule-table">
-
-  <thead>
-
-  <tr>
-
-    <th>
-      รหัส · ชื่อเล่น
-    </th>
-
-    <th>
-      TEAM
-    </th>
-  `;
-
-
-  data.dates
-    .forEach(date => {
-
-      html += `
-
-      <th class="day-head">
-        ${shortDate(date)}
-      </th>
-      `;
-    });
-
-
-  html += `
-
-  </tr>
-
-  </thead>
-
-  <tbody>
-  `;
-
-
-  data.rows
-    .forEach(row => {
-
-      html += `
-
-      <tr>
-
-      <td>
-
-        <span class="emp-code">
-          ${escapeHtml(row.employeeId)}
-        </span>
-
-        ·
-
-        <span class="emp-nick">
-          ${escapeHtml(row.nickname)}
-        </span>
-
-        <div
-          style="
-            margin-top:3px;
-            font-size:9px;
-            color:#9aa3af
-          "
-        >
-          ${escapeHtml(row.position || '')}
-        </div>
-
-      </td>
-
-      <td>
-        ${badgeTeam(row.team)}
-      </td>
-      `;
-
-
-      row.days
-        .forEach(day => {
-
-          html += `
-
-          <td class="day-cell">
-            ${shiftBadge(day.shift)}
-          </td>
-          `;
-        });
-
-
-      html += `
-
-      </tr>
-      `;
-    });
-
-
-  html += `
-
-  </tbody>
-
-  </table>
-
-  </div>
-  `;
-
-
-  setHtml(
-    'scheduleResult',
-    html
-  );
-}
-
-
-/* =========================
-   MANPOWER
-========================= */
-
-function loadManpower() {
-
-  /*
-   * หน้า "กำลังคน" ใช้วันที่อ้างอิงเดียวกับ Badge มุมขวาบน
-   * ไม่ต้องเลือกวันที่ซ้ำในหน้า
-   */
-  const date =
-    STATE.today;
-
-
-  const refBox =
-    document.getElementById(
-      'manpowerReferenceDate'
-    );
-
-
-  if (refBox) {
-
-    refBox.textContent =
-      formatThaiDate(
-        date
-      );
-  }
-
-
-  setLoading(true);
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      data => {
-
-        STATE.dashboard =
-          data.date ===
-          STATE.today
-
-            ? data
-            : STATE.dashboard;
-
-
-        renderManpower(
-          data
-        );
-
-
-        setLoading(false);
-      }
-    )
-
-    .withFailureHandler(
-      err => {
-
-        setLoading(false);
-
-        showServerError(
-          err
-        );
-      }
-    )
-
-    .getManpower(date);
-}
-
-
-function renderManpower(data) {
-
-  if (!data) return;
-
-
-  const male =
-    genderCount(
-      data.byGender,
-      'ชาย'
-    );
-
-
-  const female =
-    genderCount(
-      data.byGender,
-      'หญิง'
-    );
-
-
-  const unknown =
-    genderCount(
-      data.byGender,
-      'ไม่ระบุ'
-    );
-
-
-  let html = `
-
-
-  <div
-    style="
-      font-weight:850;
-      margin-bottom:12px
-    "
-  >
-    วันที่
-    ${formatThaiDate(data.date)}
-  </div>
-
-
-  <div class="grid grid-4">
-
-    ${statCard(
-      'พนักงาน',
-      data.total || 0,
-      'คน',
-      'green'
-    )}
-
-    ${statCard(
-      'กะเช้า',
-      data.summary.MORNING || 0,
-      'คน',
-      'blue'
-    )}
-
-    ${statCard(
-      'กะดึก',
-      data.summary.NIGHT || 0,
-      'คน',
-      'purple'
-    )}
-
-    ${statCard(
-      'หยุด',
-      data.summary.OFF || 0,
-      'คน',
-      'yellow'
-    )}
-
-  </div>
-
-
-  <div class="gender-box">
-
-    <div class="gender-stat">
-
-      <div class="stat-label">
-        👨 ชาย
-      </div>
-
-      <div class="gender-value">
-        ${male}
-      </div>
-
-    </div>
-
-
-    <div class="gender-stat">
-
-      <div class="stat-label">
-        👩 หญิง
-      </div>
-
-      <div class="gender-value">
-        ${female}
-      </div>
-
-    </div>
-
-
-    <div class="gender-stat">
-
-      <div class="stat-label">
-        ไม่ระบุเพศ
-      </div>
-
-      <div class="gender-value">
-        ${unknown}
-      </div>
-
-    </div>
-
-  </div>
-
-
-  <div
-    class="grid grid-2"
-    style="margin-top:18px"
-  >
-
-
-    <div class="card">
-
-      <div class="section-title">
-
-        <div>
-
-          <h2>
-            👥 เพศต่อ TEAM
-          </h2>
-
-          <p>
-            จำนวนชาย/หญิงในแต่ละ TEAM
-          </p>
-
-        </div>
-
-      </div>
-
-      ${renderGenderByTeam(
-        data.byTeamGender
-      )}
-
-    </div>
-
-
-    <div class="card">
-
-      <div class="section-title">
-
-        <div>
-
-          <h2>
-            🕐 เพศต่อกะ
-          </h2>
-
-          <p>
-            แยกชาย/หญิงตามกะของวันที่เลือก
-          </p>
-
-        </div>
-
-      </div>
-
-      ${renderGenderByShift(
-        data.byShiftGender
-      )}
-
-    </div>
-
-  </div>
-
-
-  <div
-    class="card"
-    style="margin-top:18px"
-  >
-
-    <div class="section-title">
-
-      <div>
-
-        <h2>
-          📊 เพศต่อกะ + TEAM
-        </h2>
-
-        <p>
-          ดูจำนวนชาย/หญิงของแต่ละ TEAM ในแต่ละกะของวันที่เลือก
-        </p>
-
-      </div>
-
-    </div>
-
-
-    ${renderTeamShiftGender(
-      data.byTeamShiftGender
-    )}
-
-  </div>
-  `;
-
-
-  setHtml(
-    'manpowerResult',
-    html
-  );
-}
-
-
-function renderGenderByTeam(
-  data
-) {
-
-  const teams =
-    Object.keys(
-      data || {}
-    );
-
-
-  if (!teams.length) {
-
-    return emptyHtml(
-      'ยังไม่มีข้อมูล'
-    );
-  }
-
-
-  let html = `
-
-  <div class="table-wrap">
-
-  <table>
-
-  <thead>
-
-  <tr>
-
-    <th>TEAM</th>
-    <th>ชาย</th>
-    <th>หญิง</th>
-    <th>ไม่ระบุ</th>
-    <th>รวม</th>
-
-  </tr>
-
-  </thead>
-
-  <tbody>
-  `;
-
-
-  teams.forEach(team => {
-
-    const x =
-      data[team] || {};
-
-
-    const male =
-      genderCount(
-        x,
-        'ชาย'
-      );
-
-
-    const female =
-      genderCount(
-        x,
-        'หญิง'
-      );
-
-
-    const unknown =
-      genderCount(
-        x,
-        'ไม่ระบุ'
-      );
-
-
-    html += `
-
-    <tr>
-
-      <td>
-        ${badgeTeam(team)}
-      </td>
-
-      <td>${male}</td>
-
-      <td>${female}</td>
-
-      <td>${unknown}</td>
-
-      <td>
-        <strong>
-          ${male + female + unknown}
-        </strong>
-      </td>
-
-    </tr>
-    `;
-  });
-
-
-  html += `
-
-  </tbody>
-
-  </table>
-
-  </div>
-  `;
-
-
-  return html;
-}
-
-
-function renderGenderByShift(
-  data
-) {
-
-  const shifts = [
-    'MORNING',
-    'NIGHT',
-    'OFF',
-    'UNSET'
-  ];
-
-
-  let html = `
-
-  <div class="table-wrap">
-
-  <table>
-
-  <thead>
-
-  <tr>
-
-    <th>กะ</th>
-    <th>ชาย</th>
-    <th>หญิง</th>
-    <th>ไม่ระบุ</th>
-    <th>รวม</th>
-
-  </tr>
-
-  </thead>
-
-  <tbody>
-  `;
-
-
-  shifts.forEach(shift => {
-
-    const x =
-      data?.[shift] || {};
-
-
-    const male =
-      genderCount(
-        x,
-        'ชาย'
-      );
-
-
-    const female =
-      genderCount(
-        x,
-        'หญิง'
-      );
-
-
-    const unknown =
-      genderCount(
-        x,
-        'ไม่ระบุ'
-      );
-
-
-    html += `
-
-    <tr>
-
-      <td>
-        ${shiftBadge(shift)}
-      </td>
-
-      <td>${male}</td>
-
-      <td>${female}</td>
-
-      <td>${unknown}</td>
-
-      <td>
-        <strong>
-          ${male + female + unknown}
-        </strong>
-      </td>
-
-    </tr>
-    `;
-  });
-
-
-  html += `
-
-  </tbody>
-
-  </table>
-
-  </div>
-  `;
-
-
-  return html;
-}
-
-
-function renderTeamShiftGender(
-  data
-) {
-
-  const teams =
-    Object.keys(
-      data || {}
-    );
-
-
-  if (!teams.length) {
-
-    return emptyHtml(
-      'ยังไม่มีข้อมูล'
-    );
-  }
-
-
-  let html = `
-
-  <div class="table-wrap">
-
-  <table>
-
-  <thead>
-
-  <tr>
-
-    <th rowspan="2">
-      TEAM
-    </th>
-
-    <th colspan="2">
-      ☀️ เช้า
-    </th>
-
-    <th colspan="2">
-      🌙 ดึก
-    </th>
-
-    <th colspan="2">
-      ❤️ หยุด
-    </th>
-
-    <th colspan="2">
-      ยังไม่ตั้ง
-    </th>
-
-  </tr>
-
-  <tr>
-
-    <th>ชาย</th>
-    <th>หญิง</th>
-
-    <th>ชาย</th>
-    <th>หญิง</th>
-
-    <th>ชาย</th>
-    <th>หญิง</th>
-
-    <th>ชาย</th>
-    <th>หญิง</th>
-
-  </tr>
-
-  </thead>
-
-  <tbody>
-  `;
-
-
-  teams.forEach(team => {
-
-    const x =
-      data[team] || {};
-
-
-    html += `
-
-    <tr>
-
-      <td>
-        ${badgeTeam(team)}
-      </td>
-
-      ${genderShiftCells(
-        x.MORNING
-      )}
-
-      ${genderShiftCells(
-        x.NIGHT
-      )}
-
-      ${genderShiftCells(
-        x.OFF
-      )}
-
-      ${genderShiftCells(
-        x.UNSET
-      )}
-
-    </tr>
-    `;
-  });
-
-
-  html += `
-
-  </tbody>
-
-  </table>
-
-  </div>
-  `;
-
-
-  return html;
-}
-
-
-function genderShiftCells(
-  object
-) {
-
-  return `
-
-  <td>
-    ${genderCount(object,'ชาย')}
-  </td>
-
-  <td>
-    ${genderCount(object,'หญิง')}
-  </td>
-  `;
-}
-
-
-function genderCount(
-  object,
-  gender
-) {
-
-  return Number(
-    object?.[gender] || 0
-  );
-}
-
-
-/* =========================
-   SETTINGS
-========================= */
-
-function getSettingFormFields(
-  type
-) {
-
-  const map = {
-
-    TEAM: {
-      idField:
-        'teamSettingId',
-
-      valueField:
-        'teamSettingValue'
-    },
-
-    BRANCH: {
-      idField:
-        'branchSettingId',
-
-      valueField:
-        'branchSettingValue'
-    },
-
-    POSITION: {
-      idField:
-        'positionSettingId',
-
-      valueField:
-        'positionSettingValue'
-    }
-  };
-
-
-  return map[
-    type
-  ] || null;
-}
-
-
-function saveSettingForm(
-  type
-) {
-
-  const fields =
-    getSettingFormFields(
-      type
-    );
-
-
-  if (!fields) {
-
-    return toast(
-      'ประเภทการตั้งค่าไม่ถูกต้อง'
-    );
-  }
-
-
-  const settingValue =
-    value(
-      fields.valueField
-    )
-    .trim();
-
-
-  if (!settingValue) {
-
-    return toast(
-      'กรุณากรอกชื่อ'
-    );
-  }
-
-
-  setLoading(true);
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      res => {
-
-        STATE.settings =
-          res.settings;
-
-
-        rebuildSettingsState();
-
-
-        clearSettingForm(
-          type
-        );
-
-
-        renderSettings();
-
-
-        refreshAllDropdowns();
-
-
-        setLoading(false);
-
-
-        toast(
-          res.message
-        );
-      }
-    )
-
-    .withFailureHandler(
-      showServerError
-    )
-
-    .saveSetting({
-
-      settingId:
-        value(
-          fields.idField
-        ),
-
-      type:
-        type,
-
-      value:
-        settingValue
-    });
-}
-
-
-function editSetting(
-  type,
-  id
-) {
-
-  const setting =
-    STATE.settings
-      .find(
-        x =>
-          x.settingId === id
-      );
-
-
-  if (!setting) {
-    return;
-  }
-
-
-  const fields =
-    getSettingFormFields(
-      type
-    );
-
-
-  if (!fields) {
-    return;
-  }
-
-
-  setValue(
-    fields.idField,
-    setting.settingId
-  );
-
-
-  setValue(
-    fields.valueField,
-    setting.value
-  );
-}
-
-
-function clearSettingForm(
-  type
-) {
-
-  const fields =
-    getSettingFormFields(
-      type
-    );
-
-
-  if (!fields) {
-    return;
-  }
-
-
-  setValue(
-    fields.idField,
-    ''
-  );
-
-
-  setValue(
-    fields.valueField,
-    ''
-  );
-}
-
-
-function removeSetting(id) {
-
-  if (
-    !confirm(
-      'ต้องการลบรายการนี้ใช่หรือไม่?'
-    )
-  ) {
-    return;
-  }
-
-
-  setLoading(true);
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      res => {
-
-        STATE.settings =
-          res.settings;
-
-        rebuildSettingsState();
-
-        renderSettings();
-
-        refreshAllDropdowns();
-
-        setLoading(false);
-
-        toast(res.message);
-      }
-    )
-
-    .withFailureHandler(
-      showServerError
-    )
-
-    .deleteSetting(id);
-}
-
-
-function rebuildSettingsState() {
-
-  STATE.teams =
-    STATE.settings
-      .filter(
-        x =>
-          x.type === 'TEAM'
-      )
-      .map(
-        x => x.value
-      );
-
-
-  STATE.branches =
-    STATE.settings
-      .filter(
-        x =>
-          x.type === 'BRANCH'
-      )
-      .map(
-        x => x.value
-      );
-
-
-  STATE.positions =
-    STATE.settings
-      .filter(
-        x =>
-          x.type === 'POSITION'
-      )
-      .map(
-        x => x.value
-      );
-}
-
-
-function renderSettings() {
-
-  renderSettingList(
-    'TEAM',
-    'teamSettingList'
-  );
-
-
-  renderSettingList(
-    'BRANCH',
-    'branchSettingList'
-  );
-
-
-  renderSettingList(
-    'POSITION',
-    'positionSettingList'
-  );
-}
-
-
-function renderSettingList(
-  type,
-  elementId
-) {
-
-  const list =
-    STATE.settings
-      .filter(
-        x =>
-          x.type === type
-      );
-
-
-  if (!list.length) {
-
-    return setHtml(
-      elementId,
-      emptyHtml(
-        'ยังไม่มีรายการ'
-      )
-    );
-  }
-
-
-  setHtml(
-
-    elementId,
-
-    list.map(x => `
-
-      <div class="setting-item">
-
-        <div class="setting-name">
-          ${
-            type === 'TEAM'
-              ? '🟦'
-              : type === 'BRANCH'
-                ? '💚'
-                : '💜'
-          }
-          ${escapeHtml(x.value)}
-        </div>
-
-        <div class="actions">
-
-          <button
-            class="btn btn-soft btn-sm"
-            onclick='editSetting(${jsonString(type)},${jsonString(x.settingId)})'
-          >
-            แก้ไข
-          </button>
-
-          <button
-            class="btn btn-danger btn-sm"
-            onclick='removeSetting(${jsonString(x.settingId)})'
-          >
-            ลบ
-          </button>
-
-        </div>
-
-      </div>
-
-    `).join('')
-  );
-}
-
-
-
-function goToPositionUsage(
-  page
-) {
-
-  const button =
-    document.querySelector(
-      `[data-page="${page}"]`
-    );
-
-
-  openPage(
-    page,
-    button
-  );
-
-
-  setTimeout(
-    () => {
-
-      if (
-        page === 'employees'
-      ) {
-
-        document
-          .getElementById(
-            'empPosition'
-          )
-          ?.focus();
-      }
-
-
-      if (
-        page === 'assign'
-      ) {
-
-        setValue(
-          'assignScopeType',
-          'POSITION'
-        );
-
-
-        updateAssignScope();
-
-
-        document
-          .getElementById(
-            'assignPositionSelect'
-          )
-          ?.focus();
-      }
-
-    },
-    60
-  );
-}
-
-
-/* =========================
-   EMPLOYEE VIEW
-========================= */
-
-function loadEmployeeView() {
-
-  const id =
-    value(
-      'employeeViewSelect'
-    );
-
-
-  if (!id) {
-
-    return toast(
-      'กรุณาเลือกพนักงาน'
-    );
-  }
-
-
-  setLoading(true);
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      data => {
-
-        renderEmployeeView(
-          data
-        );
-
-        setLoading(false);
-      }
-    )
-
-    .withFailureHandler(
-      showServerError
-    )
-
-    .getEmployeeView(id);
-}
-
-
-function renderEmployeeView(
-  data
-) {
-
-  const e =
-    data.employee;
-
-  const today =
-    String(
-      data.today || ''
-    );
-
-  const todayShift =
-    data.todayShift?.shift ||
-    'UNSET';
-
-
-  function todayCardStyle(
-    shift
-  ) {
-
-    if (
-      shift === 'MORNING'
-    ) {
-
-      return `
-        background:#fffbea;
-        border:2px solid #f2cc4d;
-        box-shadow:
-          0 0 0 3px
-          rgba(242,204,77,.16);
-      `;
-    }
-
-
-    if (
-      shift === 'NIGHT'
-    ) {
-
-      return `
-        background:#f5f1ff;
-        border:2px solid #9f87dc;
-        box-shadow:
-          0 0 0 3px
-          rgba(159,135,220,.15);
-      `;
-    }
-
-
-    if (
-      shift === 'OFF'
-    ) {
-
-      return `
-        background:#fff2f3;
-        border:2px solid #ee9199;
-        box-shadow:
-          0 0 0 3px
-          rgba(238,145,153,.15);
-      `;
-    }
-
-
-    return `
-      background:#f7f9fb;
-      border:2px solid #b9c2ce;
-      box-shadow:
-        0 0 0 3px
-        rgba(185,194,206,.12);
-    `;
-  }
-
-
-  let html = `
-
-  <div
-    style="
-      padding:20px;
-      border-radius:17px;
-      background:
-        linear-gradient(
-          135deg,
-          var(--blue-soft),
-          #fff,
-          var(--purple-soft)
+      const rawShift =
+        String(
+          row.days?.[0]?.shift ||
+          'UNSET'
         )
-    "
-  >
-
-    <div
-      style="
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        gap:15px;
-        flex-wrap:wrap
-      "
-    >
-
-      <div>
-
-        <div
-          style="
-            font-size:24px;
-            font-weight:900
-          "
-        >
-          ${escapeHtml(e.nickname)}
-        </div>
-
-        <div
-          style="
-            margin-top:4px;
-            color:#718096;
-            font-size:12px
-          "
-        >
-          ${escapeHtml(e.employeeId)}
-          ·
-          ${escapeHtml(e.team || '-')}
-          ·
-          ${escapeHtml(e.position || '-')}
-        </div>
-
-      </div>
+        .trim()
+        .toUpperCase();
 
 
-      <div
-        style="
-          display:flex;
-          flex-direction:column;
-          align-items:flex-end;
-          gap:6px
-        "
-      >
-
-        <div
-          style="
-            color:#7b8798;
-            font-size:10px;
-            font-weight:800
-          "
-        >
-          กะของวันนี้
-        </div>
-
-        ${shiftBadge(todayShift)}
-
-      </div>
-
-    </div>
-
-  </div>
+      const shift =
+        [
+          'MORNING',
+          'NIGHT',
+          'OFF'
+        ].includes(
+          rawShift
+        )
+          ? rawShift
+          : 'UNSET';
 
 
-  <div
-    style="
-      display:grid;
-      grid-template-columns:
-        repeat(
-          auto-fill,
-          minmax(105px,1fr)
-        );
-      gap:8px;
-      margin-top:16px
-    "
-  >
-
-  ${
-    data.schedule.rows[0]
-      ?.days
-      .map(
-        day => {
-
-          const isToday =
-            String(
-              day.date
-            ) === today;
+      const team =
+        row.team ||
+        'ไม่ระบุ TEAM';
 
 
-          return `
-
-          <div
-            ${isToday
-              ? 'id="employeeTodayCard"'
-              : ''
-            }
-            style="
-              position:relative;
-              border-radius:12px;
-              padding:10px;
-              min-height:96px;
-
-              ${
-                isToday
-
-                  ? todayCardStyle(
-                      day.shift
-                    )
-
-                  : `
-                    background:#fff;
-                    border:
-                      1px solid
-                      var(--border);
-                  `
-              }
-            "
-          >
-
-            ${
-              isToday
-
-                ? `
-                  <div
-                    style="
-                      position:absolute;
-                      right:7px;
-                      top:7px;
-                      padding:3px 7px;
-                      border-radius:99px;
-                      background:#344054;
-                      color:#fff;
-                      font-size:8px;
-                      font-weight:900
-                    "
-                  >
-                    วันนี้
-                  </div>
-                `
-
-                : ''
-            }
+      const position =
+        row.position ||
+        'ไม่ระบุตำแหน่ง';
 
 
-            <div
-              style="
-                color:
-                  ${isToday
-                    ? '#344054'
-                    : '#8993a3'
-                  };
-                font-size:
-                  ${isToday
-                    ? '11px'
-                    : '9px'
-                  };
-                font-weight:
-                  ${isToday
-                    ? '900'
-                    : '500'
-                  };
-                margin-bottom:7px;
-                padding-right:
-                  ${isToday
-                    ? '43px'
-                    : '0'
-                  }
-              "
-            >
-              ${shortDate(day.date)}
-            </div>
+      const gender =
+        row.gender ||
+        'ไม่ระบุ';
 
 
-            ${shiftBadge(
-              day.shift
-            )}
-
-
-            ${
-              isToday
-
-                ? `
-                  <div
-                    style="
-                      margin-top:7px;
-                      font-size:8px;
-                      font-weight:850;
-                      color:#667085
-                    "
-                  >
-                    ← วันที่ปัจจุบัน
-                  </div>
-                `
-
-                : ''
-            }
-
-          </div>
-
-          `;
-        }
-      )
-      .join('') || ''
-  }
-
-  </div>
-  `;
-
-
-  setHtml(
-    'employeeViewResult',
-    html
-  );
-
-
-  setTimeout(
-    () => {
-
-      const todayCard =
-        document.getElementById(
-          'employeeTodayCard'
-        );
+      summary[
+        shift
+      ]++;
 
 
       if (
-        todayCard
+        !byTeam[
+          team
+        ]
       ) {
 
-        todayCard.scrollIntoView({
-          behavior:'smooth',
-          block:'nearest',
-          inline:'nearest'
-        });
+        byTeam[
+          team
+        ] = {
+          MORNING: 0,
+          NIGHT: 0,
+          OFF: 0,
+          UNSET: 0
+        };
       }
 
-    },
-    100
+
+      byTeam[
+        team
+      ][
+        shift
+      ]++;
+
+
+      if (
+        !byPosition[
+          position
+        ]
+      ) {
+
+        byPosition[
+          position
+        ] = {
+          MORNING: 0,
+          NIGHT: 0,
+          OFF: 0,
+          UNSET: 0
+        };
+      }
+
+
+      byPosition[
+        position
+      ][
+        shift
+      ]++;
+
+
+      incrementObject_(
+        byGender,
+        gender
+      );
+
+
+      if (
+        !byTeamGender[
+          team
+        ]
+      ) {
+
+        byTeamGender[
+          team
+        ] = {};
+      }
+
+
+      incrementObject_(
+        byTeamGender[
+          team
+        ],
+        gender
+      );
+
+
+      incrementObject_(
+        byShiftGender[
+          shift
+        ],
+        gender
+      );
+
+
+      if (
+        !byTeamShiftGender[
+          team
+        ]
+      ) {
+
+        byTeamShiftGender[
+          team
+        ] = {
+          MORNING: {},
+          NIGHT: {},
+          OFF: {},
+          UNSET: {}
+        };
+      }
+
+
+      incrementObject_(
+        byTeamShiftGender[
+          team
+        ][
+          shift
+        ],
+        gender
+      );
+    }
+  );
+
+
+  return {
+
+    date:
+      date,
+
+    total:
+      rows.length,
+
+    summary:
+      summary,
+
+    byTeam:
+      byTeam,
+
+    byPosition:
+      byPosition,
+
+    byGender:
+      byGender,
+
+    byTeamGender:
+      byTeamGender,
+
+    byShiftGender:
+      byShiftGender,
+
+    byTeamShiftGender:
+      byTeamShiftGender
+  };
+}
+
+
+function incrementObject_(
+  obj,
+  key
+) {
+
+  if (!obj[key]) {
+    obj[key] = 0;
+  }
+
+  obj[key]++;
+}
+
+
+/* =========================================================
+   SHIFT CALCULATION
+========================================================= */
+
+function getShiftForEmployeeDate_(
+  employeeId,
+  date
+) {
+
+  const employee =
+    getEmployees_()
+      .find(
+        e =>
+          e.employeeId ===
+          employeeId
+      );
+
+
+  if (!employee) {
+
+    return {
+
+      shift:
+        'UNSET',
+
+      source:
+        'NONE'
+    };
+  }
+
+
+  const setMap = {};
+
+
+  getShiftSets_()
+    .forEach(
+      set => {
+
+        setMap[
+          set.setId
+        ] = set;
+      }
+    );
+
+
+  return calculateEmployeeShift_(
+    employee,
+    date,
+    setMap,
+    getAssignments_(),
+    getOverrideMap_(
+      date,
+      date
+    )
   );
 }
 
 
-/* =========================
-   REFRESH
-========================= */
+/**
+ * หา TEAM assignment ที่มีผลจริงของพนักงาน ณ วันที่นั้น
+ * ไม่สน POSITION/EMPLOYEE priority
+ */
+function resolveTeamAssignmentForEmployee_(
+  employee,
+  date,
+  assignments
+) {
 
-function refreshDashboard() {
+  return assignments
+    .filter(
+      item => {
 
-  google.script.run
+        if (
+          String(
+            item.active || 'TRUE'
+          ).toUpperCase() === 'FALSE'
+        ) {
+          return false;
+        }
 
-    .withSuccessHandler(
-      data => {
 
-        STATE.dashboard =
-          data;
+        if (
+          String(
+            item.scopeType || ''
+          ).toUpperCase() !== 'TEAM'
+        ) {
+          return false;
+        }
 
-        STATE.dashboardDirty =
-          false;
 
-        renderDashboard();
+        if (
+          String(
+            item.scopeValue || ''
+          ).trim() !==
+          String(
+            employee.team || ''
+          ).trim()
+        ) {
+          return false;
+        }
+
+
+        const startDate =
+          String(
+            item.startDate || ''
+          ).trim();
+
+
+        return (
+          !!startDate &&
+          startDate <= date
+        );
       }
     )
+    .sort(
+      (a, b) => {
 
-    .withFailureHandler(
-      () => {}
-    )
+        const byDate =
+          String(
+            b.startDate || ''
+          ).localeCompare(
+            String(
+              a.startDate || ''
+            )
+          );
 
-    .getManpower(
-      STATE.today
-    );
+
+        if (byDate) {
+          return byDate;
+        }
+
+
+        return String(
+          b.createdAt || ''
+        ).localeCompare(
+          String(
+            a.createdAt || ''
+          )
+        );
+      }
+    )[0] || null;
 }
 
 
-/* =========================
-   UTILITIES
-========================= */
-
-function statCard(
-  label,
-  value,
-  foot,
-  color
+/**
+ * คำนวณสถานะของ 1 assignment จาก Cycle ของมันเอง
+ */
+function calculateAssignmentCycleState_(
+  date,
+  assignment,
+  set
 ) {
 
-  return `
-
-  <div class="card stat ${color}">
-
-    <div class="stat-label">
-      ${label}
-    </div>
-
-    <div class="stat-value">
-      ${value}
-    </div>
-
-    <div class="stat-foot">
-      ${foot}
-    </div>
-
-  </div>
-  `;
-}
-
-
-function summaryRow(
-  label,
-  value
-) {
-
-  return `
-
-  <div
-    style="
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      padding:11px 0;
-      border-bottom:1px solid #edf1f5
-    "
-  >
-
-    <span>
-      ${escapeHtml(label)}
-    </span>
-
-    <strong>
-      ${value} คน
-    </strong>
-
-  </div>
-  `;
-}
-
-
-function employeeStatusBadge(
-  status
-) {
-
-  status =
+  const cycleStartDate =
     String(
-      status || ''
+      assignment.cycleStartDate ||
+      assignment.startDate ||
+      ''
     ).trim();
 
 
-  if (
-    status === 'รอเรียก'
-  ) {
+  if (!cycleStartDate) {
 
-    return `
-      <span
-        class="
-          badge
-          badge-status-wait
-        "
-      >
-        รอเรียก
-      </span>
-    `;
+    return {
+      shift: 'UNSET',
+      cycleIndex: 0,
+      dayInCycle: -1
+    };
   }
 
 
-  if (
-    status === 'พักงาน'
-  ) {
+  const diff =
+    dayDiff_(
+      cycleStartDate,
+      date
+    );
 
-    return `
-      <span
-        class="
-          badge
-          badge-status-pause
-        "
-      >
-        พักงาน
-      </span>
-    `;
+
+  if (diff < 0) {
+
+    return {
+      shift: 'UNSET',
+      cycleIndex: 0,
+      dayInCycle: -1
+    };
   }
 
 
+  const workDays =
+    Math.max(
+      1,
+      Number(
+        set.workDays || 10
+      )
+    );
+
+
+  const offDays =
+    Math.max(
+      0,
+      Number(
+        set.offDays || 5
+      )
+    );
+
+
+  const cycleLength =
+    Math.max(
+      1,
+      workDays + offDays
+    );
+
+
+  const cycleIndex =
+    Math.floor(
+      diff /
+      cycleLength
+    );
+
+
+  const dayInCycle =
+    diff %
+    cycleLength;
+
+
   if (
-    status === 'ออก'
+    dayInCycle >= workDays
   ) {
 
-    return `
-      <span
-        class="
-          badge
-          badge-status-out
-        "
-      >
-        ออก
-      </span>
-    `;
+    return {
+      shift: 'OFF',
+      cycleIndex,
+      dayInCycle
+    };
   }
 
 
-  return `
-    <span
-      class="
-        badge
-        badge-status-work
-      "
-    >
-      ทำงาน
-    </span>
-  `;
-}
-
-
-function badgeTeam(team) {
-
-  if (!team) return '-';
-
-
-  const normalized =
+  const baseShift =
     String(
-      team
+      assignment.startShift ||
+      set.startShift ||
+      'MORNING'
     )
     .trim()
     .toUpperCase();
 
 
-  let teamClass =
-    'badge-team-other';
+  let shift =
+    baseShift;
 
 
-  if (
-    normalized ===
-    'TEAM A'
-  ) {
+  if (set.alternate) {
 
-    teamClass =
-      'badge-team-a';
+    if (
+      cycleIndex % 2 === 1
+    ) {
 
-  } else if (
-    normalized ===
-    'TEAM B'
-  ) {
+      shift =
+        baseShift === 'MORNING'
+          ? 'NIGHT'
+          : 'MORNING';
+    }
 
-    teamClass =
-      'badge-team-b';
+  } else {
 
-  } else if (
-    normalized ===
-    'TEAM C'
-  ) {
-
-    teamClass =
-      'badge-team-c';
+    shift =
+      String(
+        set.fixedShift ||
+        baseShift
+      )
+      .trim()
+      .toUpperCase();
   }
 
 
-  return `
-    <span
-      class="
-        badge
-        badge-team
-        ${teamClass}
-      "
-    >
-      ${escapeHtml(team)}
-    </span>
-  `;
+  return {
+    shift,
+    cycleIndex,
+    dayInCycle
+  };
 }
 
 
-function badgePosition(
-  position
+function calculateEmployeeShift_(
+  employee,
+  date,
+  setMap,
+  assignments,
+  overrideMap
 ) {
 
-  if (!position) return '-';
+  /*
+   * 1) แก้กะรายบุคคลรายวัน สำคัญที่สุด
+   */
+  const overrideKey =
+    employee.employeeId +
+    '|' +
+    date;
 
 
-  return `
-    <span class="badge badge-position">
-      ${escapeHtml(position)}
-    </span>
-  `;
+  const overrideRow =
+    overrideMap &&
+    overrideMap[
+      overrideKey
+    ]
+      ? overrideMap[
+          overrideKey
+        ]
+      : null;
+
+
+  const overrideShift =
+    String(
+      overrideRow?.shift || ''
+    )
+    .trim()
+    .toUpperCase();
+
+
+  if (
+    [
+      'MORNING',
+      'NIGHT',
+      'OFF',
+      'UNSET'
+    ].includes(
+      overrideShift
+    )
+  ) {
+
+    return {
+      shift:
+        overrideShift,
+
+      source:
+        'OVERRIDE',
+
+      setName:
+        'แก้กะรายบุคคล'
+    };
+  }
+
+
+  /*
+   * 2) หา Assignment ที่มี priority สูงสุด
+   * EMPLOYEE > POSITION+TEAM > POSITION > TEAM
+   */
+  const assignment =
+    resolveAssignment_(
+      employee,
+      date,
+      assignments
+    );
+
+
+  if (!assignment) {
+
+    return {
+      shift:
+        'UNSET',
+
+      source:
+        'NONE',
+
+      setName:
+        ''
+    };
+  }
+
+
+  const set =
+    setMap[
+      assignment.setId
+    ];
+
+
+  if (!set) {
+
+    return {
+      shift:
+        'UNSET',
+
+      source:
+        'NONE',
+
+      setName:
+        ''
+    };
+  }
+
+
+  /*
+   * =====================================================
+   * POSITION
+   *
+   * ตำแหน่ง "ไม่มีสิทธิ์สร้างวันหยุดคนละรอบกับ TEAM"
+   *
+   * ต้องอ่านวันทำงาน/หยุดจาก TEAM ก่อนเสมอ
+   *
+   * ตัวอย่าง:
+   * TEAM B = หยุดวันที่ 31
+   * การตลาด TEAM B = เช้าคงที่
+   *
+   * 31 ต้อง "หยุด"
+   * ไม่ใช่เช้า
+   *
+   * ส่วนวันที่ TEAM B ทำงาน:
+   * การตลาดสามารถเป็นเช้าคงที่ได้ตามเซตตำแหน่ง
+   * =====================================================
+   */
+  if (
+    String(
+      assignment.scopeType || ''
+    ).toUpperCase() ===
+    'POSITION'
+  ) {
+
+    const teamAssignment =
+      resolveTeamAssignmentForEmployee_(
+        employee,
+        date,
+        assignments
+      );
+
+
+    if (teamAssignment) {
+
+      const teamSet =
+        setMap[
+          teamAssignment.setId
+        ];
+
+
+      if (teamSet) {
+
+        const teamState =
+          calculateAssignmentCycleState_(
+            date,
+            teamAssignment,
+            teamSet
+          );
+
+
+        /*
+         * TEAM เป็นเจ้าของ "ทำงาน/หยุด"
+         */
+        if (
+          teamState.shift === 'OFF'
+        ) {
+
+          return {
+            shift:
+              'OFF',
+
+            source:
+              'POSITION_TEAM_CYCLE',
+
+            setName:
+              set.setName
+          };
+        }
+
+
+        if (
+          teamState.shift === 'UNSET'
+        ) {
+
+          return {
+            shift:
+              'UNSET',
+
+            source:
+              'POSITION_TEAM_CYCLE',
+
+            setName:
+              set.setName
+          };
+        }
+
+
+        /*
+         * วันนี้ TEAM ทำงาน
+         * ใช้เซต POSITION กำหนดเฉพาะ "เช้า/ดึก"
+         *
+         * ถ้า POSITION เป็นสลับกะ
+         * ให้สลับตามรอบของ TEAM ไม่ใช่สร้าง Cycle ใหม่
+         */
+        const baseShift =
+          String(
+            assignment.startShift ||
+            set.startShift ||
+            'MORNING'
+          )
+          .trim()
+          .toUpperCase();
+
+
+        let positionShift =
+          baseShift;
+
+
+        if (set.alternate) {
+
+          if (
+            teamState.cycleIndex %
+            2 === 1
+          ) {
+
+            positionShift =
+              baseShift === 'MORNING'
+                ? 'NIGHT'
+                : 'MORNING';
+          }
+
+        } else {
+
+          positionShift =
+            String(
+              set.fixedShift ||
+              baseShift
+            )
+            .trim()
+            .toUpperCase();
+        }
+
+
+        return {
+          shift:
+            positionShift,
+
+          source:
+            assignment.teamFilter
+              ? 'POSITION_TEAM'
+              : 'POSITION',
+
+          setName:
+            set.setName
+        };
+      }
+    }
+  }
+
+
+  /*
+   * 3) TEAM / EMPLOYEE
+   * ใช้ Cycle ของ Assignment ตัวเองตามปกติ
+   */
+  const state =
+    calculateAssignmentCycleState_(
+      date,
+      assignment,
+      set
+    );
+
+
+  return {
+    shift:
+      state.shift,
+
+    source:
+      assignment.scopeType,
+
+    setName:
+      set.setName
+  };
 }
 
 
-/* สีของกะทั้งหมดอยู่ตรงนี้ */
-
-function shiftBadge(
-  shift
+/**
+ * จุดอ้างอิง Cycle:
+ * TEAM เป็นเจ้าของรอบทำงาน/หยุด
+ * POSITION/EMPLOYEE ที่ใช้ work/off เท่ากัน จะเกาะ Cycle ของ TEAM
+ */
+function resolveCycleStartDate_(
+  employee,
+  date,
+  assignment,
+  set,
+  assignments,
+  setMap
 ) {
 
-  if (
-    shift === 'MORNING'
-  ) {
+  /*
+   * กติกา Cycle ที่ถูกต้อง:
+   *
+   * TEAM
+   * = ใช้วันที่เริ่มของ TEAM เป็น Anchor ของ 10/5 โดยตรง
+   *
+   * POSITION / EMPLOYEE
+   * = ถ้าใช้จำนวนวันทำงาน/วันหยุดเท่ากับ TEAM
+   *   ให้ "เกาะ Cycle ของ TEAM"
+   *   เพื่อให้วันทำงาน/วันหยุดตรงกับ TEAM นั้น
+   *
+   * ตัวอย่าง:
+   * TEAM B อยู่ Cycle ของ B
+   * การตลาด TEAM B ตั้งเป็น "เช้าคงที่"
+   *
+   * ผล:
+   * - วันทำงาน/หยุด ต้องตรงกับ TEAM B
+   * - แต่ในวันทำงาน การตลาดยังเป็นกะเช้าตามเซตตำแหน่ง
+   *
+   * รอบ 26-25 เป็นเพียงกรอบแสดงผล ไม่มีผลกับ Cycle
+   */
 
-    return `
-      <span class="shift shift-morning">
-        ☀️ เช้า
-      </span>
-    `;
-  }
-
-
-  if (
-    shift === 'NIGHT'
-  ) {
-
-    return `
-      <span class="shift shift-night">
-        🌙 ดึก
-      </span>
-    `;
-  }
-
-
-  if (
-    shift === 'OFF'
-  ) {
-
-    return `
-      <span class="shift shift-off">
-        หยุด
-      </span>
-    `;
-  }
+  const ownCycleStart =
+    String(
+      assignment.cycleStartDate ||
+      assignment.startDate ||
+      ''
+    ).trim();
 
 
   if (
-    shift === 'UNSET'
+    String(
+      assignment.scopeType || ''
+    ).toUpperCase() ===
+    'TEAM'
   ) {
 
-    return `
-      <span class="shift shift-unset">
-        ไม่มีกะ
-      </span>
-    `;
+    return ownCycleStart;
   }
 
 
-  return `
-    <span class="shift shift-unset">
-      -
-    </span>
-  `;
+  const assignmentWorkDays =
+    Math.max(
+      1,
+      Number(
+        set?.workDays || 10
+      )
+    );
+
+
+  const assignmentOffDays =
+    Math.max(
+      0,
+      Number(
+        set?.offDays || 5
+      )
+    );
+
+
+  /*
+   * หา TEAM assignment ของพนักงานคนนี้โดยตรง
+   * ไม่ใช้ resolveAssignment_ เพราะ POSITION/EMPLOYEE
+   * มี priority สูงกว่า TEAM
+   */
+  const teamAssignment =
+    assignments
+      .filter(
+        item => {
+
+          if (
+            String(
+              item.active || 'TRUE'
+            ).toUpperCase() ===
+            'FALSE'
+          ) {
+            return false;
+          }
+
+
+          if (
+            String(
+              item.scopeType || ''
+            ).toUpperCase() !==
+            'TEAM'
+          ) {
+            return false;
+          }
+
+
+          if (
+            String(
+              item.scopeValue || ''
+            ).trim() !==
+            String(
+              employee.team || ''
+            ).trim()
+          ) {
+            return false;
+          }
+
+
+          const startDate =
+            String(
+              item.startDate || ''
+            ).trim();
+
+
+          return (
+            !!startDate &&
+            startDate <= date
+          );
+        }
+      )
+      .sort(
+        (a, b) => {
+
+          const dateCompare =
+            String(
+              b.startDate || ''
+            ).localeCompare(
+              String(
+                a.startDate || ''
+              )
+            );
+
+
+          if (
+            dateCompare !== 0
+          ) {
+            return dateCompare;
+          }
+
+
+          return String(
+            b.createdAt || ''
+          ).localeCompare(
+            String(
+              a.createdAt || ''
+            )
+          );
+        }
+      )[0];
+
+
+  if (!teamAssignment) {
+
+    return ownCycleStart;
+  }
+
+
+  const teamSet =
+    setMap[
+      teamAssignment.setId
+    ];
+
+
+  if (!teamSet) {
+
+    return ownCycleStart;
+  }
+
+
+  const teamWorkDays =
+    Math.max(
+      1,
+      Number(
+        teamSet.workDays || 10
+      )
+    );
+
+
+  const teamOffDays =
+    Math.max(
+      0,
+      Number(
+        teamSet.offDays || 5
+      )
+    );
+
+
+  /*
+   * เกาะ Cycle ของ TEAM เฉพาะเมื่อโครง work/off เท่ากัน
+   * เช่น 10/5 กับ 10/5
+   */
+  if (
+    assignmentWorkDays ===
+      teamWorkDays &&
+    assignmentOffDays ===
+      teamOffDays
+  ) {
+
+    return String(
+      teamAssignment.cycleStartDate ||
+      teamAssignment.startDate ||
+      ownCycleStart
+    ).trim();
+  }
+
+
+  /*
+   * ถ้าตำแหน่งใช้ Cycle คนละแบบ เช่น 8/2
+   * ให้ใช้ Anchor ของตัวเอง
+   */
+  return ownCycleStart;
 }
 
 
-function shiftText(
-  shift
+function resolveAssignment_(
+  employee,
+  date,
+  assignments
 ) {
 
-  if (
-    shift === 'MORNING'
-  ) {
-    return '☀️ เช้า';
+  const matches =
+    assignments.filter(
+      assignment => {
+
+        if (
+          String(
+            assignment.active ||
+            'TRUE'
+          ).toUpperCase() ===
+          'FALSE'
+        ) {
+
+          return false;
+        }
+
+
+        if (
+          !assignment.startDate ||
+          assignment.startDate >
+          date
+        ) {
+
+          return false;
+        }
+
+
+        if (
+          assignment.scopeType ===
+          'EMPLOYEE'
+        ) {
+
+          return (
+            assignment.scopeValue ===
+            employee.employeeId
+          );
+        }
+
+
+        if (
+          assignment.scopeType ===
+          'POSITION'
+        ) {
+
+          if (
+            assignment.scopeValue !==
+            employee.position
+          ) {
+
+            return false;
+          }
+
+
+          /*
+           * POSITION แบบระบุ TEAM
+           * ใช้เฉพาะ TEAM นั้นเท่านั้น
+           */
+          if (
+            assignment.teamFilter &&
+            assignment.teamFilter !==
+            employee.team
+          ) {
+
+            return false;
+          }
+
+
+          return true;
+        }
+
+
+        if (
+          assignment.scopeType ===
+          'TEAM'
+        ) {
+
+          return (
+            assignment.scopeValue ===
+            employee.team
+          );
+        }
+
+
+        return false;
+      }
+    );
+
+
+  if (!matches.length) {
+    return null;
   }
 
-  if (
-    shift === 'NIGHT'
+
+  /*
+   * Priority:
+   *
+   * 400 = EMPLOYEE
+   * 300 = POSITION ที่ระบุ TEAM
+   * 250 = POSITION ทุก TEAM
+   * 100 = TEAM
+   *
+   * ดังนั้น:
+   * "การตลาด + TEAM B"
+   * จะไม่ถูก "การตลาดทุก TEAM" หรือ TEAM A มาทับ
+   */
+  function assignmentPriority_(
+    assignment
   ) {
-    return '🌙 ดึก';
+
+    if (
+      assignment.scopeType ===
+      'EMPLOYEE'
+    ) {
+
+      return 400;
+    }
+
+
+    if (
+      assignment.scopeType ===
+      'POSITION'
+    ) {
+
+      return assignment.teamFilter
+        ? 300
+        : 250;
+    }
+
+
+    if (
+      assignment.scopeType ===
+      'TEAM'
+    ) {
+
+      return 100;
+    }
+
+
+    return 0;
   }
 
-  if (
-    shift === 'OFF'
-  ) {
-    return '❤️ หยุด';
-  }
 
-  return '-';
+  matches.sort(
+    (a, b) => {
+
+      const priorityCompare =
+        assignmentPriority_(
+          b
+        ) -
+        assignmentPriority_(
+          a
+        );
+
+
+      if (
+        priorityCompare !== 0
+      ) {
+
+        return priorityCompare;
+      }
+
+
+      const dateCompare =
+        String(
+          b.startDate || ''
+        ).localeCompare(
+          String(
+            a.startDate || ''
+          )
+        );
+
+
+      if (
+        dateCompare !== 0
+      ) {
+
+        return dateCompare;
+      }
+
+
+      return String(
+        b.createdAt || ''
+      ).localeCompare(
+        String(
+          a.createdAt || ''
+        )
+      );
+    }
+  );
+
+
+  return matches[0];
 }
 
 
-function scopeText(
-  type
+/* =========================================================
+   OVERRIDES
+========================================================= */
+
+function getOverrideMap_(
+  from,
+  to
 ) {
 
-  if (
-    type === 'TEAM'
-  ) {
-    return 'TEAM';
-  }
+  const map = {};
 
-  if (
-    type === 'POSITION'
-  ) {
-    return 'ตำแหน่ง';
-  }
 
-  if (
-    type === 'EMPLOYEE'
-  ) {
-    return 'รายบุคคล';
-  }
+  getSheetObjects_(
+    APP.SHEETS.OVERRIDES
+  )
+  .forEach(
+    row => {
 
-  return type;
+      if (
+        row.date >= from &&
+        row.date <= to
+      ) {
+
+        map[
+          row.employeeId +
+          '|' +
+          row.date
+        ] = row;
+      }
+    }
+  );
+
+
+  return map;
 }
 
 
-function fillSelect(
-  id,
-  values,
-  placeholder
+/* =========================================================
+   SHEET HELPERS
+========================================================= */
+
+function getSheetObjects_(
+  sheetName
 ) {
 
-  const el =
-    document.getElementById(id);
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        sheetName
+      );
 
-  if (!el) return;
+
+  if (!sheet) {
+    return [];
+  }
 
 
-  let html = '';
+  const values =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
 
 
   if (
-    placeholder !==
-    undefined
+    values.length <= 1
   ) {
-
-    html += `
-      <option value="">
-        ${escapeHtml(placeholder)}
-      </option>
-    `;
+    return [];
   }
 
 
-  (values || [])
-    .forEach(item => {
-
-      html += `
-
-      <option
-        value="${escapeAttr(item)}"
-      >
-        ${escapeHtml(item)}
-      </option>
-      `;
-    });
+  const headers =
+    values[0];
 
 
-  el.innerHTML = html;
+  return values
+    .slice(1)
+    .filter(
+      row =>
+        row.some(
+          value =>
+            String(value)
+              .trim() !== ''
+        )
+    )
+    .map(
+      row => {
+
+        const obj = {};
+
+
+        headers.forEach(
+          (header, index) => {
+
+            obj[header] =
+              row[index] !==
+              undefined
+                ? row[index]
+                : '';
+          }
+        );
+
+
+        return obj;
+      }
+    );
 }
 
 
-function fillObjectSelect(
-  id,
-  values,
-  placeholder
-) {
+/* =========================================================
+   DATE HELPERS
+========================================================= */
 
-  const el =
-    document.getElementById(id);
+function todayText_() {
 
-  if (!el) return;
-
-
-  let html = '';
-
-
-  if (
-    placeholder !==
-    undefined
-  ) {
-
-    html += `
-      <option value="">
-        ${escapeHtml(placeholder)}
-      </option>
-    `;
-  }
-
-
-  (values || [])
-    .forEach(item => {
-
-      html += `
-
-      <option
-        value="${escapeAttr(item.value)}"
-      >
-        ${escapeHtml(item.label)}
-      </option>
-      `;
-    });
-
-
-  el.innerHTML = html;
+  return Utilities.formatDate(
+    new Date(),
+    Session.getScriptTimeZone(),
+    'yyyy-MM-dd'
+  );
 }
 
 
-function value(id) {
+function nowText_() {
 
-  return document
-    .getElementById(id)
-    ?.value || '';
+  return Utilities.formatDate(
+    new Date(),
+    Session.getScriptTimeZone(),
+    'yyyy-MM-dd HH:mm:ss'
+  );
 }
 
 
-function setValue(
-  id,
-  value
-) {
-
-  const el =
-    document
-      .getElementById(id);
-
-
-  if (el) {
-
-    el.value =
-      value ?? '';
-  }
-}
-
-
-function setText(
-  id,
+function parseDate_(
   text
 ) {
 
-  const el =
-    document
-      .getElementById(id);
-
-
-  if (el) {
-
-    el.textContent =
-      text ?? '';
-  }
-}
-
-
-function setHtml(
-  id,
-  html
-) {
-
-  const el =
-    document
-      .getElementById(id);
-
-
-  if (el) {
-
-    el.innerHTML =
-      html || '';
-  }
-}
-
-
-function parseLocalDate(
-  str
-) {
-
-  const p =
-    String(str)
+  const parts =
+    String(text)
       .split('-')
       .map(Number);
 
 
   return new Date(
-    p[0],
-    p[1]-1,
-    p[2],
-    12
+    parts[0],
+    parts[1] - 1,
+    parts[2],
+    12,
+    0,
+    0
   );
 }
 
 
-function formatDateInput(
+function formatDate_(
   date
 ) {
 
-  const y =
+  return Utilities.formatDate(
+    date,
+    Session.getScriptTimeZone(),
+    'yyyy-MM-dd'
+  );
+}
+
+
+function dayDiff_(
+  from,
+  to
+) {
+
+  const a =
+    String(from)
+      .split('-')
+      .map(Number);
+
+
+  const b =
+    String(to)
+      .split('-')
+      .map(Number);
+
+
+  const utcA =
+    Date.UTC(
+      a[0],
+      a[1] - 1,
+      a[2]
+    );
+
+
+  const utcB =
+    Date.UTC(
+      b[0],
+      b[1] - 1,
+      b[2]
+    );
+
+
+  return Math.round(
+    (utcB - utcA) /
+    86400000
+  );
+}
+
+
+function createDateRange_(
+  from,
+  to,
+  maxDays
+) {
+
+  const start =
+    parseDate_(from);
+
+  const end =
+    parseDate_(to);
+
+  const result = [];
+
+  let date =
+    new Date(start);
+
+
+  while (
+    date <= end &&
+    result.length <
+    maxDays
+  ) {
+
+    result.push(
+      formatDate_(date)
+    );
+
+
+    date.setDate(
+      date.getDate() + 1
+    );
+  }
+
+
+  return result;
+}
+
+
+function getRoundRange_(
+  dateText
+) {
+
+  const date =
+    parseDate_(
+      dateText
+    );
+
+
+  const year =
     date.getFullYear();
 
+  const month =
+    date.getMonth();
 
-  const m =
-    String(
-      date.getMonth()+1
-    )
-    .padStart(2,'0');
-
-
-  const d =
-    String(
-      date.getDate()
-    )
-    .padStart(2,'0');
+  const day =
+    date.getDate();
 
 
-  return `${y}-${m}-${d}`;
-}
-
-
-function formatThaiDate(
-  date
-) {
-
-  if (!date) return '-';
-
-
-  const d =
-    parseLocalDate(date);
-
-
-  return d.toLocaleDateString(
-    'th-TH',
-    {
-      day:'numeric',
-      month:'short',
-      year:'numeric'
-    }
-  );
-}
-
-
-function shortDate(
-  date
-) {
-
-  const d =
-    parseLocalDate(date);
-
-
-  const weekday =
-    d.toLocaleDateString(
-      'th-TH',
-      {
-        weekday:'short'
-      }
-    );
-
-
-  return `
-
-  ${d.getDate()}/${d.getMonth()+1}
-
-  <br>
-
-  <span
-    style="
-      font-size:8px;
-      color:#9aa3af
-    "
-  >
-    ${weekday}
-  </span>
-  `;
-}
-
-
-function emptyHtml(
-  text
-) {
-
-  return `
-
-  <div class="empty">
-
-    <div class="empty-icon">
-      🗂️
-    </div>
-
-    ${escapeHtml(text)}
-
-  </div>
-  `;
-}
-
-
-function toast(
-  message,
-  type
-) {
-
-  const el =
-    document
-      .getElementById(
-        'toast'
-      );
-
-
-  if (!el) {
-    return;
-  }
-
-
-  const text =
-    String(
-      message ||
-      'ดำเนินการเรียบร้อย'
-    )
-    .trim();
-
-
-  /*
-   * ถ้า caller ไม่ได้ส่ง type มา
-   * ให้ระบบดูจากข้อความอัตโนมัติ
-   */
-  if (!type) {
-
-    if (
-      /ผิดพลาด|error|ไม่สามารถ|ล้มเหลว|ไม่สำเร็จ/i
-        .test(
-          text
-        )
-    ) {
-
-      type =
-        'error';
-
-    } else if (
-      /กรุณา|ยังไม่มี|ยังไม่ได้|ไม่พบ|ต้องเลือก|โปรด/i
-        .test(
-          text
-        )
-    ) {
-
-      type =
-        'warning';
-
-    } else if (
-      /กำลัง|ข้อมูล|อัปเดต/i
-        .test(
-          text
-        )
-    ) {
-
-      type =
-        'info';
-
-    } else {
-
-      type =
-        'success';
-    }
-  }
-
-
-  el.textContent =
-    text;
-
-
-  el.classList
-    .remove(
-      'toast-success',
-      'toast-error',
-      'toast-warning',
-      'toast-info'
-    );
+  let from;
+  let to;
 
 
   if (
-    type === 'error'
+    day >= 26
   ) {
 
-    el.classList
-      .add(
-        'toast-error'
+    from =
+      new Date(
+        year,
+        month,
+        26,
+        12
       );
 
-  } else if (
-    type === 'warning'
-  ) {
 
-    el.classList
-      .add(
-        'toast-warning'
-      );
-
-  } else if (
-    type === 'info'
-  ) {
-
-    el.classList
-      .add(
-        'toast-info'
+    to =
+      new Date(
+        year,
+        month + 1,
+        25,
+        12
       );
 
   } else {
 
-    el.classList
-      .add(
-        'toast-success'
+    from =
+      new Date(
+        year,
+        month - 1,
+        26,
+        12
+      );
+
+
+    to =
+      new Date(
+        year,
+        month,
+        25,
+        12
       );
   }
 
 
-  /*
-   * restart animation ทุกครั้ง
-   */
-  el.classList
-    .remove(
-      'show'
-    );
+  return {
 
+    from:
+      formatDate_(from),
 
-  void el.offsetWidth;
-
-
-  el.classList
-    .add(
-      'show'
-    );
-
-
-  clearTimeout(
-    window.toastTimer
-  );
-
-
-  /*
-   * Popup หายเองหลัง 3 วินาที
-   */
-  window.toastTimer =
-    setTimeout(
-      () => {
-
-        el.classList
-          .remove(
-            'show'
-          );
-
-      },
-      3000
-    );
+    to:
+      formatDate_(to)
+  };
 }
-
-
-function setLoading(show) {
-
-  document
-    .getElementById(
-      'loading'
-    )
-    .classList
-    .toggle(
-      'show',
-      !!show
-    );
-}
-
-
-function showServerError(
-  error
-) {
-
-  setLoading(false);
-
-
-  console.error(error);
-
-
-  toast(
-    error?.message ||
-    String(error) ||
-    'เกิดข้อผิดพลาด'
-  );
-}
-
-
-function escapeHtml(
-  value
-) {
-
-  return String(
-    value ?? ''
-  )
-  .replace(
-    /&/g,
-    '&amp;'
-  )
-  .replace(
-    /</g,
-    '&lt;'
-  )
-  .replace(
-    />/g,
-    '&gt;'
-  )
-  .replace(
-    /"/g,
-    '&quot;'
-  )
-  .replace(
-    /'/g,
-    '&#039;'
-  );
-}
-
-
-function escapeAttr(
-  value
-) {
-
-  return escapeHtml(
-    value
-  );
-}
-
-
-function jsonString(
-  value
-) {
-
-  return JSON.stringify(
-    String(
-      value ?? ''
-    )
-  );
-}
-
-</script>
-
-
-</body>
-
-</html>

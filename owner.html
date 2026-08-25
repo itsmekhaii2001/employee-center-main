@@ -4190,6 +4190,86 @@ th:nth-child(2) {
   }
 }
 
+
+
+/* =========================
+   DEDUCTION WORKFLOW ACTIONS
+========================= */
+
+.deduct-work-status{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:25px;
+  padding:0 9px;
+  border-radius:999px;
+  font-size:8.5px;
+  font-weight:950;
+  white-space:nowrap
+}
+
+.deduct-work-status.waiting{
+  background:#fff2cf;
+  color:#9b7818;
+  border:1px solid #f4dfa1
+}
+
+.deduct-work-status.done{
+  background:#dcf6e6;
+  color:#3c946b;
+  border:1px solid #c5ead4
+}
+
+.deduct-row-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:6px;
+  flex-wrap:nowrap
+}
+
+.deduct-action-btn{
+  width:32px;
+  height:32px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+  font-family:inherit;
+  font-size:13px;
+  font-weight:1000;
+  cursor:pointer;
+  transition:transform .14s ease,box-shadow .14s ease,opacity .14s ease
+}
+
+.deduct-action-btn:hover:not(:disabled){
+  transform:translateY(-1px)
+}
+
+.deduct-action-btn.done{
+  border:1px solid #bfe8d0;
+  background:#e7f8ee;
+  color:#3f9b6f;
+  box-shadow:0 5px 12px rgba(63,155,111,.10)
+}
+
+.deduct-action-btn.delete{
+  border:1px solid #ffd1d8;
+  background:#fff1f4;
+  color:#d05e72;
+  box-shadow:0 5px 12px rgba(208,94,114,.08)
+}
+
+.deduct-action-btn:disabled{
+  opacity:.42;
+  cursor:not-allowed;
+  box-shadow:none
+}
+
+.deduct-done-row{
+  background:linear-gradient(90deg,rgba(238,250,243,.38),transparent)
+}
+
 </style>
 
 </head>
@@ -9170,6 +9250,221 @@ function deductionStatusHtml(
 }
 
 
+function deductionWorkflowStatusHtml(
+  row
+) {
+
+  const done =
+    String(
+      row?.status || 'WAITING'
+    )
+    .trim()
+    .toUpperCase() ===
+    'DONE';
+
+
+  return done
+    ? `
+        <span class="deduct-work-status done">
+          ✓ หักแล้ว
+        </span>
+      `
+    : `
+        <span class="deduct-work-status waiting">
+          ⏳ รอทำ
+        </span>
+      `;
+}
+
+
+function deductionActionsHtml(
+  row
+) {
+
+  const done =
+    String(
+      row?.status || 'WAITING'
+    )
+    .trim()
+    .toUpperCase() ===
+    'DONE';
+
+
+  return `
+    <div class="deduct-row-actions">
+
+      <button
+        type="button"
+        class="deduct-action-btn done"
+        title="${
+          done
+            ? 'รายการนี้หักแล้ว'
+            : 'ทำรายการแล้ว'
+        }"
+        ${
+          done
+            ? 'disabled'
+            : ''
+        }
+        onclick='markDeductionDone(${jsonString(row.deductionId)})'
+      >
+        ✓
+      </button>
+
+      <button
+        type="button"
+        class="deduct-action-btn delete"
+        title="ลบรายการ"
+        onclick='deleteDeductionRecord(${jsonString(row.deductionId)})'
+      >
+        ×
+      </button>
+
+    </div>
+  `;
+}
+
+
+function markDeductionDone(
+  deductionId
+) {
+
+  const row =
+    (
+      STATE.deductionRecords ||
+      []
+    )
+      .find(
+        item =>
+          item.deductionId ===
+          deductionId
+      );
+
+
+  if (!row) {
+    return;
+  }
+
+
+  if (
+    String(
+      row.status || ''
+    )
+    .toUpperCase() ===
+    'DONE'
+  ) {
+    return;
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      res => {
+
+        STATE.deductionDirty =
+          true;
+
+        STATE.deductionListLoaded =
+          false;
+
+        STATE.deductionLimitLoaded =
+          false;
+
+
+        toast(
+          res?.message ||
+          'เปลี่ยนสถานะเป็นหักแล้ว'
+        );
+
+
+        loadDeductionRecords(
+          true
+        );
+      }
+    )
+
+    .withFailureHandler(
+      showServerError
+    )
+
+    .markDeductionDone(
+      deductionId
+    );
+}
+
+
+function deleteDeductionRecord(
+  deductionId
+) {
+
+  const row =
+    (
+      STATE.deductionRecords ||
+      []
+    )
+      .find(
+        item =>
+          item.deductionId ===
+          deductionId
+      );
+
+
+  if (!row) {
+    return;
+  }
+
+
+  if (
+    !confirm(
+      'ลบรายการตัดยอดของ ' +
+      (row.employeeId || '') +
+      ' จำนวน ' +
+      moneyTH(row.amount) +
+      ' บาท ใช่ไหม?'
+    )
+  ) {
+    return;
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      res => {
+
+        STATE.deductionDirty =
+          true;
+
+        STATE.deductionListLoaded =
+          false;
+
+        STATE.deductionLimitLoaded =
+          false;
+
+
+        toast(
+          res?.message ||
+          'ลบรายการแล้ว'
+        );
+
+
+        loadDeductionRecords(
+          true
+        );
+      }
+    )
+
+    .withFailureHandler(
+      showServerError
+    )
+
+    .deleteDeductionRecord(
+      deductionId
+    );
+}
+
+
 function renderDeductionRecords(
   rows,
   summary
@@ -9296,6 +9591,7 @@ function renderDeductionRecords(
           <th>ใช้วงเงิน</th>
           <th>หักเงินจริง</th>
           <th>สถานะ</th>
+          <th>จัดการ</th>
         </tr>
 
       </thead>
@@ -9310,7 +9606,13 @@ function renderDeductionRecords(
 
         html += `
 
-          <tr>
+          <tr
+            class="${
+              String(row.status || 'WAITING').toUpperCase() === 'DONE'
+                ? 'deduct-done-row'
+                : ''
+            }"
+          >
 
             <td>
               ${escapeHtml(row.transactionDate || '-')}
@@ -9345,7 +9647,11 @@ function renderDeductionRecords(
             </td>
 
             <td>
-              ${deductionStatusHtml(row)}
+              ${deductionWorkflowStatusHtml(row)}
+            </td>
+
+            <td>
+              ${deductionActionsHtml(row)}
             </td>
 
           </tr>
