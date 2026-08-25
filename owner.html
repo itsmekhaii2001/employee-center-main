@@ -4048,6 +4048,148 @@ th:nth-child(2) {
   }
 }
 
+
+
+/* =========================
+   DEDUCTION SPLIT CALCULATOR
+========================= */
+
+.deduct-split-calculator{
+  padding:15px;
+  border:1px solid #dce8f2;
+  border-radius:17px;
+  background:linear-gradient(135deg,#f7fbff 0%,#fbf7ff 100%)
+}
+
+.deduct-split-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:12px
+}
+
+.deduct-split-title{
+  color:#425873;
+  font-size:11px;
+  font-weight:1000
+}
+
+.deduct-split-sub{
+  margin-top:3px;
+  color:#8a96a6;
+  font-size:8.5px;
+  font-weight:750
+}
+
+.deduct-split-example{
+  min-height:28px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:0 10px;
+  border-radius:999px;
+  background:#eef5ff;
+  color:#5f7fa5;
+  font-size:8.5px;
+  font-weight:900;
+  white-space:nowrap
+}
+
+.deduct-split-grid{
+  display:grid;
+  grid-template-columns:1fr .75fr 1.15fr;
+  gap:10px;
+  align-items:end
+}
+
+.deduct-people-input{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:7px;
+  align-items:center
+}
+
+.deduct-people-input span{
+  color:#748197;
+  font-size:9px;
+  font-weight:850
+}
+
+.deduct-split-result{
+  min-height:73px;
+  display:grid;
+  grid-template-columns:1fr auto;
+  grid-template-areas:
+    "label button"
+    "value button";
+  align-items:center;
+  column-gap:10px;
+  padding:10px 12px;
+  border:1px solid #d9e5f1;
+  border-radius:13px;
+  background:#fff
+}
+
+.deduct-split-result-label{
+  grid-area:label;
+  color:#8a96a7;
+  font-size:8.5px;
+  font-weight:850
+}
+
+.deduct-split-result-value{
+  grid-area:value;
+  color:#4a6382;
+  font-size:17px;
+  font-weight:1000
+}
+
+.deduct-use-split-btn{
+  grid-area:button;
+  min-height:38px;
+  padding:0 12px;
+  border:0;
+  border-radius:11px;
+  background:linear-gradient(135deg,#57a8d5,#7868d5);
+  color:#fff;
+  font-family:inherit;
+  font-size:9px;
+  font-weight:950;
+  cursor:pointer;
+  box-shadow:0 7px 16px rgba(91,107,202,.15)
+}
+
+.deduct-use-split-btn:disabled{
+  opacity:.38;
+  cursor:not-allowed;
+  box-shadow:none
+}
+
+@media(max-width:900px){
+  .deduct-split-grid{
+    grid-template-columns:1fr 1fr
+  }
+
+  .deduct-split-result{
+    grid-column:1/-1
+  }
+}
+
+@media(max-width:620px){
+  .deduct-split-head{
+    flex-direction:column
+  }
+
+  .deduct-split-grid{
+    grid-template-columns:1fr
+  }
+
+  .deduct-split-result{
+    grid-column:auto
+  }
+}
+
 </style>
 
 </head>
@@ -5063,6 +5205,114 @@ th:nth-child(2) {
           id="deductDate"
           type="date"
         >
+
+
+      </div>
+
+
+      <div class="field span-4">
+
+        <div class="deduct-split-calculator">
+
+          <div class="deduct-split-head">
+
+            <div>
+
+              <div class="deduct-split-title">
+                🧮 คำนวณยอดหาร
+              </div>
+
+              <div class="deduct-split-sub">
+                ใช้กรณียอดเสียหาย 1 รายการมีผู้รับผิดชอบหลายคน
+              </div>
+
+            </div>
+
+
+            <div
+              class="deduct-split-example"
+              id="deductSplitFormula"
+            >
+              ยอดเสียหาย ÷ จำนวนคน
+            </div>
+
+          </div>
+
+
+          <div class="deduct-split-grid">
+
+            <div class="field">
+
+              <label>
+                ยอดเสียหายรวม
+              </label>
+
+              <input
+                id="deductSplitTotal"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="เช่น 87000"
+                oninput="calculateDeductionSplit()"
+              >
+
+            </div>
+
+
+            <div class="field">
+
+              <label>
+                ผู้รับผิดชอบ
+              </label>
+
+              <div class="deduct-people-input">
+
+                <input
+                  id="deductSplitPeople"
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="เช่น 16"
+                  oninput="calculateDeductionSplit()"
+                >
+
+                <span>
+                  คน
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <div class="deduct-split-result">
+
+              <div class="deduct-split-result-label">
+                ยอดที่ต้องถูกหัก / คน
+              </div>
+
+              <div
+                class="deduct-split-result-value"
+                id="deductSplitResult"
+              >
+                0.00 บาท
+              </div>
+
+              <button
+                type="button"
+                class="deduct-use-split-btn"
+                id="deductUseSplitButton"
+                onclick="useDeductionSplitAmount()"
+                disabled
+              >
+                ↓ ใช้ยอดนี้
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
 
       </div>
 
@@ -8343,12 +8593,178 @@ function clearDeductionForm() {
   );
 
   setValue(
+    'deductSplitTotal',
+    ''
+  );
+
+  setValue(
+    'deductSplitPeople',
+    ''
+  );
+
+  setValue(
     'deductDate',
     STATE.today
   );
 
 
+  calculateDeductionSplit();
+
+
   previewDeductionEmployee();
+}
+
+
+function calculateDeductionSplit() {
+
+  const total =
+    Number(
+      value(
+        'deductSplitTotal'
+      )
+    );
+
+
+  const people =
+    Number(
+      value(
+        'deductSplitPeople'
+      )
+    );
+
+
+  const resultEl =
+    document.getElementById(
+      'deductSplitResult'
+    );
+
+
+  const formulaEl =
+    document.getElementById(
+      'deductSplitFormula'
+    );
+
+
+  const button =
+    document.getElementById(
+      'deductUseSplitButton'
+    );
+
+
+  const valid =
+    (
+      Number.isFinite(total) &&
+      total > 0 &&
+      Number.isInteger(people) &&
+      people > 0
+    );
+
+
+  if (!valid) {
+
+    if (resultEl) {
+
+      resultEl.textContent =
+        '0.00 บาท';
+    }
+
+
+    if (formulaEl) {
+
+      formulaEl.textContent =
+        'ยอดเสียหาย ÷ จำนวนคน';
+    }
+
+
+    if (button) {
+
+      button.disabled =
+        true;
+    }
+
+
+    return 0;
+  }
+
+
+  const perPerson =
+    Math.round(
+      (
+        total /
+        people
+      ) *
+      100
+    ) /
+    100;
+
+
+  if (resultEl) {
+
+    resultEl.textContent =
+      moneyTH(
+        perPerson
+      ) +
+      ' บาท';
+  }
+
+
+  if (formulaEl) {
+
+    formulaEl.textContent =
+      moneyTH(
+        total
+      ) +
+      ' ÷ ' +
+      people +
+      ' = ' +
+      moneyTH(
+        perPerson
+      );
+  }
+
+
+  if (button) {
+
+    button.disabled =
+      false;
+  }
+
+
+  return perPerson;
+}
+
+
+function useDeductionSplitAmount() {
+
+  const perPerson =
+    calculateDeductionSplit();
+
+
+  if (
+    !perPerson ||
+    perPerson <= 0
+  ) {
+
+    return toast(
+      'กรุณากรอกยอดเสียหายรวมและจำนวนผู้รับผิดชอบก่อน',
+      'warning'
+    );
+  }
+
+
+  setValue(
+    'deductAmount',
+    perPerson.toFixed(2)
+  );
+
+
+  toast(
+    'นำยอดต่อคน ' +
+    moneyTH(
+      perPerson
+    ) +
+    ' บาท ไปใส่ในช่องยอดเงินแล้ว'
+  );
 }
 
 
