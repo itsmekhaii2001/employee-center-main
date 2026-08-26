@@ -4367,6 +4367,81 @@ th:nth-child(2) {
   }
 }
 
+
+
+/* =========================
+   SEATING CUSTOM COLORS
+========================= */
+
+.seat-color-options{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px
+}
+
+.seat-color-choice{
+  min-height:42px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  padding:6px 8px;
+  border:2px solid transparent;
+  border-radius:12px;
+  background:#fff;
+  color:#66758a;
+  font-family:inherit;
+  font-size:8.5px;
+  font-weight:900;
+  cursor:pointer;
+  box-shadow:0 4px 12px rgba(65,82,112,.06);
+  transition:transform .14s ease,border-color .14s ease,box-shadow .14s ease
+}
+
+.seat-color-choice:hover{
+  transform:translateY(-1px);
+  box-shadow:0 7px 16px rgba(65,82,112,.10)
+}
+
+.seat-color-choice span{
+  width:22px;
+  height:22px;
+  flex:0 0 auto;
+  border-radius:7px;
+  background:var(--choice);
+  border:1px solid rgba(69,87,111,.16);
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.28)
+}
+
+.seat-color-choice.active{
+  border-color:#536b8b;
+  box-shadow:0 0 0 3px rgba(83,107,139,.10)
+}
+
+.seat-top{
+  padding:7px 9px;
+  margin:-3px -2px 2px;
+  border-radius:11px;
+  background:var(--seat-header-color,transparent);
+  border:1px solid rgba(67,86,111,.08)
+}
+
+.seat-number{
+  font-weight:1000;
+  letter-spacing:.2px
+}
+
+.seat-person{
+  background:var(--seat-name-color,rgba(255,255,255,.88));
+  border-color:rgba(66,87,113,.10)
+}
+
+@media(max-width:760px){
+  .seat-color-options{
+    grid-template-columns:1fr
+  }
+}
+
 </style>
 
 </head>
@@ -7218,6 +7293,126 @@ th:nth-child(2) {
         <div class="seat-editor-label">
 
           <span>
+            🎨 สีหัวโต๊ะ
+          </span>
+
+          <span class="seat-editor-hint">
+            เลือกได้ 1 สี
+          </span>
+
+        </div>
+
+        <div
+          class="seat-color-options"
+          id="seatHeaderColorOptions"
+        >
+
+          <button
+            type="button"
+            class="seat-color-choice"
+            data-color="#66FFCC"
+            style="--choice:#66FFCC"
+            onclick="selectSeatHeaderColor('#66FFCC')"
+            title="#66FFCC"
+          >
+            <span></span>
+            #66FFCC
+          </button>
+
+          <button
+            type="button"
+            class="seat-color-choice"
+            data-color="#9999FF"
+            style="--choice:#9999FF"
+            onclick="selectSeatHeaderColor('#9999FF')"
+            title="#9999FF"
+          >
+            <span></span>
+            #9999FF
+          </button>
+
+          <button
+            type="button"
+            class="seat-color-choice"
+            data-color="#6495ED"
+            style="--choice:#6495ED"
+            onclick="selectSeatHeaderColor('#6495ED')"
+            title="#6495ED"
+          >
+            <span></span>
+            #6495ED
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div class="seat-editor-block">
+
+        <div class="seat-editor-label">
+
+          <span>
+            🪪 สีบล็อคชื่อ
+          </span>
+
+          <span class="seat-editor-hint">
+            ใช้กับบล็อครายชื่อพนักงานในโต๊ะ
+          </span>
+
+        </div>
+
+        <div
+          class="seat-color-options"
+          id="seatNameColorOptions"
+        >
+
+          <button
+            type="button"
+            class="seat-color-choice"
+            data-color="#99FFCC"
+            style="--choice:#99FFCC"
+            onclick="selectSeatNameColor('#99FFCC')"
+            title="#99FFCC"
+          >
+            <span></span>
+            #99FFCC
+          </button>
+
+          <button
+            type="button"
+            class="seat-color-choice"
+            data-color="#CCCCFF"
+            style="--choice:#CCCCFF"
+            onclick="selectSeatNameColor('#CCCCFF')"
+            title="#CCCCFF"
+          >
+            <span></span>
+            #CCCCFF
+          </button>
+
+          <button
+            type="button"
+            class="seat-color-choice"
+            data-color="#87CEFA"
+            style="--choice:#87CEFA"
+            onclick="selectSeatNameColor('#87CEFA')"
+            title="#87CEFA"
+          >
+            <span></span>
+            #87CEFA
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div class="seat-editor-block">
+
+        <div class="seat-editor-label">
+
+          <span>
             👥 เลือกพนักงาน
           </span>
 
@@ -7384,6 +7579,12 @@ let STATE = {
     0,
 
   seatEditName:
+    '',
+
+  seatEditHeaderColor:
+    '',
+
+  seatEditNameColor:
     '',
 
   seatEditEmployeeIds:
@@ -11369,12 +11570,36 @@ function seatBoxHtml(
   const people =
     employeeIds
       .map(
-        employeeId =>
-          getSeatEmployee(
-            employeeId
-          )
-      )
-      .filter(Boolean);
+        employeeId => {
+
+          const employee =
+            getSeatEmployee(
+              employeeId
+            );
+
+
+          /*
+           * ถ้ารายชื่อพนักงานยังโหลดไม่ทัน / หา ID ไม่เจอ
+           * ห้ามทำการ์ดหาย ให้แสดงรหัสที่บันทึกไว้ก่อน
+           */
+          return employee || {
+
+            employeeId:
+              String(
+                employeeId || ''
+              ),
+
+            nickname:
+              'รอข้อมูล',
+
+            team:
+              '-',
+
+            position:
+              '-'
+          };
+        }
+      );
 
 
   const occupied =
@@ -11459,6 +11684,10 @@ function seatBoxHtml(
         }
       "
       data-seat="${number}"
+      style="
+        --seat-header-color:${escapeAttr(seat?.headerColor || 'transparent')};
+        --seat-name-color:${escapeAttr(seat?.nameColor || 'rgba(255,255,255,.88)')};
+      "
       onclick="openSeatEditor(${number})"
       title="คลิกเพื่อจัดโต๊ะที่ ${number}"
     >
@@ -11515,6 +11744,73 @@ function seatBoxHtml(
 }
 
 
+function renderSeatColorChoices() {
+
+  document
+    .querySelectorAll(
+      '#seatHeaderColorOptions .seat-color-choice'
+    )
+    .forEach(
+      button => {
+
+        button.classList.toggle(
+          'active',
+          button.dataset.color ===
+            STATE.seatEditHeaderColor
+        );
+      }
+    );
+
+
+  document
+    .querySelectorAll(
+      '#seatNameColorOptions .seat-color-choice'
+    )
+    .forEach(
+      button => {
+
+        button.classList.toggle(
+          'active',
+          button.dataset.color ===
+            STATE.seatEditNameColor
+        );
+      }
+    );
+}
+
+
+function selectSeatHeaderColor(
+  color
+) {
+
+  STATE.seatEditHeaderColor =
+    String(
+      color || ''
+    )
+    .trim()
+    .toUpperCase();
+
+
+  renderSeatColorChoices();
+}
+
+
+function selectSeatNameColor(
+  color
+) {
+
+  STATE.seatEditNameColor =
+    String(
+      color || ''
+    )
+    .trim()
+    .toUpperCase();
+
+
+  renderSeatColorChoices();
+}
+
+
 function openSeatEditor(
   seatNo
 ) {
@@ -11550,6 +11846,22 @@ function openSeatEditor(
     String(
       seat.seatName || ''
     );
+
+
+  STATE.seatEditHeaderColor =
+    String(
+      seat.headerColor || ''
+    )
+    .trim()
+    .toUpperCase();
+
+
+  STATE.seatEditNameColor =
+    String(
+      seat.nameColor || ''
+    )
+    .trim()
+    .toUpperCase();
 
 
   STATE.seatEditEmployeeIds =
@@ -11590,6 +11902,9 @@ function openSeatEditor(
     'seatNameInput',
     STATE.seatEditName
   );
+
+
+  renderSeatColorChoices();
 
 
   setText(
@@ -11645,6 +11960,12 @@ function closeSeatEditor() {
     0;
 
   STATE.seatEditName =
+    '';
+
+  STATE.seatEditHeaderColor =
+    '';
+
+  STATE.seatEditNameColor =
     '';
 
   STATE.seatEditEmployeeIds =
@@ -12225,6 +12546,12 @@ function saveCurrentSeat() {
         60
       ),
 
+    headerColor:
+      STATE.seatEditHeaderColor,
+
+    nameColor:
+      STATE.seatEditNameColor,
+
     employeeIds:
       [
         ...(
@@ -12430,6 +12757,12 @@ function saveCurrentSeat() {
       seatName:
         nextSeat.seatName,
 
+      headerColor:
+        nextSeat.headerColor,
+
+      nameColor:
+        nextSeat.nameColor,
+
       employeeIds:
         nextSeat.employeeIds,
 
@@ -12487,6 +12820,16 @@ function clearCurrentSeat() {
     seatName:
       String(
         previousSeat?.seatName || ''
+      ),
+
+    headerColor:
+      String(
+        previousSeat?.headerColor || ''
+      ),
+
+    nameColor:
+      String(
+        previousSeat?.nameColor || ''
       ),
 
     employeeIds:
@@ -12613,6 +12956,16 @@ function clearCurrentSeat() {
       seatName:
         String(
           previousSeat?.seatName || ''
+        ),
+
+      headerColor:
+        String(
+          previousSeat?.headerColor || ''
+        ),
+
+      nameColor:
+        String(
+          previousSeat?.nameColor || ''
         ),
 
       employeeIds:

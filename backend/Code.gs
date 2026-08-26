@@ -6285,54 +6285,72 @@ function uniqueCleanStrings_(
 }
 
 
+function getSeatingCanonicalHeaders_() {
+
+  return [
+    'seatNo',
+    'seatName',
+    'headerColor',
+    'nameColor',
+    'employeeIdsJson',
+    'emailNamesJson',
+    'updatedAt'
+  ];
+}
+
+
 function ensureSeatingSheet_() {
 
   const ss =
     getDatabase_();
 
 
-  ensureSheet_(
-    ss,
-    APP.SHEETS.SEATING,
-    [
-      'seatNo',
-      'seatName',
-      'employeeIdsJson',
-      'emailNamesJson',
-      'updatedAt'
-    ]
-  );
-
-
-  return ss
-    .getSheetByName(
+  let sheet =
+    ss.getSheetByName(
       APP.SHEETS.SEATING
     );
-}
 
 
-function getSeatingPlan() {
+  if (!sheet) {
 
-  ensureSeatingSheet_();
-
-  migrateSeatingNameColumn_();
-
-  return getSeatingPlan_();
-}
-
-
-function migrateSeatingNameColumn_() {
-
-  const sheet =
-    getDatabase_()
-      .getSheetByName(
+    sheet =
+      ss.insertSheet(
         APP.SHEETS.SEATING
       );
 
 
-  if (!sheet) {
-    return;
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        7
+      )
+      .setValues([
+        getSeatingCanonicalHeaders_()
+      ]);
+
+
+    sheet.setFrozenRows(
+      1
+    );
+
+
+    return sheet;
   }
+
+
+  /*
+   * สำคัญ:
+   * เพิ่มเฉพาะ header ที่ "ไม่มีเลย"
+   * ห้าม clearContents / deleteColumns / insert กลางข้อมูล
+   * เพื่อไม่ให้ผังเดิมเสียอีก
+   */
+  const lastColumn =
+    Math.max(
+      1,
+      sheet.getLastColumn()
+    );
 
 
   const headers =
@@ -6341,110 +6359,321 @@ function migrateSeatingNameColumn_() {
         1,
         1,
         1,
-        sheet.getLastColumn()
+        lastColumn
       )
-      .getDisplayValues()[0];
+      .getDisplayValues()[0]
+      .map(
+        value =>
+          String(
+            value || ''
+          )
+          .trim()
+      );
+
+
+  const missing =
+    getSeatingCanonicalHeaders_()
+      .filter(
+        header =>
+          !headers.includes(
+            header
+          )
+      );
 
 
   if (
-    headers[0] === 'seatNo' &&
-    headers[1] === 'seatName' &&
-    headers[2] === 'employeeIdsJson'
-  ) {
-    return;
-  }
-
-
-  if (
-    headers[0] === 'seatNo' &&
-    headers[1] === 'employeeIdsJson'
+    missing.length
   ) {
 
-    sheet.insertColumnAfter(
-      1
-    );
+    const startColumn =
+      sheet.getLastColumn() + 1;
 
 
     sheet
       .getRange(
         1,
-        2
+        startColumn,
+        1,
+        missing.length
       )
-      .setValue(
-        'seatName'
-      );
+      .setValues([
+        missing
+      ]);
   }
+
+
+  sheet.setFrozenRows(
+    1
+  );
+
+
+  return sheet;
+}
+
+
+function getSeatingHeaderInfo_(
+  sheet
+) {
+
+  const lastColumn =
+    Math.max(
+      1,
+      sheet.getLastColumn()
+    );
+
+
+  const headers =
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        lastColumn
+      )
+      .getDisplayValues()[0]
+      .map(
+        value =>
+          String(
+            value || ''
+          )
+          .trim()
+      );
+
+
+  const indexes = {};
+
+
+  headers
+    .forEach(
+      (
+        header,
+        index
+      ) => {
+
+        if (!header) {
+          return;
+        }
+
+
+        if (
+          !indexes[
+            header
+          ]
+        ) {
+
+          indexes[
+            header
+          ] = [];
+        }
+
+
+        indexes[
+          header
+        ]
+          .push(
+            index
+          );
+      }
+    );
+
+
+  return {
+
+    headers:
+      headers,
+
+    indexes:
+      indexes
+  };
+}
+
+
+function firstSeatingValue_(
+  row,
+  indexes
+) {
+
+  indexes =
+    indexes || [];
+
+
+  for (
+    const index of indexes
+  ) {
+
+    const value =
+      String(
+        row[
+          index
+        ] || ''
+      );
+
+
+    if (
+      value.trim() !== ''
+    ) {
+
+      return value;
+    }
+  }
+
+
+  return '';
+}
+
+
+function getSeatingPlan() {
+
+  ensureSeatingSheet_();
+
+  return getSeatingPlan_();
+}
+
+
+function migrateSeatingNameColumn_() {
+
+  /*
+   * compatibility กับโค้ดเดิม
+   * ตอนนี้ไม่ทำ migration แบบย้าย/ลบคอลัมน์แล้ว
+   */
+  ensureSeatingSheet_();
 }
 
 
 function getSeatingPlan_() {
 
+  const sheet =
+    ensureSeatingSheet_();
+
+
+  const info =
+    getSeatingHeaderInfo_(
+      sheet
+    );
+
+
+  const lastRow =
+    sheet.getLastRow();
+
+
   const saved = {};
 
 
-  getSheetObjects_(
-    APP.SHEETS.SEATING
-  )
-  .forEach(
-    row => {
+  if (
+    lastRow >= 2
+  ) {
 
-      const seatNo =
-        Number(
-          row.seatNo
-        );
-
-
-      if (
-        !Number.isInteger(
-          seatNo
-        ) ||
-        seatNo < 1 ||
-        seatNo > 48
-      ) {
-        return;
-      }
+    const rows =
+      sheet
+        .getRange(
+          2,
+          1,
+          lastRow - 1,
+          sheet.getLastColumn()
+        )
+        .getDisplayValues();
 
 
-      saved[
-        seatNo
-      ] = {
+    rows
+      .forEach(
+        (
+          row,
+          rowIndex
+        ) => {
 
-        seatNo:
-          seatNo,
+          const seatNo =
+            Number(
+              firstSeatingValue_(
+                row,
+                info.indexes.seatNo
+              ) ||
+              (
+                rowIndex +
+                1
+              )
+            );
 
-        seatName:
-          String(
-            row.seatName || ''
-          )
-          .trim()
-          .slice(
-            0,
-            60
-          ),
 
-        employeeIds:
-          uniqueCleanStrings_(
-            parseStringArrayJson_(
-              row.employeeIdsJson
-            ),
-            80
-          ),
+          if (
+            !Number.isInteger(
+              seatNo
+            ) ||
+            seatNo < 1 ||
+            seatNo > 48
+          ) {
+            return;
+          }
 
-        emailNames:
-          uniqueCleanStrings_(
-            parseStringArrayJson_(
-              row.emailNamesJson
-            ),
-            80
-          ),
 
-        updatedAt:
-          String(
-            row.updatedAt || ''
-          )
-      };
-    }
-  );
+          saved[
+            seatNo
+          ] = {
+
+            seatNo:
+              seatNo,
+
+            /*
+             * ถ้ามี header ซ้ำ จะเลือกค่าที่ไม่ว่างตัวแรก
+             * ทำให้ชื่อ/สีเดิมที่ยังอยู่ในชีตถูกอ่านกลับมาได้
+             */
+            seatName:
+              firstSeatingValue_(
+                row,
+                info.indexes.seatName
+              )
+              .trim()
+              .slice(
+                0,
+                60
+              ),
+
+            headerColor:
+              firstSeatingValue_(
+                row,
+                info.indexes.headerColor
+              )
+              .trim()
+              .toUpperCase(),
+
+            nameColor:
+              firstSeatingValue_(
+                row,
+                info.indexes.nameColor
+              )
+              .trim()
+              .toUpperCase(),
+
+            employeeIds:
+              uniqueCleanStrings_(
+                parseStringArrayJson_(
+                  firstSeatingValue_(
+                    row,
+                    info.indexes.employeeIdsJson
+                  )
+                ),
+                80
+              ),
+
+            emailNames:
+              uniqueCleanStrings_(
+                parseStringArrayJson_(
+                  firstSeatingValue_(
+                    row,
+                    info.indexes.emailNamesJson
+                  )
+                ),
+                80
+              ),
+
+            updatedAt:
+              firstSeatingValue_(
+                row,
+                info.indexes.updatedAt
+              )
+          };
+        }
+      );
+  }
 
 
   const result = [];
@@ -6467,6 +6696,12 @@ function getSeatingPlan_() {
         seatName:
           '',
 
+        headerColor:
+          '',
+
+        nameColor:
+          '',
+
         employeeIds:
           [],
 
@@ -6481,6 +6716,59 @@ function getSeatingPlan_() {
 
 
   return result;
+}
+
+
+function normalizeSeatColor_(
+  color,
+  allowed
+) {
+
+  const value =
+    String(
+      color || ''
+    )
+    .trim()
+    .toUpperCase();
+
+
+  return allowed.includes(
+    value
+  )
+    ? value
+    : '';
+}
+
+
+function setSeatingField_(
+  sheet,
+  rowNumber,
+  headerIndexes,
+  value
+) {
+
+  headerIndexes =
+    headerIndexes || [];
+
+
+  /*
+   * ถ้ามี header ซ้ำ ให้เขียนค่าเดียวกันทุกคอลัมน์
+   * จะได้ไม่มีคอลัมน์เก่ามาทับตอนอ่านอีก
+   */
+  headerIndexes
+    .forEach(
+      zeroIndex => {
+
+        sheet
+          .getRange(
+            rowNumber,
+            zeroIndex + 1
+          )
+          .setValue(
+            value
+          );
+      }
+    );
 }
 
 
@@ -6523,6 +6811,28 @@ function saveSeatAssignment(
     );
 
 
+  const headerColor =
+    normalizeSeatColor_(
+      data.headerColor,
+      [
+        '#66FFCC',
+        '#9999FF',
+        '#6495ED'
+      ]
+    );
+
+
+  const nameColor =
+    normalizeSeatColor_(
+      data.nameColor,
+      [
+        '#99FFCC',
+        '#CCCCFF',
+        '#87CEFA'
+      ]
+    );
+
+
   const employeeIds =
     uniqueCleanStrings_(
       data.employeeIds,
@@ -6537,26 +6847,19 @@ function saveSeatAssignment(
     );
 
 
-  ensureSeatingSheet_();
-
-  migrateSeatingNameColumn_();
-
-
   const sheet =
-    getDatabase_()
-      .getSheetByName(
-        APP.SHEETS.SEATING
-      );
+    ensureSeatingSheet_();
+
+
+  const info =
+    getSeatingHeaderInfo_(
+      sheet
+    );
 
 
   /*
-   * เร็วกว่าแบบเดิม:
-   * - โต๊ะ 1 อยู่แถว 2
-   * - โต๊ะ 2 อยู่แถว 3
-   * - ...
-   * - โต๊ะ 48 อยู่แถว 49
-   *
-   * ไม่ต้องอ่านทั้งชีตเพื่อหาแถวทุกครั้ง
+   * ใช้แถวคงที่ตามเลขโต๊ะ
+   * โต๊ะ 1 = row 2 ... โต๊ะ 48 = row 49
    */
   const targetRow =
     seatNo + 1;
@@ -6566,32 +6869,66 @@ function saveSeatAssignment(
     nowText_();
 
 
-  sheet
-    .getRange(
-      targetRow,
-      1,
-      1,
-      5
+  setSeatingField_(
+    sheet,
+    targetRow,
+    info.indexes.seatNo,
+    seatNo
+  );
+
+
+  setSeatingField_(
+    sheet,
+    targetRow,
+    info.indexes.seatName,
+    seatName
+  );
+
+
+  setSeatingField_(
+    sheet,
+    targetRow,
+    info.indexes.headerColor,
+    headerColor
+  );
+
+
+  setSeatingField_(
+    sheet,
+    targetRow,
+    info.indexes.nameColor,
+    nameColor
+  );
+
+
+  setSeatingField_(
+    sheet,
+    targetRow,
+    info.indexes.employeeIdsJson,
+    JSON.stringify(
+      employeeIds
     )
-    .setValues([
-      [
-        seatNo,
-        seatName,
-        JSON.stringify(
-          employeeIds
-        ),
-        JSON.stringify(
-          emailNames
-        ),
-        updatedAt
-      ]
-    ]);
+  );
 
 
-  /*
-   * ไม่อ่าน DB_Seating ทั้งชีตซ้ำอีกครั้ง
-   * ส่งกลับเฉพาะโต๊ะที่เพิ่งบันทึก
-   */
+  setSeatingField_(
+    sheet,
+    targetRow,
+    info.indexes.emailNamesJson,
+    JSON.stringify(
+      emailNames
+    )
+  );
+
+
+  setSeatingField_(
+    sheet,
+    targetRow,
+    info.indexes.updatedAt,
+    updatedAt
+  );
+
+
   return {
 
     ok:
@@ -6603,14 +6940,10 @@ function saveSeatAssignment(
         emailNames.length
       )
         ? (
-            'บันทึกโต๊ะที่ ' +
-            seatNo +
-            ' แล้ว'
+            'บันทึกโต๊ะแล้ว'
           )
         : (
-            'ล้างโต๊ะที่ ' +
-            seatNo +
-            ' แล้ว'
+            'ล้างโต๊ะแล้ว'
           ),
 
     seat: {
@@ -6620,6 +6953,12 @@ function saveSeatAssignment(
 
       seatName:
         seatName,
+
+      headerColor:
+        headerColor,
+
+      nameColor:
+        nameColor,
 
       employeeIds:
         employeeIds,
@@ -6632,7 +6971,6 @@ function saveSeatAssignment(
     }
   };
 }
-
 
 
 /* =========================================================
