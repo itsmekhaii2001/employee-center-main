@@ -7764,15 +7764,171 @@ document.addEventListener(
 );
 
 
+const OWNER_SNAPSHOT_KEY =
+  'EMPLOYEE_CENTER_OWNER_SNAPSHOT_V2';
+
+
+function saveOwnerSnapshot_() {
+
+  try {
+
+    const payload = {
+
+      savedAt:
+        Date.now(),
+
+      data: {
+
+        teams:
+          STATE.teams || [],
+
+        branches:
+          STATE.branches || [],
+
+        settings:
+          STATE.settings || [],
+
+        positions:
+          STATE.positions || [],
+
+        genders:
+          STATE.genders || [],
+
+        employeeStatus:
+          STATE.employeeStatus || [],
+
+        employees:
+          STATE.employees || [],
+
+        shiftSets:
+          STATE.shiftSets || [],
+
+        assignments:
+          STATE.assignments || [],
+
+        importSheets:
+          STATE.importSheets || [],
+
+        today:
+          STATE.today || '',
+
+        dashboard:
+          STATE.dashboard || null,
+
+        round:
+          STATE.round || null
+      }
+    };
+
+
+    localStorage.setItem(
+      OWNER_SNAPSHOT_KEY,
+      JSON.stringify(
+        payload
+      )
+    );
+
+  } catch (_) {}
+}
+
+
+function loadOwnerSnapshot_() {
+
+  try {
+
+    const raw =
+      localStorage.getItem(
+        OWNER_SNAPSHOT_KEY
+      );
+
+
+    if (!raw) {
+      return false;
+    }
+
+
+    const payload =
+      JSON.parse(
+        raw
+      );
+
+
+    const age =
+      Date.now() -
+      Number(
+        payload?.savedAt || 0
+      );
+
+
+    /*
+     * ใช้ snapshot เปิดหน้าทันทีได้ไม่เกิน 30 นาที
+     * แล้วค่อย sync ข้อมูลสดจาก Apps Script เบื้องหลัง
+     */
+    if (
+      !payload?.data ||
+      age < 0 ||
+      age > 30 * 60 * 1000
+    ) {
+
+      return false;
+    }
+
+
+    STATE =
+      Object.assign(
+        STATE,
+        payload.data
+      );
+
+
+    initializeUI();
+
+
+    const badge =
+      document.getElementById(
+        'todayBadge'
+      );
+
+
+    if (badge) {
+
+      badge.textContent =
+        '🔄 กำลังซิงก์ข้อมูล...';
+    }
+
+
+    return true;
+
+  } catch (_) {
+
+    return false;
+  }
+}
+
+
+window.addEventListener(
+  'beforeunload',
+  () => {
+
+    saveOwnerSnapshot_();
+  }
+);
+
+
 function loadApp() {
 
-  setLoading(true);
+  const hasSnapshot =
+    loadOwnerSnapshot_();
 
 
-  /*
-   * ถ้า Apps Script ตอบช้าผิดปกติ
-   * อย่าปล่อยหน้าเหมือนค้างโดยไม่มีคำอธิบาย
-   */
+  if (!hasSnapshot) {
+
+    setLoading(
+      true
+    );
+  }
+
+
   clearTimeout(
     window.ownerInitialLoadTimer
   );
@@ -7790,10 +7946,7 @@ function loadApp() {
 
         if (
           badge &&
-          badge.textContent
-            .includes(
-              'กำลังโหลด'
-            )
+          !hasSnapshot
         ) {
 
           badge.textContent =
@@ -7809,11 +7962,29 @@ function loadApp() {
     .withSuccessHandler(
       data => {
 
+        /*
+         * ถ้ามี Dashboard จาก snapshot ให้คงไว้ก่อน
+         * จนกว่าข้อมูล Dashboard สดจะโหลดเสร็จ
+         */
+        const oldDashboard =
+          STATE.dashboard || null;
+
+
         STATE =
           Object.assign(
             STATE,
             data
           );
+
+
+        if (
+          !STATE.dashboard &&
+          oldDashboard
+        ) {
+
+          STATE.dashboard =
+            oldDashboard;
+        }
 
 
         clearTimeout(
@@ -7823,7 +7994,19 @@ function loadApp() {
 
         initializeUI();
 
-        setLoading(false);
+        setLoading(
+          false
+        );
+
+
+        saveOwnerSnapshot_();
+
+
+        /*
+         * Dashboard เป็นส่วนคำนวณหนัก
+         * โหลดหลังหน้า OWNER เปิดแล้ว
+         */
+        refreshDashboardFast_();
       }
     )
 
@@ -7833,6 +8016,32 @@ function loadApp() {
         clearTimeout(
           window.ownerInitialLoadTimer
         );
+
+
+        if (
+          hasSnapshot
+        ) {
+
+          const badge =
+            document.getElementById(
+              'todayBadge'
+            );
+
+
+          if (badge) {
+
+            badge.textContent =
+              '⚠️ ใช้ข้อมูลล่าสุดที่บันทึกไว้';
+          }
+
+
+          setLoading(
+            false
+          );
+
+
+          return;
+        }
 
 
         const badge =
@@ -7932,9 +8141,14 @@ function initializeUI() {
 
   renderDashboard();
 
-  renderManpower(
+  if (
     STATE.dashboard
-  );
+  ) {
+
+    renderManpower(
+      STATE.dashboard
+    );
+  }
 }
 
 
@@ -8242,6 +8456,14 @@ if (
   ) {
 
     loadSchedule();
+  }
+
+
+  if (
+    page === 'employees'
+  ) {
+
+    loadImportSheetsSilent();
   }
 
 
@@ -19395,6 +19617,66 @@ function renderEmployeeView(
 /* =========================
    REFRESH
 ========================= */
+
+function refreshDashboardFast_() {
+
+  if (
+    !STATE.today
+  ) {
+    return;
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      data => {
+
+        STATE.dashboard =
+          data;
+
+        STATE.dashboardDirty =
+          false;
+
+
+        renderDashboard();
+
+
+        /*
+         * ถ้าหน้ากำลังคนเปิดอยู่ ก็อัปเดตเงียบ ๆ
+         */
+        const manpowerPage =
+          document.getElementById(
+            'page-manpower'
+          );
+
+
+        if (
+          manpowerPage?.classList
+            .contains(
+              'active'
+            )
+        ) {
+
+          renderManpower(
+            data
+          );
+        }
+
+
+        saveOwnerSnapshot_();
+      }
+    )
+
+    .withFailureHandler(
+      () => {}
+    )
+
+    .getManpower(
+      STATE.today
+    );
+}
+
 
 function refreshDashboard() {
 

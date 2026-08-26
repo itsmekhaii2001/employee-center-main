@@ -1270,7 +1270,7 @@ function ensureSystemReadyCached_() {
       .getScriptCache();
 
   const key =
-    'EMPLOYEE_CENTER_SYSTEM_READY_V7';
+    'EMPLOYEE_CENTER_SYSTEM_READY_V9';
 
 
   if (
@@ -1286,7 +1286,7 @@ function ensureSystemReadyCached_() {
   cache.put(
     key,
     '1',
-    300
+    21600
   );
 }
 
@@ -1954,19 +1954,15 @@ function getAppData() {
 function getAppDataFast_() {
 
   /*
-   * ทำ migration ก่อนอ่าน settings
-   * ถ้าทำไปแล้วฟังก์ชันจะ return ทันที
+   * migration นี้มี Script Property กันรันซ้ำอยู่แล้ว
    */
   migrateLegacyPositionsToSettings_();
+
 
   let settings =
     getSettings_();
 
 
-  /*
-   * ระบบเก่าที่เพิ่งอัปเดตอาจยังไม่มี POSITION ใน DB_Settings
-   * เติมรายการตำแหน่งเดิมให้ครั้งแรกอัตโนมัติ แล้วโหลด settings ใหม่
-   */
   if (
     !settings.some(
       x => x.type === 'POSITION'
@@ -1980,6 +1976,10 @@ function getAppDataFast_() {
   }
 
 
+  /*
+   * Bootstrap โหลดเฉพาะข้อมูลที่ต้องใช้เปิด UI
+   * ไม่คำนวณกำลังคนและไม่ scan ชีต Import ใน request แรก
+   */
   const employees =
     getEmployees_();
 
@@ -1994,86 +1994,6 @@ function getAppDataFast_() {
 
   const today =
     todayText_();
-
-
-  /*
-   * รายชื่อชีต Import เปลี่ยนน้อยมาก
-   * cache 10 นาที ลดการ scan ทุก sheet ตอนเปิด OWNER
-   */
-  const importCache =
-    CacheService
-      .getScriptCache();
-
-
-  const importKey =
-    'EMPLOYEE_IMPORT_SHEETS_V1';
-
-
-  let importSheets =
-    null;
-
-
-  const cachedImportSheets =
-    importCache.get(
-      importKey
-    );
-
-
-  if (cachedImportSheets) {
-
-    try {
-
-      importSheets =
-        JSON.parse(
-          cachedImportSheets
-        );
-
-    } catch (_) {}
-  }
-
-
-  if (
-    !Array.isArray(
-      importSheets
-    )
-  ) {
-
-    importSheets =
-      getImportSheets_();
-
-
-    try {
-
-      importCache.put(
-        importKey,
-        JSON.stringify(
-          importSheets
-        ),
-        600
-      );
-
-    } catch (_) {}
-  }
-
-
-  /*
-   * Dashboard ยังคืนมาใน bootstrap เหมือนเวอร์ชันที่ใช้งานได้
-   * เพื่อไม่ให้ Frontend เจอ null / state ไม่ครบ
-   */
-  const dashboard =
-    getManpowerInternal_(
-      today,
-      {
-        employees:
-          employees,
-
-        shiftSets:
-          shiftSets,
-
-        assignments:
-          assignments
-      }
-    );
 
 
   return {
@@ -2123,17 +2043,27 @@ function getAppDataFast_() {
     assignments:
       assignments,
 
+    /*
+     * โหลดเมื่อเปิดหน้าพนักงาน
+     */
     importSheets:
-      importSheets,
+      [],
+
+    importSheetsLoaded:
+      false,
 
     today:
       today,
 
+    /*
+     * Frontend จะแสดง snapshot/ค่า 0 ก่อน
+     * แล้วโหลด dashboard สดเบื้องหลัง
+     */
     dashboard:
-      dashboard,
+      null,
 
     dashboardDirty:
-      false,
+      true,
 
     round:
       getRoundRange_(
@@ -10954,12 +10884,65 @@ function getManpower(
   date
 ) {
 
-  return getManpowerInternal_(
+  date =
     String(
       date ||
       todayText_()
-    )
-  );
+    );
+
+
+  const cache =
+    CacheService
+      .getScriptCache();
+
+
+  const key =
+    'MANPOWER_FAST_V3_' +
+    date;
+
+
+  const cached =
+    cache.get(
+      key
+    );
+
+
+  if (cached) {
+
+    try {
+
+      return JSON.parse(
+        cached
+      );
+
+    } catch (_) {}
+  }
+
+
+  const data =
+    getManpowerInternal_(
+      date
+    );
+
+
+  /*
+   * Cache สั้น 20 วินาที
+   * ลดการคำนวณซ้ำเวลาสลับหน้า/รีเฟรชติดกัน
+   */
+  try {
+
+    cache.put(
+      key,
+      JSON.stringify(
+        data
+      ),
+      20
+    );
+
+  } catch (_) {}
+
+
+  return data;
 }
 
 
