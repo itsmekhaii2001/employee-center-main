@@ -6296,6 +6296,7 @@ function ensureSeatingSheet_() {
     APP.SHEETS.SEATING,
     [
       'seatNo',
+      'seatName',
       'employeeIdsJson',
       'emailNamesJson',
       'updatedAt'
@@ -6314,7 +6315,65 @@ function getSeatingPlan() {
 
   ensureSeatingSheet_();
 
+  migrateSeatingNameColumn_();
+
   return getSeatingPlan_();
+}
+
+
+function migrateSeatingNameColumn_() {
+
+  const sheet =
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.SEATING
+      );
+
+
+  if (!sheet) {
+    return;
+  }
+
+
+  const headers =
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        sheet.getLastColumn()
+      )
+      .getDisplayValues()[0];
+
+
+  if (
+    headers[0] === 'seatNo' &&
+    headers[1] === 'seatName' &&
+    headers[2] === 'employeeIdsJson'
+  ) {
+    return;
+  }
+
+
+  if (
+    headers[0] === 'seatNo' &&
+    headers[1] === 'employeeIdsJson'
+  ) {
+
+    sheet.insertColumnAfter(
+      1
+    );
+
+
+    sheet
+      .getRange(
+        1,
+        2
+      )
+      .setValue(
+        'seatName'
+      );
+  }
 }
 
 
@@ -6352,6 +6411,16 @@ function getSeatingPlan_() {
 
         seatNo:
           seatNo,
+
+        seatName:
+          String(
+            row.seatName || ''
+          )
+          .trim()
+          .slice(
+            0,
+            60
+          ),
 
         employeeIds:
           uniqueCleanStrings_(
@@ -6394,6 +6463,9 @@ function getSeatingPlan_() {
 
         seatNo:
           seatNo,
+
+        seatName:
+          '',
 
         employeeIds:
           [],
@@ -6440,6 +6512,17 @@ function saveSeatAssignment(
   }
 
 
+  const seatName =
+    String(
+      data.seatName || ''
+    )
+    .trim()
+    .slice(
+      0,
+      60
+    );
+
+
   const employeeIds =
     uniqueCleanStrings_(
       data.employeeIds,
@@ -6454,8 +6537,16 @@ function saveSeatAssignment(
     );
 
 
+  ensureSeatingSheet_();
+
+  migrateSeatingNameColumn_();
+
+
   const sheet =
-    ensureSeatingSheet_();
+    getDatabase_()
+      .getSheetByName(
+        APP.SHEETS.SEATING
+      );
 
 
   /*
@@ -6480,11 +6571,12 @@ function saveSeatAssignment(
       targetRow,
       1,
       1,
-      4
+      5
     )
     .setValues([
       [
         seatNo,
+        seatName,
         JSON.stringify(
           employeeIds
         ),
@@ -6525,6 +6617,9 @@ function saveSeatAssignment(
 
       seatNo:
         seatNo,
+
+      seatName:
+        seatName,
 
       employeeIds:
         employeeIds,

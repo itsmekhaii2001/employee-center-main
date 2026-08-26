@@ -7193,6 +7193,31 @@ th:nth-child(2) {
         <div class="seat-editor-label">
 
           <span>
+            🏷️ ชื่อโต๊ะ
+          </span>
+
+          <span class="seat-editor-hint">
+            ตั้งชื่อเองได้ · เว้นว่างจะใช้ “โต๊ะที่ …”
+          </span>
+
+        </div>
+
+        <input
+          class="seat-search"
+          id="seatNameInput"
+          maxlength="60"
+          placeholder="เช่น โต๊ะแอดมิน A, โต๊ะฝาก-ถอน 1"
+          oninput="STATE.seatEditName=this.value"
+        >
+
+      </div>
+
+
+      <div class="seat-editor-block">
+
+        <div class="seat-editor-label">
+
+          <span>
             👥 เลือกพนักงาน
           </span>
 
@@ -7357,6 +7382,9 @@ let STATE = {
 
   seatEditSeatNo:
     0,
+
+  seatEditName:
+    '',
 
   seatEditEmployeeIds:
     [],
@@ -11297,6 +11325,26 @@ function seatPositionTag(
 }
 
 
+function getSeatDisplayName(
+  seatNo,
+  seat
+) {
+
+  const customName =
+    String(
+      seat?.seatName || ''
+    )
+    .trim();
+
+
+  return customName ||
+    (
+      'โต๊ะที่ ' +
+      seatNo
+    );
+}
+
+
 function seatBoxHtml(
   number,
   seat
@@ -11418,7 +11466,7 @@ function seatBoxHtml(
       <div class="seat-top">
 
         <div class="seat-number">
-          โต๊ะที่ ${number}
+          ${escapeHtml(getSeatDisplayName(number,seat))}
         </div>
 
         <div class="seat-status">
@@ -11498,6 +11546,12 @@ function openSeatEditor(
     seatNo;
 
 
+  STATE.seatEditName =
+    String(
+      seat.seatName || ''
+    );
+
+
   STATE.seatEditEmployeeIds =
     Array.isArray(
       seat.employeeIds
@@ -11524,8 +11578,17 @@ function openSeatEditor(
 
   setText(
     'seatEditorTitle',
-    '🪑 โต๊ะที่ ' +
-      seatNo
+    '🪑 ' +
+      getSeatDisplayName(
+        seatNo,
+        seat
+      )
+  );
+
+
+  setValue(
+    'seatNameInput',
+    STATE.seatEditName
   );
 
 
@@ -11580,6 +11643,9 @@ function closeSeatEditor() {
 
   STATE.seatEditSeatNo =
     0;
+
+  STATE.seatEditName =
+    '';
 
   STATE.seatEditEmployeeIds =
     [];
@@ -12147,6 +12213,18 @@ function saveCurrentSeat() {
     seatNo:
       seatNo,
 
+    seatName:
+      String(
+        value(
+          'seatNameInput'
+        ) || ''
+      )
+      .trim()
+      .slice(
+        0,
+        60
+      ),
+
     employeeIds:
       [
         ...(
@@ -12349,6 +12427,9 @@ function saveCurrentSeat() {
       seatNo:
         seatNo,
 
+      seatName:
+        nextSeat.seatName,
+
       employeeIds:
         nextSeat.employeeIds,
 
@@ -12402,6 +12483,11 @@ function clearCurrentSeat() {
 
     seatNo:
       seatNo,
+
+    seatName:
+      String(
+        previousSeat?.seatName || ''
+      ),
 
     employeeIds:
       [],
@@ -12523,6 +12609,11 @@ function clearCurrentSeat() {
     .saveSeatAssignment({
       seatNo:
         seatNo,
+
+      seatName:
+        String(
+          previousSeat?.seatName || ''
+        ),
 
       employeeIds:
         [],
