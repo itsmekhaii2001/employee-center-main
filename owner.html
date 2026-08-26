@@ -7600,6 +7600,9 @@ let STATE = {
   assignments: [],
   importSheets: [],
 
+  importSheetsLoaded:
+    false,
+
   today: '',
   round: null,
   dashboard: null,
@@ -13291,6 +13294,54 @@ function renderDashboard() {
    EMPLOYEE IMPORT
 ========================= */
 
+function loadImportSheetsSilent(
+  force
+) {
+
+  if (
+    STATE.importSheetsLoaded &&
+    !force
+  ) {
+    return;
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      sheets => {
+
+        STATE.importSheets =
+          sheets || [];
+
+
+        STATE.importSheetsLoaded =
+          true;
+
+
+        fillSelect(
+          'employeeImportSheet',
+          STATE.importSheets,
+          'เลือกชีตที่มีข้อมูลพนักงาน'
+        );
+      }
+    )
+
+    .withFailureHandler(
+      () => {
+
+        /*
+         * ไม่ให้รายการ import ทำหน้า OWNER หลักพัง
+         */
+        STATE.importSheetsLoaded =
+          false;
+      }
+    )
+
+    .getImportSheets();
+}
+
+
 function refreshImportSheets() {
 
   setLoading(true);
@@ -13302,6 +13353,9 @@ function refreshImportSheets() {
 
         STATE.importSheets =
           sheets || [];
+
+        STATE.importSheetsLoaded =
+          true;
 
         fillSelect(
           'employeeImportSheet',
