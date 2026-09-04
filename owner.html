@@ -2319,25 +2319,28 @@ th:nth-child(2) {
 }
 
 .dashboard-team-gender-row {
-  display:grid;
-  grid-template-columns:minmax(92px,1fr) auto auto auto;
-  align-items:center;
-  gap:10px;
-  padding:12px 14px;
+  padding:14px;
   border:1px solid var(--border);
-  border-radius:16px;
+  border-radius:18px;
   background:#fff;
+}
+
+.dashboard-team-gender-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:12px;
 }
 
 .dashboard-team-name {
   min-width:0;
-  font-size:15px;
+  font-size:16px;
   font-weight:900;
   color:var(--text);
 }
 
-.dashboard-team-total,
-.dashboard-gender-pill {
+.dashboard-team-total {
   display:inline-flex;
   align-items:center;
   justify-content:center;
@@ -2346,34 +2349,85 @@ th:nth-child(2) {
   font-size:13px;
   font-weight:900;
   padding:7px 10px;
-}
-
-.dashboard-team-total {
   background:#f2f5f9;
   color:#526076;
 }
 
-.dashboard-gender-pill.female {
-  background:#ffe7f2;
+.dashboard-gender-detail-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+
+.dashboard-gender-detail {
+  border-radius:16px;
+  padding:12px;
+}
+
+.dashboard-gender-detail.female {
+  background:#fff2f7;
+  border:1px solid #ffd7e8;
+}
+
+.dashboard-gender-detail.male {
+  background:#f1f7ff;
+  border:1px solid #d7e8ff;
+}
+
+.dashboard-gender-title {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:9px;
+  font-size:14px;
+  font-weight:900;
+}
+
+.dashboard-gender-detail.female .dashboard-gender-title {
   color:#b84278;
 }
 
-.dashboard-gender-pill.male {
-  background:#e8f2ff;
+.dashboard-gender-detail.male .dashboard-gender-title {
   color:#3974b8;
 }
 
+.dashboard-status-mini-grid {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;
+}
+
+.dashboard-status-mini {
+  padding:8px 6px;
+  border-radius:12px;
+  background:#fff;
+  text-align:center;
+  border:1px solid rgba(0,0,0,.06);
+}
+
+.dashboard-status-mini-label {
+  display:block;
+  font-size:11px;
+  color:#7b8798;
+  font-weight:800;
+  margin-bottom:3px;
+}
+
+.dashboard-status-mini-value {
+  display:block;
+  font-size:16px;
+  font-weight:900;
+  color:#273449;
+}
+
 @media (max-width:700px) {
-  .dashboard-team-gender-row {
-    grid-template-columns:1fr auto;
+  .dashboard-gender-detail-grid {
+    grid-template-columns:1fr;
   }
 
-  .dashboard-team-total {
-    justify-self:end;
-  }
-
-  .dashboard-gender-pill {
-    width:100%;
+  .dashboard-status-mini-grid {
+    grid-template-columns:repeat(3,minmax(0,1fr));
   }
 }
 
@@ -5039,7 +5093,7 @@ th:nth-child(2) {
           </h2>
 
           <p>
-            นับเฉพาะสถานะ ทำงาน / รอเรียก / พักงาน
+            แยกเพศ และสถานะ ทำงาน / รอเรียก / พักงาน
           </p>
 
         </div>
@@ -13485,40 +13539,169 @@ function normalizeEmployeeGender_(value) {
 }
 
 
-function dashboardTeamGenderRow_(team, employees) {
-  const teamEmployees = employees.filter(
-    employee =>
-      String(employee.team || '').trim() ===
-      String(team || '').trim()
-  );
+function dashboardTeamGenderRow_(
+  team,
+  employees
+) {
 
-  const female = teamEmployees.filter(
-    employee =>
-      normalizeEmployeeGender_(employee.gender) === 'หญิง'
-  ).length;
+  const teamEmployees =
+    employees.filter(
+      employee =>
+        String(
+          employee.team || ''
+        )
+          .trim() ===
+        String(
+          team || ''
+        )
+          .trim()
+    );
 
-  const male = teamEmployees.filter(
-    employee =>
-      normalizeEmployeeGender_(employee.gender) === 'ชาย'
-  ).length;
+
+  const countByGenderAndStatus =
+    (
+      gender,
+      status
+    ) =>
+      teamEmployees.filter(
+        employee =>
+          normalizeEmployeeGender_(
+            employee.gender
+          ) === gender &&
+          String(
+            employee.status || ''
+          )
+            .trim() === status
+      ).length;
+
+
+  const femaleWork =
+    countByGenderAndStatus(
+      'หญิง',
+      'ทำงาน'
+    );
+
+  const femaleWaiting =
+    countByGenderAndStatus(
+      'หญิง',
+      'รอเรียก'
+    );
+
+  const femaleSuspended =
+    countByGenderAndStatus(
+      'หญิง',
+      'พักงาน'
+    );
+
+
+  const maleWork =
+    countByGenderAndStatus(
+      'ชาย',
+      'ทำงาน'
+    );
+
+  const maleWaiting =
+    countByGenderAndStatus(
+      'ชาย',
+      'รอเรียก'
+    );
+
+  const maleSuspended =
+    countByGenderAndStatus(
+      'ชาย',
+      'พักงาน'
+    );
+
+
+  const femaleTotal =
+    femaleWork +
+    femaleWaiting +
+    femaleSuspended;
+
+
+  const maleTotal =
+    maleWork +
+    maleWaiting +
+    maleSuspended;
+
 
   return `
     <div class="dashboard-team-gender-row">
-      <div class="dashboard-team-name">
-        TEAM ${escapeHtml(team || '-')}
+
+      <div class="dashboard-team-gender-head">
+
+        <div class="dashboard-team-name">
+          TEAM ${escapeHtml(team || '-')}
+        </div>
+
+        <div class="dashboard-team-total">
+          รวม ${teamEmployees.length} คน
+        </div>
+
       </div>
 
-      <div class="dashboard-team-total">
-        รวม ${teamEmployees.length} คน
+
+      <div class="dashboard-gender-detail-grid">
+
+        <div class="dashboard-gender-detail female">
+
+          <div class="dashboard-gender-title">
+            <span>👩 หญิง</span>
+            <span>${femaleTotal} คน</span>
+          </div>
+
+          <div class="dashboard-status-mini-grid">
+
+            <div class="dashboard-status-mini">
+              <span class="dashboard-status-mini-label">ทำงาน</span>
+              <span class="dashboard-status-mini-value">${femaleWork}</span>
+            </div>
+
+            <div class="dashboard-status-mini">
+              <span class="dashboard-status-mini-label">รอเรียก</span>
+              <span class="dashboard-status-mini-value">${femaleWaiting}</span>
+            </div>
+
+            <div class="dashboard-status-mini">
+              <span class="dashboard-status-mini-label">พักงาน</span>
+              <span class="dashboard-status-mini-value">${femaleSuspended}</span>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="dashboard-gender-detail male">
+
+          <div class="dashboard-gender-title">
+            <span>👨 ชาย</span>
+            <span>${maleTotal} คน</span>
+          </div>
+
+          <div class="dashboard-status-mini-grid">
+
+            <div class="dashboard-status-mini">
+              <span class="dashboard-status-mini-label">ทำงาน</span>
+              <span class="dashboard-status-mini-value">${maleWork}</span>
+            </div>
+
+            <div class="dashboard-status-mini">
+              <span class="dashboard-status-mini-label">รอเรียก</span>
+              <span class="dashboard-status-mini-value">${maleWaiting}</span>
+            </div>
+
+            <div class="dashboard-status-mini">
+              <span class="dashboard-status-mini-label">พักงาน</span>
+              <span class="dashboard-status-mini-value">${maleSuspended}</span>
+            </div>
+
+          </div>
+
+        </div>
+
       </div>
 
-      <div class="dashboard-gender-pill female">
-        👩 หญิง ${female}
-      </div>
-
-      <div class="dashboard-gender-pill male">
-        👨 ชาย ${male}
-      </div>
     </div>
   `;
 }
