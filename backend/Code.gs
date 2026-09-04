@@ -4015,6 +4015,29 @@ function saveEmployee(data) {
 }
 
 
+function getEmployeesFresh() {
+
+  /*
+   * Endpoint เบา ๆ สำหรับ Dashboard / หน้าพนักงาน
+   * อ่านเฉพาะ DB_Employees ไม่โหลดกะ / ผัง / ตัดยอด / settings ทั้งระบบ
+   */
+  return {
+
+    ok:
+      true,
+
+    employees:
+      getEmployees_(),
+
+    fetchedAt:
+      new Date()
+        .toISOString()
+  };
+}
+
+
+
+
 function deleteEmployee(
   employeeId
 ) {

@@ -2421,6 +2421,69 @@ th:nth-child(2) {
   color:#273449;
 }
 
+.employee-live-summary {
+  margin:14px 0 16px;
+}
+
+.employee-live-summary-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:10px;
+  color:#667085;
+  font-size:13px;
+  font-weight:800;
+}
+
+.employee-live-summary .dashboard-team-gender-list {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+}
+
+.employee-live-summary .dashboard-team-gender-row {
+  min-width:0;
+}
+
+.dashboard-status-mini.is-clickable {
+  cursor:pointer;
+  transition:
+    transform .15s ease,
+    box-shadow .15s ease,
+    border-color .15s ease;
+}
+
+.dashboard-status-mini.is-clickable:hover {
+  transform:translateY(-1px);
+  box-shadow:0 7px 18px rgba(34,55,90,.08);
+  border-color:#cbd5e1;
+}
+
+.employee-filter-counts {
+  display:inline-flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-left:6px;
+}
+
+.employee-filter-count-badge {
+  display:inline-flex;
+  align-items:center;
+  border-radius:999px;
+  padding:4px 8px;
+  background:#f4f6f9;
+  color:#596579;
+  font-size:12px;
+  font-weight:800;
+}
+
+@media (max-width:1150px) {
+  .employee-live-summary .dashboard-team-gender-list {
+    grid-template-columns:1fr;
+  }
+}
+
 @media (max-width:700px) {
   .dashboard-gender-detail-grid {
     grid-template-columns:1fr;
@@ -5411,6 +5474,12 @@ th:nth-child(2) {
   </div>
 
 
+  <div
+    class="employee-live-summary"
+    id="employeeTeamGenderSummary"
+  ></div>
+
+
   <div class="filters">
 
     <input
@@ -5426,6 +5495,16 @@ th:nth-child(2) {
 
     <select
       id="employeePositionFilter"
+      onchange="renderEmployees()"
+    ></select>
+
+    <select
+      id="employeeGenderFilter"
+      onchange="renderEmployees()"
+    ></select>
+
+    <select
+      id="employeeStatusFilter"
       onchange="renderEmployees()"
     ></select>
 
@@ -7689,6 +7768,12 @@ let STATE = {
 
   employees: [],
 
+  employeeDataFresh:
+    false,
+
+  employeeSyncInFlight:
+    false,
+
   inlineEmployeeEditId:
     '',
 
@@ -8006,6 +8091,14 @@ function loadOwnerSnapshot_() {
       );
 
 
+    /*
+     * Snapshot ใช้เปิด UI ให้ไว แต่จำนวนพนักงานต้องรอข้อมูลสด
+     * จึงไม่แสดงตัวเลขเก่าเป็นตัวเลขปัจจุบัน
+     */
+    STATE.employeeDataFresh =
+      false;
+
+
     initializeUI();
 
 
@@ -8100,6 +8193,10 @@ function loadApp() {
             STATE,
             data
           );
+
+
+        STATE.employeeDataFresh =
+          true;
 
 
         if (
@@ -8564,11 +8661,24 @@ function openPage(
 
 
   if (
-    page === 'dashboard' &&
-    STATE.dashboardDirty
+    page === 'dashboard'
   ) {
 
-    refreshDashboard();
+    /*
+     * Dashboard ต้องอิงรายชื่อพนักงานล่าสุดเสมอ
+     * โหลดเฉพาะรายชื่อพนักงานแบบเบา ไม่ reload ทั้งระบบ
+     */
+    syncEmployeeDirectoryFresh_(
+      true
+    );
+
+
+    if (
+      STATE.dashboardDirty
+    ) {
+
+      refreshDashboard();
+    }
   }
 if (
     page === 'schedule' &&
@@ -8587,6 +8697,13 @@ if (
   if (
     page === 'employees'
   ) {
+
+    /*
+     * เปิดหน้าพนักงาน = เช็กรายชื่อสดจากฐานข้อมูล
+     */
+    syncEmployeeDirectoryFresh_(
+      true
+    );
 
     loadImportSheetsSilent();
   }
@@ -13377,6 +13494,18 @@ function refreshAllDropdowns() {
     'ทุกตำแหน่ง'
   );
 
+  fillSelect(
+    'employeeGenderFilter',
+    STATE.genders,
+    'ทุกเพศ'
+  );
+
+  fillSelect(
+    'employeeStatusFilter',
+    STATE.employeeStatus,
+    'ทุกสถานะ'
+  );
+
 
   fillSelect(
     'employeeImportSheet',
@@ -13539,9 +13668,23 @@ function normalizeEmployeeGender_(value) {
 }
 
 
+function employeeTeamLabel_(team) {
+  const raw =
+    String(
+      team || '-'
+    )
+      .trim();
+
+  return /^team\s+/i.test(raw)
+    ? raw
+    : 'TEAM ' + raw;
+}
+
+
 function dashboardTeamGenderRow_(
   team,
-  employees
+  employees,
+  clickable
 ) {
 
   const teamEmployees =
@@ -13625,13 +13768,43 @@ function dashboardTeamGenderRow_(
     maleSuspended;
 
 
+  const quickClass =
+    clickable
+      ? ' is-clickable'
+      : '';
+
+
+  const quickAttr =
+    (
+      gender,
+      status
+    ) =>
+      clickable
+        ? `
+          role="button"
+          tabindex="0"
+          title="คลิกเพื่อดูรายชื่อ"
+          onclick='applyEmployeeQuickFilter(
+            ${jsonString(team)},
+            ${jsonString(gender)},
+            ${jsonString(status)}
+          )'
+          onkeydown="
+            if(event.key==='Enter'){
+              this.click()
+            }
+          "
+        `
+        : '';
+
+
   return `
     <div class="dashboard-team-gender-row">
 
       <div class="dashboard-team-gender-head">
 
         <div class="dashboard-team-name">
-          TEAM ${escapeHtml(team || '-')}
+          ${escapeHtml(employeeTeamLabel_(team))}
         </div>
 
         <div class="dashboard-team-total">
@@ -13652,17 +13825,26 @@ function dashboardTeamGenderRow_(
 
           <div class="dashboard-status-mini-grid">
 
-            <div class="dashboard-status-mini">
+            <div
+              class="dashboard-status-mini${quickClass}"
+              ${quickAttr('หญิง','ทำงาน')}
+            >
               <span class="dashboard-status-mini-label">ทำงาน</span>
               <span class="dashboard-status-mini-value">${femaleWork}</span>
             </div>
 
-            <div class="dashboard-status-mini">
+            <div
+              class="dashboard-status-mini${quickClass}"
+              ${quickAttr('หญิง','รอเรียก')}
+            >
               <span class="dashboard-status-mini-label">รอเรียก</span>
               <span class="dashboard-status-mini-value">${femaleWaiting}</span>
             </div>
 
-            <div class="dashboard-status-mini">
+            <div
+              class="dashboard-status-mini${quickClass}"
+              ${quickAttr('หญิง','พักงาน')}
+            >
               <span class="dashboard-status-mini-label">พักงาน</span>
               <span class="dashboard-status-mini-value">${femaleSuspended}</span>
             </div>
@@ -13681,17 +13863,26 @@ function dashboardTeamGenderRow_(
 
           <div class="dashboard-status-mini-grid">
 
-            <div class="dashboard-status-mini">
+            <div
+              class="dashboard-status-mini${quickClass}"
+              ${quickAttr('ชาย','ทำงาน')}
+            >
               <span class="dashboard-status-mini-label">ทำงาน</span>
               <span class="dashboard-status-mini-value">${maleWork}</span>
             </div>
 
-            <div class="dashboard-status-mini">
+            <div
+              class="dashboard-status-mini${quickClass}"
+              ${quickAttr('ชาย','รอเรียก')}
+            >
               <span class="dashboard-status-mini-label">รอเรียก</span>
               <span class="dashboard-status-mini-value">${maleWaiting}</span>
             </div>
 
-            <div class="dashboard-status-mini">
+            <div
+              class="dashboard-status-mini${quickClass}"
+              ${quickAttr('ชาย','พักงาน')}
+            >
               <span class="dashboard-status-mini-label">พักงาน</span>
               <span class="dashboard-status-mini-value">${maleSuspended}</span>
             </div>
@@ -13727,25 +13918,8 @@ function recalculateEmployeeDashboardNow_() {
 
 function renderDashboard() {
 
-  const countedStatuses =
-    new Set([
-      'ทำงาน',
-      'รอเรียก',
-      'พักงาน'
-    ]);
-
-
   const active =
-    STATE.employees
-      .filter(
-        employee =>
-          countedStatuses.has(
-            String(
-              employee.status || ''
-            )
-              .trim()
-          )
-      );
+    getCurrentCountedEmployees_();
 
 
   const data =
@@ -13765,7 +13939,9 @@ function renderDashboard() {
 
     statCard(
       'พนักงานทั้งหมด',
-      active.length,
+      STATE.employeeDataFresh
+        ? active.length
+        : '…',
       'คน',
       'green'
     )
@@ -13802,30 +13978,42 @@ function renderDashboard() {
   let teamHtml = '';
 
 
-  STATE.teams
-    .forEach(
-      team => {
+  if (
+    STATE.employeeDataFresh
+  ) {
 
-        teamHtml +=
-          dashboardTeamGenderRow_(
-            team,
-            active
-          );
-      }
-    );
+    STATE.teams
+      .forEach(
+        team => {
+
+          teamHtml +=
+            dashboardTeamGenderRow_(
+              team,
+              active,
+              false
+            );
+        }
+      );
+  }
 
 
   setHtml(
     'dashboardTeams',
 
-    teamHtml
-      ? `
-          <div class="dashboard-team-gender-list">
-            ${teamHtml}
-          </div>
-        `
-      : emptyHtml(
-          'ยังไม่มีข้อมูล TEAM'
+    !STATE.employeeDataFresh
+      ? emptyHtml(
+          'กำลังอัปเดตรายชื่อพนักงานล่าสุด...'
+        )
+      : (
+          teamHtml
+            ? `
+                <div class="dashboard-team-gender-list">
+                  ${teamHtml}
+                </div>
+              `
+            : emptyHtml(
+                'ยังไม่มีข้อมูล TEAM'
+              )
         )
   );
 
@@ -14743,6 +14931,9 @@ function saveInlineEmployee(
         STATE.employees =
           res.employees;
 
+        STATE.employeeDataFresh =
+          true;
+
 
         STATE.inlineEmployeeEditId =
           '';
@@ -15001,6 +15192,269 @@ function employeeNewRibbonHtml(
 }
 
 
+function countedEmployeeStatuses_() {
+  return new Set([
+    'ทำงาน',
+    'รอเรียก',
+    'พักงาน'
+  ]);
+}
+
+
+function getCurrentCountedEmployees_() {
+  const allowed =
+    countedEmployeeStatuses_();
+
+  return STATE.employees.filter(
+    employee =>
+      allowed.has(
+        String(
+          employee.status || ''
+        )
+          .trim()
+      )
+  );
+}
+
+
+function renderEmployeeTeamGenderSummary_() {
+  const container =
+    document.getElementById(
+      'employeeTeamGenderSummary'
+    );
+
+  if (!container) {
+    return;
+  }
+
+
+  const counted =
+    getCurrentCountedEmployees_();
+
+
+  let html = '';
+
+
+  STATE.teams.forEach(
+    team => {
+
+      html +=
+        dashboardTeamGenderRow_(
+          team,
+          counted,
+          true
+        );
+    }
+  );
+
+
+  container.innerHTML = `
+    <div class="employee-live-summary-head">
+      <span>
+        👥 สรุปกำลังคนตามรายชื่อปัจจุบัน
+      </span>
+      <span>
+        คลิกจำนวนเพื่อกรองดูรายชื่อ
+      </span>
+    </div>
+
+    ${
+      html
+        ? `
+          <div class="dashboard-team-gender-list">
+            ${html}
+          </div>
+        `
+        : emptyHtml(
+            'ยังไม่มีข้อมูลพนักงาน'
+          )
+    }
+  `;
+}
+
+
+function applyEmployeeQuickFilter(
+  team,
+  gender,
+  status
+) {
+
+  setValue(
+    'employeeSearch',
+    ''
+  );
+
+  setValue(
+    'employeeTeamFilter',
+    team || ''
+  );
+
+  setValue(
+    'employeePositionFilter',
+    ''
+  );
+
+  setValue(
+    'employeeGenderFilter',
+    gender || ''
+  );
+
+  setValue(
+    'employeeStatusFilter',
+    status || ''
+  );
+
+
+  renderEmployees();
+
+
+  document
+    .getElementById(
+      'employeeTable'
+    )
+    ?.scrollIntoView({
+      behavior:
+        'smooth',
+
+      block:
+        'start'
+    });
+}
+
+
+function filteredEmployeeCountText_(
+  rows
+) {
+
+  const female =
+    rows.filter(
+      employee =>
+        normalizeEmployeeGender_(
+          employee.gender
+        ) ===
+        'หญิง'
+    ).length;
+
+
+  const male =
+    rows.filter(
+      employee =>
+        normalizeEmployeeGender_(
+          employee.gender
+        ) ===
+        'ชาย'
+    ).length;
+
+
+  const work =
+    rows.filter(
+      employee =>
+        String(
+          employee.status || ''
+        ).trim() ===
+        'ทำงาน'
+    ).length;
+
+
+  const waiting =
+    rows.filter(
+      employee =>
+        String(
+          employee.status || ''
+        ).trim() ===
+        'รอเรียก'
+    ).length;
+
+
+  const suspended =
+    rows.filter(
+      employee =>
+        String(
+          employee.status || ''
+        ).trim() ===
+        'พักงาน'
+    ).length;
+
+
+  return `
+    แสดง ${rows.length} จาก ${STATE.employees.length} คน
+    <span class="employee-filter-counts">
+      <span class="employee-filter-count-badge">👩 หญิง ${female}</span>
+      <span class="employee-filter-count-badge">👨 ชาย ${male}</span>
+      <span class="employee-filter-count-badge">🟢 ทำงาน ${work}</span>
+      <span class="employee-filter-count-badge">🟡 รอเรียก ${waiting}</span>
+      <span class="employee-filter-count-badge">⏸️ พักงาน ${suspended}</span>
+    </span>
+  `;
+}
+
+
+function syncEmployeeDirectoryFresh_(
+  silent
+) {
+
+  if (
+    STATE.employeeSyncInFlight
+  ) {
+    return;
+  }
+
+
+  STATE.employeeSyncInFlight =
+    true;
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      res => {
+
+        STATE.employeeSyncInFlight =
+          false;
+
+
+        STATE.employees =
+          Array.isArray(
+            res?.employees
+          )
+            ? res.employees
+            : [];
+
+
+        STATE.employeeDataFresh =
+          true;
+
+
+        renderEmployees();
+
+        refreshEmployeeDropdowns();
+
+        renderDashboard();
+
+        saveOwnerSnapshot_();
+      }
+    )
+
+    .withFailureHandler(
+      err => {
+
+        STATE.employeeSyncInFlight =
+          false;
+
+
+        if (!silent) {
+
+          showServerError(
+            err
+          );
+        }
+      }
+    )
+
+    .getEmployeesFresh();
+}
+
+
 function renderEmployees() {
 
   let rows =
@@ -15025,6 +15479,21 @@ function renderEmployees() {
     value(
       'employeePositionFilter'
     );
+
+
+  const gender =
+    value(
+      'employeeGenderFilter'
+    );
+
+
+  const status =
+    value(
+      'employeeStatusFilter'
+    );
+
+
+  renderEmployeeTeamGenderSummary_();
 
 
   if (search) {
@@ -15071,13 +15540,43 @@ function renderEmployees() {
   }
 
 
-  setText(
+  if (gender) {
+
+    rows =
+      rows.filter(
+        e =>
+          normalizeEmployeeGender_(
+            e.gender
+          ) ===
+          normalizeEmployeeGender_(
+            gender
+          )
+      );
+  }
+
+
+  if (status) {
+
+    rows =
+      rows.filter(
+        e =>
+          String(
+            e.status || ''
+          )
+            .trim() ===
+          String(
+            status || ''
+          )
+            .trim()
+      );
+  }
+
+
+  setHtml(
     'employeeCountText',
-    'แสดง ' +
-      rows.length +
-      ' จาก ' +
-      STATE.employees.length +
-      ' คน'
+    filteredEmployeeCountText_(
+      rows
+    )
   );
 
 
@@ -15425,6 +15924,16 @@ function clearEmployeeFilters() {
 
   setValue(
     'employeePositionFilter',
+    ''
+  );
+
+  setValue(
+    'employeeGenderFilter',
+    ''
+  );
+
+  setValue(
+    'employeeStatusFilter',
     ''
   );
 
