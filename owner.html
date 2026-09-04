@@ -2307,6 +2307,77 @@ th:nth-child(2) {
 }
 
 
+
+/* =========================
+   DASHBOARD TEAM + GENDER
+========================= */
+
+.dashboard-team-gender-list {
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.dashboard-team-gender-row {
+  display:grid;
+  grid-template-columns:minmax(92px,1fr) auto auto auto;
+  align-items:center;
+  gap:10px;
+  padding:12px 14px;
+  border:1px solid var(--border);
+  border-radius:16px;
+  background:#fff;
+}
+
+.dashboard-team-name {
+  min-width:0;
+  font-size:15px;
+  font-weight:900;
+  color:var(--text);
+}
+
+.dashboard-team-total,
+.dashboard-gender-pill {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  white-space:nowrap;
+  border-radius:999px;
+  font-size:13px;
+  font-weight:900;
+  padding:7px 10px;
+}
+
+.dashboard-team-total {
+  background:#f2f5f9;
+  color:#526076;
+}
+
+.dashboard-gender-pill.female {
+  background:#ffe7f2;
+  color:#b84278;
+}
+
+.dashboard-gender-pill.male {
+  background:#e8f2ff;
+  color:#3974b8;
+}
+
+@media (max-width:700px) {
+  .dashboard-team-gender-row {
+    grid-template-columns:1fr auto;
+  }
+
+  .dashboard-team-total {
+    justify-self:end;
+  }
+
+  .dashboard-gender-pill {
+    width:100%;
+  }
+}
+
+
 /* =========================
    GENDER TABLE
 ========================= */
@@ -4968,7 +5039,7 @@ th:nth-child(2) {
           </h2>
 
           <p>
-            พนักงานที่ยังทำงานอยู่
+            นับเฉพาะสถานะ ทำงาน / รอเรียก / พักงาน
           </p>
 
         </div>
@@ -13389,13 +13460,108 @@ function refreshShiftSetDropdown() {
    DASHBOARD
 ========================= */
 
+function normalizeEmployeeGender_(value) {
+  const gender = String(value || '').trim().toLowerCase();
+
+  if (
+    gender === 'หญิง' ||
+    gender === 'female' ||
+    gender === 'f' ||
+    gender === 'ผู้หญิง'
+  ) {
+    return 'หญิง';
+  }
+
+  if (
+    gender === 'ชาย' ||
+    gender === 'male' ||
+    gender === 'm' ||
+    gender === 'ผู้ชาย'
+  ) {
+    return 'ชาย';
+  }
+
+  return '';
+}
+
+
+function dashboardTeamGenderRow_(team, employees) {
+  const teamEmployees = employees.filter(
+    employee =>
+      String(employee.team || '').trim() ===
+      String(team || '').trim()
+  );
+
+  const female = teamEmployees.filter(
+    employee =>
+      normalizeEmployeeGender_(employee.gender) === 'หญิง'
+  ).length;
+
+  const male = teamEmployees.filter(
+    employee =>
+      normalizeEmployeeGender_(employee.gender) === 'ชาย'
+  ).length;
+
+  return `
+    <div class="dashboard-team-gender-row">
+      <div class="dashboard-team-name">
+        TEAM ${escapeHtml(team || '-')}
+      </div>
+
+      <div class="dashboard-team-total">
+        รวม ${teamEmployees.length} คน
+      </div>
+
+      <div class="dashboard-gender-pill female">
+        👩 หญิง ${female}
+      </div>
+
+      <div class="dashboard-gender-pill male">
+        👨 ชาย ${male}
+      </div>
+    </div>
+  `;
+}
+
+
+function recalculateEmployeeDashboardNow_() {
+
+  /*
+   * จำนวน TEAM / หญิง / ชาย ใช้ STATE.employees โดยตรง
+   * จึงคำนวณใหม่ได้ทันทีหลังเพิ่ม/แก้ไข/ลบ/นำเข้าพนักงาน
+   */
+  renderDashboard();
+
+
+  /*
+   * กะวันนี้อาจเกี่ยวข้องกับข้อมูลพนักงานที่เปลี่ยน
+   * ทำเครื่องหมายไว้ให้โหลดค่ากะสดเมื่อกลับหน้า Dashboard
+   */
+  STATE.dashboardDirty =
+    true;
+}
+
+
 function renderDashboard() {
+
+  const countedStatuses =
+    new Set([
+      'ทำงาน',
+      'รอเรียก',
+      'พักงาน'
+    ]);
+
 
   const active =
     STATE.employees
       .filter(
-        e =>
-          e.status !== 'ออก'
+        employee =>
+          countedStatuses.has(
+            String(
+              employee.status || ''
+            )
+              .trim()
+          )
       );
 
 
@@ -13454,29 +13620,30 @@ function renderDashboard() {
 
 
   STATE.teams
-    .forEach(team => {
+    .forEach(
+      team => {
 
-      const count =
-        active.filter(
-          e =>
-            e.team === team
-        ).length;
-
-
-      teamHtml +=
-        summaryRow(
-          team,
-          count
-        );
-    });
+        teamHtml +=
+          dashboardTeamGenderRow_(
+            team,
+            active
+          );
+      }
+    );
 
 
   setHtml(
     'dashboardTeams',
-    teamHtml ||
-      emptyHtml(
-        'ยังไม่มีข้อมูล TEAM'
-      )
+
+    teamHtml
+      ? `
+          <div class="dashboard-team-gender-list">
+            ${teamHtml}
+          </div>
+        `
+      : emptyHtml(
+          'ยังไม่มีข้อมูล TEAM'
+        )
   );
 
 
@@ -13870,6 +14037,8 @@ function importEmployeesNow() {
 
         refreshEmployeeDropdowns();
 
+        recalculateEmployeeDashboardNow_();
+
         setHtml(
           'employeeImportPreview',
           ''
@@ -14011,6 +14180,11 @@ function saveEmployeeForm() {
         renderEmployees();
 
         refreshEmployeeDropdowns();
+
+        /*
+         * เพิ่มพนักงานใหม่แล้วคำนวณ TEAM / เพศใหม่ทันที
+         */
+        recalculateEmployeeDashboardNow_();
 
         refreshDashboard();
 
@@ -14396,11 +14570,9 @@ function saveInlineEmployee(
         refreshEmployeeDropdowns();
 
         /*
-         * Dashboard ค่อย refresh เมื่อกลับไปหน้า Dashboard
-         * ไม่ต้องโหลดทั้งหน้าใหม่หลังแก้พนักงาน 1 คน
+         * แก้ TEAM / เพศ / สถานะแล้วคำนวณตัวเลขใหม่ทันที
          */
-        STATE.dashboardDirty =
-          true;
+        recalculateEmployeeDashboardNow_();
 
 
         toast(
@@ -14533,6 +14705,8 @@ function removeEmployee(id) {
         renderEmployees();
 
         refreshEmployeeDropdowns();
+
+        recalculateEmployeeDashboardNow_();
 
         refreshDashboard();
 
